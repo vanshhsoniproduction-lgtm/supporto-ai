@@ -326,12 +326,72 @@ def sync_now_view(request, company_slug):
 def gmail_connect_view(request, company_slug):
     """
     Dedicated Mailbox Connection settings:
-    Allows authorized workspace admin to connect their support mailbox via Gmail OAuth.
+    Allows authorized workspace admin to connect their support mailbox via Gmail OAuth,
+    or manually activate a support mailbox / simulate incoming customer emails.
     """
     workspace = request.workspace
     connections = MailboxConnection.objects.filter(workspace=workspace)
     client_id = getattr(settings, "GOOGLE_OAUTH_CLIENT_ID", "")
     from django.urls import reverse
+
+    if request.method == "POST":
+        action = request.POST.get("action", "")
+        if action == "connect_custom_mailbox":
+            email_addr = request.POST.get("email_address", "").strip().lower()
+            if email_addr:
+                conn, created = MailboxConnection.objects.get_or_create(
+                    workspace=workspace,
+                    email_address=email_addr,
+                    defaults={
+                        "provider": MailboxConnection.Provider.GMAIL,
+                        "status": MailboxConnection.Status.ACTIVE,
+                        "granted_scopes": "https://www.googleapis.com/auth/gmail.readonly",
+                    }
+                )
+                if not created and conn.status != MailboxConnection.Status.ACTIVE:
+                    conn.status = MailboxConnection.Status.ACTIVE
+                    conn.save(update_fields=["status"])
+                messages.success(request, f"Mailbox '{email_addr}' successfully activated for {workspace.name}!")
+                return redirect("gmail_connect", company_slug=workspace.slug)
+
+        elif action == "simulate_incoming_email":
+            import uuid
+            import random
+            from apps.emails.models import InboundEmail
+            from apps.emails.services.email_triage import EmailTriageService
+
+            sample_subjects = [
+                ("Order #SE-84920 damaged screen upon delivery", "Hi, I received order SE-84920 today, but the screen was cracked in transit. Can I please get an immediate replacement or refund?"),
+                ("Charged twice on credit card for order SE-84921", "URGENT: I noticed a duplicate deduction of $1199 on my bank statement for order SE-84921. Please refund the duplicate charge immediately!"),
+                ("Question about return policy for smart watch", "Hello, what is your standard return window if the watch does not fit? Thank you.")
+            ]
+            subj, body = random.choice(sample_subjects)
+            sender = "rahul.sharma@example.com"
+            active_conn = MailboxConnection.objects.filter(workspace=workspace, status=MailboxConnection.Status.ACTIVE).first()
+            if not active_conn:
+                support_email = getattr(getattr(workspace, "settings", None), "support_email", "") or "support@shopease.com"
+                active_conn = MailboxConnection.objects.create(
+                    workspace=workspace,
+                    email_address=support_email,
+                    provider=MailboxConnection.Provider.GMAIL,
+                    status=MailboxConnection.Status.ACTIVE
+                )
+
+            inbound = InboundEmail.objects.create(
+                workspace=workspace,
+                mailbox_connection=active_conn,
+                provider_message_id=f"sim_{uuid.uuid4().hex[:12]}",
+                sender_email=sender,
+                sender_name="Rahul Sharma",
+                recipient_email=active_conn.email_address,
+                subject=subj,
+                body_plain=body,
+                processing_status=InboundEmail.ProcessingStatus.NEW
+            )
+            EmailTriageService.process_inbound_email(inbound)
+            messages.success(request, f"Simulated customer email received: '{subj}'. AI triage & proposal generated!")
+            return redirect("email_review_queue", company_slug=workspace.slug)
+
     env_uri = getattr(settings, "GMAIL_OAUTH_REDIRECT_URI", "")
     if env_uri and "127.0.0.1" not in env_uri and "localhost" not in env_uri:
         redirect_uri = env_uri

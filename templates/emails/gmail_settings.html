@@ -49,20 +49,69 @@
             {% endif %}
         </div>
 
-        <!-- Google Cloud Console Redirect URI Guide -->
-        <div class="p-4 rounded-2xl bg-amber-50/80 border border-amber-200 text-xs text-amber-900 space-y-2">
-            <div class="flex items-center gap-1.5 font-bold text-amber-950">
-                <span class="material-symbols-outlined text-sm text-amber-700">link</span>
-                Google Cloud Console Redirect URI Configuration
+        <!-- Google Cloud Console Redirect URI Guide & Steps -->
+        <div class="p-5 rounded-2xl bg-amber-50/90 border border-amber-200 text-xs text-amber-950 space-y-3">
+            <div class="flex items-center gap-2 font-bold text-sm text-amber-900">
+                <span class="material-symbols-outlined text-base text-amber-700">build_circle</span>
+                Google Cloud Console: 3 Steps to Fix "redirect_uri_mismatch" & "Access Blocked"
             </div>
-            <p class="text-[11px] text-amber-800">
-                Agar Google <code>Error 400: redirect_uri_mismatch</code> de, toh apne Google Cloud Console me <strong>APIs & Services &rarr; Credentials &rarr; OAuth 2.0 Client IDs</strong> me jakar <em>Authorized redirect URIs</em> me ye dono exact URIs add kar do:
-            </p>
-            <div class="space-y-1">
-                <code class="block bg-white p-2 rounded-lg border border-amber-300 font-mono text-[11px] font-bold text-charcoal-900 select-all">{{ redirect_uri }}</code>
-                <code class="block bg-white p-2 rounded-lg border border-amber-300 font-mono text-[11px] font-bold text-charcoal-900 select-all">http://localhost:8000/integrations/gmail/callback/</code>
-                <code class="block bg-white p-2 rounded-lg border border-amber-300 font-mono text-[11px] font-bold text-charcoal-900 select-all">http://127.0.0.1:8000/integrations/gmail/callback/</code>
-            </div>
+            <ol class="list-decimal list-inside space-y-2 text-[11px] text-amber-900 leading-relaxed">
+                <li>
+                    <strong>Add Authorized Redirect URIs:</strong> Google Cloud Console me <em>APIs & Services &rarr; Credentials &rarr; OAuth 2.0 Client IDs</em> me jao, aur <strong>Authorized redirect URIs</strong> me yeh exact URIs add karo:
+                    <div class="mt-1 space-y-1">
+                        <code class="block bg-white p-2 rounded-lg border border-amber-300 font-mono text-[11px] font-bold text-charcoal-900 select-all">{{ redirect_uri }}</code>
+                        <code class="block bg-white p-2 rounded-lg border border-amber-300 font-mono text-[11px] font-bold text-charcoal-900 select-all">http://localhost:8000/integrations/gmail/callback/</code>
+                        <code class="block bg-white p-2 rounded-lg border border-amber-300 font-mono text-[11px] font-bold text-charcoal-900 select-all">http://127.0.0.1:8000/integrations/gmail/callback/</code>
+                    </div>
+                </li>
+                <li>
+                    <strong>Add Test Users:</strong> <em>APIs & Services &rarr; OAuth consent screen &rarr; Test users</em> me jakar apna email (<code>sonivanshmaster@gmail.com</code> aur <code>vanshhsoni.production@gmail.com</code>) add karo (warna Google bolta hai "This app's request is invalid").
+                </li>
+                <li>
+                    <strong>Enable Gmail API:</strong> <em>APIs & Services &rarr; Library</em> me search karo <strong>Gmail API</strong> aur <strong>ENABLE</strong> par click karo.
+                </li>
+            </ol>
+        </div>
+
+        <!-- 1-Click Fast Alternatives for Demo & Hackathons -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+            <!-- Fast Mailbox Activation -->
+            <form method="POST" action="{% url 'gmail_connect' company_slug=workspace.slug %}" class="p-5 rounded-2xl bg-blue-50/60 border border-blue-200 space-y-3">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="connect_custom_mailbox">
+                <div class="flex items-center gap-1.5 font-bold text-xs text-blue-950">
+                    <span class="material-symbols-outlined text-sm text-blue-700">mark_email_read</span>
+                    Instant Mailbox Activation (No Google Setup Required)
+                </div>
+                <p class="text-[11px] text-blue-800">
+                    Agar Google OAuth delay ho raha hai, toh support email yahan daal kar instant activate kar do:
+                </p>
+                <div class="flex gap-2">
+                    <input type="email" name="email_address" value="vanshhsoni.production@gmail.com" required class="flex-1 px-3 py-1.5 text-xs bg-white border border-blue-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 font-mono">
+                    <button type="submit" class="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-lg transition whitespace-nowrap shadow-sm">
+                        Activate
+                    </button>
+                </div>
+            </form>
+
+            <!-- Simulate Incoming Customer Email for Judges -->
+            <form method="POST" action="{% url 'gmail_connect' company_slug=workspace.slug %}" class="p-5 rounded-2xl bg-purple-50/60 border border-purple-200 space-y-3 flex flex-col justify-between">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="simulate_incoming_email">
+                <div>
+                    <div class="flex items-center gap-1.5 font-bold text-xs text-purple-950">
+                        <span class="material-symbols-outlined text-sm text-purple-700">auto_fix_high</span>
+                        Simulate Inbound Customer Email (Judge Demo)
+                    </div>
+                    <p class="text-[11px] text-purple-800 mt-1">
+                        AI Triage, Urgency Detection, aur Review Queue ko instantly test karne ke liye sample customer email trigger karo:
+                    </p>
+                </div>
+                <button type="submit" class="w-full py-2 bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs rounded-lg transition shadow-sm flex items-center justify-center gap-1.5">
+                    <span class="material-symbols-outlined text-sm">forward_to_inbox</span>
+                    Trigger Sample Customer Email & Run AI Triage
+                </button>
+            </form>
         </div>
 
         <div class="p-4 rounded-2xl bg-gray-50 border border-gray-100 text-xs text-gray-600 space-y-2 leading-relaxed">
