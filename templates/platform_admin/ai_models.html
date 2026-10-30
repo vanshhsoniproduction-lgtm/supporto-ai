@@ -1,0 +1,82 @@
+{% extends "platform_admin/base_admin.html" %}
+
+{% block admin_title %}AI Models & Runtime Health{% endblock %}
+
+{% block admin_content %}
+<div class="space-y-6">
+    <div class="flex items-center justify-between">
+        <div>
+            <h3 class="text-xl font-bold text-charcoal-900">Local AI Engine Diagnostics</h3>
+            <p class="text-xs text-gray-500">Apple Silicon optimized local model stack (Qwen 8B LLM, Whisper STT, Kokoro TTS)</p>
+        </div>
+        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold {% if health.ai_enabled %}bg-emerald-50 text-emerald-700 border border-emerald-200{% else %}bg-gray-100 text-gray-600{% endif %}">
+            <span class="w-2 h-2 rounded-full {% if health.ai_enabled %}bg-emerald-500 animate-pulse{% else %}bg-gray-400{% endif %}"></span>
+            AI Engine: {% if health.ai_enabled %}Enabled{% else %}Disabled{% endif %}
+        </span>
+    </div>
+
+    <!-- Models Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <!-- Qwen LLM -->
+        <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm space-y-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <span class="material-symbols-outlined text-brand-500 text-2xl">neurology</span>
+                    <h4 class="font-bold text-charcoal-900 text-base">LLM (Qwen 8B)</h4>
+                </div>
+                <span class="px-2 py-0.5 rounded-full text-xs font-semibold {% if health.llm.file_exists %}bg-emerald-50 text-emerald-700{% else %}bg-red-50 text-red-700{% endif %}">
+                    {{ health.llm.status }}
+                </span>
+            </div>
+            <div class="text-xs space-y-2 text-gray-600 font-mono bg-gray-50 p-3 rounded-xl border border-gray-100">
+                <div>Format: GGUF (Q4_K_M)</div>
+                <div>Size: {{ health.llm.file_size_gb }} GB</div>
+                <div>Runtime: {% if health.llm.runtime_installed %}llama-cpp-python{% else %}Heuristic Fallback Engine{% endif %}</div>
+                <div class="truncate text-[10px] text-gray-400">Path: {{ health.llm.path }}</div>
+            </div>
+            <p class="text-xs text-gray-500">Powering customer responses, intent classification, urgency detection, and ticket summarization.</p>
+        </div>
+
+        <!-- Whisper STT -->
+        <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm space-y-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <span class="material-symbols-outlined text-blue-500 text-2xl">mic</span>
+                    <h4 class="font-bold text-charcoal-900 text-base">Whisper Small STT</h4>
+                </div>
+                <span class="px-2 py-0.5 rounded-full text-xs font-semibold {% if health.stt.dir_exists %}bg-emerald-50 text-emerald-700{% else %}bg-red-50 text-red-700{% endif %}">
+                    {{ health.stt.status }}
+                </span>
+            </div>
+            <div class="text-xs space-y-2 text-gray-600 font-mono bg-gray-50 p-3 rounded-xl border border-gray-100">
+                <div>Format: CTranslate2 / Bin</div>
+                <div>Runtime: {% if health.stt.runtime_installed %}faster-whisper{% else %}Not Loaded{% endif %}</div>
+                <div>Device: CPU (int8 quant)</div>
+                <div class="truncate text-[10px] text-gray-400">Path: {{ health.stt.path }}</div>
+            </div>
+            <p class="text-xs text-gray-500">Real-time local speech-to-text for browser push-to-talk voice support.</p>
+        </div>
+
+        <!-- Kokoro TTS -->
+        <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm space-y-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <span class="material-symbols-outlined text-purple-500 text-2xl">volume_up</span>
+                    <h4 class="font-bold text-charcoal-900 text-base">Kokoro ONNX TTS</h4>
+                </div>
+                <span class="px-2 py-0.5 rounded-full text-xs font-semibold {% if health.tts.dir_exists %}bg-emerald-50 text-emerald-700{% else %}bg-red-50 text-red-700{% endif %}">
+                    {{ health.tts.status }}
+                </span>
+            </div>
+            <div class="text-xs space-y-2 text-gray-600 font-mono bg-gray-50 p-3 rounded-xl border border-gray-100">
+                <div>Format: ONNX + voices.bin</div>
+                <div>Runtime: {% if health.tts.runtime_installed %}kokoro-onnx{% else %}Not Loaded{% endif %}</div>
+                <div>Default Voice: af_sarah</div>
+                <div class="truncate text-[10px] text-gray-400">Path: {{ health.tts.path }}</div>
+            </div>
+            <p class="text-xs text-gray-500">High-fidelity local speech synthesis for spoken audio customer replies.</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

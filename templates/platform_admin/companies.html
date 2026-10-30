@@ -1,0 +1,113 @@
+{% extends "platform_admin/base_admin.html" %}
+
+{% block admin_title %}Company Workspaces{% endblock %}
+
+{% block admin_content %}
+<div class="space-y-6">
+    <!-- Header with Create Modal Trigger -->
+    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div>
+            <h3 class="text-xl font-bold text-charcoal-900">Manage Companies</h3>
+            <p class="text-xs text-gray-500">Create, configure, approve, or suspend tenant workspaces</p>
+        </div>
+        <button onclick="document.getElementById('createCompanyModal').classList.remove('hidden')" class="flex items-center gap-2 bg-brand-500 hover:bg-brand-600 text-white font-semibold text-xs py-2.5 px-4 rounded-xl shadow-sm transition">
+            <span class="material-symbols-outlined text-sm">add_business</span>
+            Create Workspace
+        </button>
+    </div>
+
+    <!-- Companies Table -->
+    <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse text-sm">
+                <thead>
+                    <tr class="bg-gray-50/50 border-b border-gray-200 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                        <th class="py-3.5 px-6">Company</th>
+                        <th class="py-3.5 px-6">Slug</th>
+                        <th class="py-3.5 px-6">Status</th>
+                        <th class="py-3.5 px-6">Members</th>
+                        <th class="py-3.5 px-6">Tickets</th>
+                        <th class="py-3.5 px-6">Created</th>
+                        <th class="py-3.5 px-6 text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                    {% for w in workspaces %}
+                    <tr class="hover:bg-gray-50/80 transition">
+                        <td class="py-4 px-6 font-bold text-charcoal-900">
+                            <a href="{% url 'workspace_dashboard' company_slug=w.slug %}" class="hover:text-brand-500 flex items-center gap-2">
+                                <span class="material-symbols-outlined text-gray-400">storefront</span>
+                                {{ w.name }}
+                            </a>
+                        </td>
+                        <td class="py-4 px-6 font-mono text-xs text-gray-500">/{{ w.slug }}/</td>
+                        <td class="py-4 px-6">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold {% if w.status == 'ACTIVE' %}bg-emerald-50 text-emerald-700 border border-emerald-200{% else %}bg-red-50 text-red-700 border border-red-200{% endif %}">
+                                {{ w.status }}
+                            </span>
+                        </td>
+                        <td class="py-4 px-6 text-gray-600 font-medium">{{ w.memberships.count }}</td>
+                        <td class="py-4 px-6 text-gray-600 font-medium">{{ w.tickets.count }}</td>
+                        <td class="py-4 px-6 text-xs text-gray-400">{{ w.created_at|date:"M d, Y" }}</td>
+                        <td class="py-4 px-6 text-right">
+                            <form method="POST" action="{% url 'platform_admin_company_toggle' workspace_id=w.id %}" class="inline">
+                                {% csrf_token %}
+                                {% if w.status == 'ACTIVE' %}
+                                <button type="submit" class="text-xs font-semibold text-red-600 hover:text-red-700 border border-red-200 hover:border-red-300 bg-red-50/50 py-1.5 px-3 rounded-lg transition">
+                                    Suspend
+                                </button>
+                                {% else %}
+                                <button type="submit" class="text-xs font-semibold text-emerald-600 hover:text-emerald-700 border border-emerald-200 hover:border-emerald-300 bg-emerald-50/50 py-1.5 px-3 rounded-lg transition">
+                                    Approve & Activate
+                                </button>
+                                {% endif %}
+                            </form>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="py-8 text-center text-sm text-gray-500">No workspaces found. Click "Create Workspace" above.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Create Workspace Modal -->
+<div id="createCompanyModal" class="hidden fixed inset-0 bg-charcoal-900/60 z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-lg w-full p-6 sm:p-8 shadow-2xl border border-gray-100 space-y-4">
+        <div class="flex items-center justify-between pb-3 border-b border-gray-100">
+            <h4 class="font-bold text-lg text-charcoal-900">Create New Workspace</h4>
+            <button onclick="document.getElementById('createCompanyModal').classList.add('hidden')" class="text-gray-400 hover:text-gray-600">
+                <span class="material-symbols-outlined">close</span>
+            </button>
+        </div>
+        <form method="POST" action="{% url 'platform_admin_companies' %}" class="space-y-4">
+            {% csrf_token %}
+            <div>
+                <label class="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1">Company Name</label>
+                <input type="text" name="name" required placeholder="e.g. Acme Corporation" class="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-brand-500 outline-none text-sm">
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1">URL Slug (Identifier)</label>
+                <input type="text" name="slug" placeholder="e.g. acme (leave blank to auto-generate)" class="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-brand-500 outline-none text-sm font-mono">
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1">Initial Owner Email</label>
+                <input type="email" name="owner_email" placeholder="owner@acme.com" class="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-brand-500 outline-none text-sm">
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1">Description</label>
+                <textarea name="description" rows="2" placeholder="Brief workspace description" class="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-brand-500 outline-none text-sm"></textarea>
+            </div>
+            <div class="pt-4 flex justify-end gap-3 border-t border-gray-100">
+                <button type="button" onclick="document.getElementById('createCompanyModal').classList.add('hidden')" class="px-4 py-2 text-xs font-semibold text-gray-600 hover:bg-gray-100 rounded-xl">Cancel</button>
+                <button type="submit" class="px-4 py-2 text-xs font-bold text-white bg-brand-500 hover:bg-brand-600 rounded-xl shadow-sm">Create Workspace</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+

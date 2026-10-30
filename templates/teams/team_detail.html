@@ -1,0 +1,80 @@
+{% extends "workspace/base_workspace.html" %}
+
+{% block workspace_title %}{{ team.name }} - Team Details{% endblock %}
+
+{% block workspace_content %}
+<div class="space-y-6 max-w-4xl">
+    <div class="flex items-center gap-2 mb-2">
+        <a href="{% url 'team_list' company_slug=workspace.slug %}" class="text-xs font-semibold text-brand-500 hover:text-brand-600 flex items-center gap-1">
+            <span class="material-symbols-outlined text-sm">arrow_back</span>
+            Back to Teams
+        </a>
+    </div>
+
+    <!-- Team Overview Card -->
+    <div class="bg-white p-6 sm:p-8 rounded-2xl border border-gray-200 shadow-sm space-y-4">
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-gray-100 pb-4">
+            <div>
+                <span class="text-xs font-mono text-brand-500 font-bold">/{{ team.slug }}/</span>
+                <h3 class="text-2xl font-bold text-charcoal-900">{{ team.name }}</h3>
+                <p class="text-sm text-gray-600 mt-1">{{ team.description }}</p>
+            </div>
+            <div class="flex items-center gap-2">
+                <span class="px-3 py-1 rounded-full text-xs font-bold bg-gray-100 text-gray-700">
+                    {{ members|length }} Active Members
+                </span>
+            </div>
+        </div>
+
+        <!-- Add Member Form -->
+        {% if available_staff %}
+        <form method="POST" class="p-4 rounded-xl bg-gray-50 border border-gray-200 flex flex-col sm:flex-row items-end gap-3">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="add_member">
+            <div class="flex-1 w-full">
+                <label class="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1">Add Staff Agent to Team</label>
+                <select name="user_id" required class="w-full px-3 py-2 border rounded-xl text-xs bg-white focus:ring-2 focus:ring-brand-500 outline-none">
+                    <option value="">Select an agent...</option>
+                    {% for s in available_staff %}
+                    <option value="{{ s.user.id }}">{{ s.user.full_name }} ({{ s.user.email }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="w-full sm:w-40">
+                <label class="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1">Role</label>
+                <select name="role" class="w-full px-3 py-2 border rounded-xl text-xs bg-white focus:ring-2 focus:ring-brand-500 outline-none">
+                    <option value="MEMBER">Team Member</option>
+                    <option value="LEAD">Team Lead</option>
+                </select>
+            </div>
+            <button type="submit" class="w-full sm:w-auto px-4 py-2 bg-brand-500 hover:bg-brand-600 text-white font-bold text-xs rounded-xl shadow-sm transition">
+                Add Member
+            </button>
+        </form>
+        {% endif %}
+
+        <!-- Members Table -->
+        <div class="divide-y divide-gray-100 pt-2">
+            {% for m in members %}
+            <div class="py-3.5 flex items-center justify-between">
+                <div>
+                    <h5 class="text-sm font-bold text-charcoal-900">{{ m.user.full_name }}</h5>
+                    <p class="text-xs text-gray-500">{{ m.user.email }} • <span class="text-brand-500 font-semibold">{{ m.get_role_display }}</span></p>
+                </div>
+                <form method="POST">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="remove_member">
+                    <input type="hidden" name="membership_id" value="{{ m.id }}">
+                    <button type="submit" class="text-xs text-red-600 hover:text-red-700 border border-red-200 bg-red-50 py-1 px-2.5 rounded-lg transition">
+                        Remove
+                    </button>
+                </form>
+            </div>
+            {% empty %}
+            <p class="text-sm text-gray-500 py-6 text-center">No members assigned to this team yet.</p>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+

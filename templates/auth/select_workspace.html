@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block title %}Select Workspace - Supporto AI{% endblock %}
+
+{% block content %}
+<div class="min-h-full flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-[#F7F8FA]">
+    <div class="max-w-2xl w-full space-y-6">
+        <div class="text-center">
+            <h2 class="text-3xl font-extrabold text-charcoal-900">Select Workspace</h2>
+            <p class="mt-2 text-sm text-gray-600">You are a member of multiple organizations. Choose a workspace to continue.</p>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {% for m in memberships %}
+            <a href="{% url 'workspace_dashboard' company_slug=m.workspace.slug %}" class="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 hover:border-brand-500 hover:shadow-md transition-all group flex flex-col justify-between">
+                <div>
+                    <div class="flex items-center justify-between">
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-brand-50 text-brand-600">
+                            {{ m.get_role_display }}
+                        </span>
+                        <span class="material-symbols-outlined text-gray-400 group-hover:text-brand-500 transition">arrow_forward</span>
+                    </div>
+                    <h3 class="mt-4 text-xl font-bold text-charcoal-900 group-hover:text-brand-500 transition">{{ m.workspace.name }}</h3>
+                    <p class="mt-1 text-xs text-gray-500">/{{ m.workspace.slug }}/</p>
+                    {% if m.workspace.description %}
+                    <p class="mt-2 text-sm text-gray-600 line-clamp-2">{{ m.workspace.description }}</p>
+                    {% endif %}
+                </div>
+                <div class="mt-6 pt-4 border-t border-gray-100 flex items-center justify-between text-xs text-gray-400">
+                    <span>Joined {{ m.created_at|date:"M Y" }}</span>
+                    <span class="font-semibold text-brand-500">Launch Portal &rarr;</span>
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+
+        {% if is_platform_admin %}
+        <div class="text-center pt-4">
+            <a href="{% url 'platform_admin_overview' %}" class="text-sm font-semibold text-brand-500 hover:text-brand-600">
+                &larr; Switch to Platform Administration
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+

@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+
+{% block content_layout %}
+<div class="min-h-full flex flex-col md:flex-row">
+    <!-- Dark Charcoal Sidebar -->
+    <aside class="w-full md:w-64 bg-charcoal-900 text-white flex-shrink-0 flex flex-col justify-between border-r border-charcoal-800">
+        <div>
+            <!-- Header & Brand -->
+            <div class="h-16 flex items-center gap-3 px-6 border-b border-charcoal-800">
+                <span class="material-symbols-outlined text-brand-500 text-2xl">admin_panel_settings</span>
+                <div>
+                    <h1 class="font-bold text-base text-white tracking-wide">Supporto AI</h1>
+                    <p class="text-[10px] uppercase tracking-wider text-brand-500 font-bold">Platform Admin</p>
+                </div>
+            </div>
+
+            <!-- Navigation Links -->
+            <nav class="p-4 space-y-1">
+                <a href="{% url 'platform_admin_overview' %}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition {% if active_tab == 'overview' %}bg-brand-500 text-white font-semibold{% else %}text-gray-300 hover:bg-charcoal-800 hover:text-white{% endif %}">
+                    <span class="material-symbols-outlined text-xl">dashboard</span>
+                    Overview
+                </a>
+                <a href="{% url 'platform_admin_companies' %}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition {% if active_tab == 'companies' %}bg-brand-500 text-white font-semibold{% else %}text-gray-300 hover:bg-charcoal-800 hover:text-white{% endif %}">
+                    <span class="material-symbols-outlined text-xl">apartment</span>
+                    Companies
+                </a>
+                <a href="{% url 'platform_admin_users' %}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition {% if active_tab == 'users' %}bg-brand-500 text-white font-semibold{% else %}text-gray-300 hover:bg-charcoal-800 hover:text-white{% endif %}">
+                    <span class="material-symbols-outlined text-xl">group</span>
+                    Users & Roles
+                </a>
+                <a href="{% url 'platform_admin_ai_models' %}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition {% if active_tab == 'ai_models' %}bg-brand-500 text-white font-semibold{% else %}text-gray-300 hover:bg-charcoal-800 hover:text-white{% endif %}">
+                    <span class="material-symbols-outlined text-xl">psychology</span>
+                    AI Models Health
+                </a>
+                <a href="{% url 'platform_admin_activity' %}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition {% if active_tab == 'activity' %}bg-brand-500 text-white font-semibold{% else %}text-gray-300 hover:bg-charcoal-800 hover:text-white{% endif %}">
+                    <span class="material-symbols-outlined text-xl">history</span>
+                    Audit Activity
+                </a>
+            </nav>
+        </div>
+
+        <!-- User profile & Logout -->
+        <div class="p-4 border-t border-charcoal-800">
+            <div class="flex items-center gap-3 px-2 py-2 mb-2">
+                <div class="w-8 h-8 rounded-full bg-brand-500/20 text-brand-500 flex items-center justify-center font-bold text-xs">
+                    {{ request.user.email|slice:":1"|upper }}
+                </div>
+                <div class="flex-1 truncate">
+                    <p class="text-xs font-semibold text-white truncate">{{ request.user.email }}</p>
+                    <p class="text-[10px] text-gray-400">Super Administrator</p>
+                </div>
+            </div>
+            <form method="POST" action="{% url 'logout' %}">
+                {% csrf_token %}
+                <button type="submit" class="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-semibold text-gray-400 hover:text-white hover:bg-charcoal-800 transition">
+                    <span class="material-symbols-outlined text-sm">logout</span>
+                    Sign Out
+                </button>
+            </form>
+        </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 flex flex-col min-w-0 bg-[#F7F8FA] overflow-y-auto">
+        <header class="h-16 bg-white border-b border-gray-200 px-6 sm:px-8 flex items-center justify-between">
+            <h2 class="text-lg font-bold text-charcoal-900">{% block admin_title %}Platform Administration{% endblock %}</h2>
+            <div class="flex items-center gap-3">
+                <a href="{% url 'select_workspace' %}" class="text-xs font-semibold text-charcoal-800 hover:text-brand-500 flex items-center gap-1 bg-gray-100 hover:bg-gray-200 px-3 py-1.5 rounded-lg transition">
+                    <span class="material-symbols-outlined text-sm">storefront</span>
+                    Company Portals
+                </a>
+            </div>
+        </header>
+
+        <div class="p-6 sm:p-8 max-w-7xl w-full">
+            {% block admin_content %}{% endblock %}
+        </div>
+    </main>
+</div>
+{% endblock %}
+

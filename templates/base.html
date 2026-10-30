@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-[#F7F8FA]">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Supporto AI - Intelligent Support. Faster Resolutions.{% endblock %}</title>
+    <!-- Google Fonts: Inter & Material Symbols -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" />
+    
+    <!-- Tailwind CSS CDN with configuration -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#fff7ed',
+                            100: '#ffedd5',
+                            500: '#FF6B35',
+                            600: '#ea580c',
+                            700: '#c2410c',
+                        },
+                        charcoal: {
+                            800: '#1F2937',
+                            900: '#111827',
+                            950: '#0B0F17',
+                        },
+                        surface: '#F7F8FA',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+        /* Custom scrollbars */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #9ca3af; }
+    </style>
+    {% block extra_head %}{% endblock %}
+</head>
+<body class="h-full text-[#111827] antialiased flex flex-col font-sans">
+    <!-- Flash Messages (Toasts) -->
+    {% if messages %}
+    <div id="toast-container" class="fixed top-5 right-5 z-50 flex flex-col gap-2 max-w-md w-full">
+        {% for message in messages %}
+        <div class="flex items-center gap-3 px-4 py-3 rounded-lg shadow-lg text-sm transition-all transform duration-300 {% if message.tags == 'error' %}bg-red-600 text-white{% elif message.tags == 'success' %}bg-emerald-600 text-white{% else %}bg-charcoal-900 text-white{% endif %}">
+            <span class="material-symbols-outlined text-lg">
+                {% if message.tags == 'error' %}error{% elif message.tags == 'success' %}check_circle{% else %}info{% endif %}
+            </span>
+            <div class="flex-1 font-medium">{{ message }}</div>
+            <button onclick="this.parentElement.remove()" class="text-white/80 hover:text-white">
+                <span class="material-symbols-outlined text-base">close</span>
+            </button>
+        </div>
+        {% endfor %}
+    </div>
+    <script>
+        setTimeout(() => {
+            const container = document.getElementById('toast-container');
+            if (container) container.remove();
+        }, 5000);
+    </script>
+    {% endif %}
+
+    {% block content_layout %}
+        {% block content %}{% endblock %}
+    {% endblock %}
+
+    {% block extra_scripts %}{% endblock %}
+</body>
+</html>
+

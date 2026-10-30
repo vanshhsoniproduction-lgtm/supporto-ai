@@ -1,0 +1,174 @@
+{% extends "workspace/base_workspace.html" %}
+
+{% block workspace_title %}[{{ ticket.ticket_number }}] {{ ticket.subject }}{% endblock %}
+
+{% block workspace_content %}
+<div class="space-y-6">
+    <!-- Top Action Bar -->
+    <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <div>
+            <div class="flex items-center gap-2 mb-1">
+                <a href="{% url 'ticket_list' company_slug=workspace.slug %}" class="text-xs font-semibold text-brand-500 hover:text-brand-600 flex items-center gap-1">
+                    <span class="material-symbols-outlined text-sm">arrow_back</span>
+                    Tickets
+                </a>
+                <span class="text-gray-300">•</span>
+                <span class="font-mono text-xs font-bold text-gray-500">{{ ticket.ticket_number }}</span>
+                <span class="px-2.5 py-0.5 rounded-full text-xs font-bold {% if ticket.priority == 'CRITICAL' %}bg-red-50 text-red-600 border border-red-200{% elif ticket.priority == 'HIGH' %}bg-orange-50 text-orange-600 border border-orange-200{% else %}bg-amber-50 text-amber-600{% endif %}">
+                    {{ ticket.priority }}
+                </span>
+            </div>
+            <h3 class="text-xl font-bold text-charcoal-900">{{ ticket.subject }}</h3>
+        </div>
+
+        <!-- Status update form -->
+        <form method="POST" class="flex items-center gap-2 flex-wrap">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="update_status">
+            <span class="text-xs font-semibold text-gray-500">Status:</span>
+            <select name="status" onchange="this.form.submit()" class="px-3 py-1.5 border rounded-xl text-xs font-bold outline-none focus:ring-2 focus:ring-brand-500 bg-white">
+                <option value="OPEN" {% if ticket.status == 'OPEN' %}selected{% endif %}>OPEN</option>
+                <option value="IN_PROGRESS" {% if ticket.status == 'IN_PROGRESS' %}selected{% endif %}>IN PROGRESS</option>
+                <option value="PENDING" {% if ticket.status == 'PENDING' %}selected{% endif %}>PENDING</option>
+                <option value="RESOLVED" {% if ticket.status == 'RESOLVED' %}selected{% endif %}>RESOLVED</option>
+                <option value="CLOSED" {% if ticket.status == 'CLOSED' %}selected{% endif %}>CLOSED</option>
+            </select>
+        </form>
+    </div>
+
+    <!-- Main Grid: Conversation/Notes on Left, Sidebar Meta on Right -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Main Conversation & Notes (2 cols) -->
+        <div class="lg:col-span-2 space-y-6">
+            <!-- Ticket Description -->
+            <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm space-y-2">
+                <h4 class="text-xs font-bold uppercase tracking-wider text-gray-400">Issue Description / AI Summary</h4>
+                <div class="text-sm text-gray-800 whitespace-pre-line leading-relaxed bg-gray-50 p-4 rounded-xl border border-gray-100 font-sans">
+                    {{ ticket.description }}
+                </div>
+            </div>
+
+            <!-- Customer Conversation Transcript -->
+            {% if conversation_messages %}
+            <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm space-y-4">
+                <div class="flex items-center justify-between border-b border-gray-100 pb-3">
+                    <div class="flex items-center gap-2">
+                        <span class="material-symbols-outlined text-brand-500">chat</span>
+                        <h4 class="text-sm font-bold text-charcoal-900">Original Customer Interaction Transcript</h4>
+                    </div>
+                    <span class="text-xs text-gray-400 font-mono">Channel: {{ ticket.conversation.channel }}</span>
+                </div>
+                <div class="space-y-3 max-h-96 overflow-y-auto pr-2">
+                    {% for msg in conversation_messages %}
+                    <div class="flex flex-col {% if msg.sender_type == 'CUSTOMER' %}items-start{% else %}items-end{% endif %}">
+                        <span class="text-[10px] text-gray-400 mb-1 px-1">
+                            {% if msg.sender_type == 'CUSTOMER' %}{{ ticket.customer.name }}{% elif msg.sender_type == 'AI' %}Supporto AI{% else %}Staff Agent{% endif %} • {{ msg.created_at|date:"H:i" }}
+                        </span>
+                        <div class="max-w-[85%] rounded-2xl px-4 py-2.5 text-xs sm:text-sm {% if msg.sender_type == 'CUSTOMER' %}bg-gray-100 text-charcoal-900 rounded-tl-none{% else %}bg-brand-500 text-white rounded-tr-none{% endif %}">
+                            {{ msg.content }}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Comments & Staff Notes Stream -->
+            <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm space-y-4">
+                <h4 class="text-sm font-bold text-charcoal-900 border-b border-gray-100 pb-3">Staff Activity & Notes</h4>
+                <div class="space-y-4">
+                    {% for c in comments %}
+                    <div class="p-4 rounded-xl border {% if c.is_internal %}bg-amber-50/50 border-amber-200/60{% else %}bg-blue-50/40 border-blue-100{% endif %}">
+                        <div class="flex items-center justify-between mb-1">
+                            <span class="text-xs font-bold {% if c.is_internal %}text-amber-800{% else %}text-blue-800{% endif %}">
+                                {% if c.is_internal %}🔒 Internal Staff Note{% else %}💬 Customer Response{% endif %} by {{ c.author.full_name|default:"Agent" }}
+                            </span>
+                            <span class="text-[10px] text-gray-400">{{ c.created_at|date:"M d, H:i" }}</span>
+                        </div>
+                        <p class="text-xs text-gray-800 whitespace-pre-line">{{ c.content }}</p>
+                    </div>
+                    {% empty %}
+                    <p class="text-xs text-gray-400 text-center py-4">No internal notes or replies recorded yet.</p>
+                    {% endfor %}
+                </div>
+
+                <!-- Add Note Form -->
+                <form method="POST" class="pt-4 border-t border-gray-100 space-y-3">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="add_comment">
+                    <textarea name="content" rows="3" required placeholder="Type an internal staff note or reply..." class="w-full px-4 py-2 text-xs border rounded-xl outline-none focus:ring-2 focus:ring-brand-500"></textarea>
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <input type="checkbox" id="is_internal" name="is_internal" value="true" checked class="w-4 h-4 text-amber-600 rounded">
+                            <label for="is_internal" class="text-xs font-medium text-gray-700">Internal Note (Hidden from Customer)</label>
+                        </div>
+                        <button type="submit" class="px-4 py-2 bg-charcoal-900 hover:bg-black text-white text-xs font-bold rounded-xl transition">
+                            Post Note
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Sidebar Details (1 col) -->
+        <div class="space-y-6">
+            <!-- Assignment Card -->
+            <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm space-y-4">
+                <h4 class="text-xs font-bold uppercase tracking-wider text-gray-400 border-b border-gray-100 pb-2">Ticket Assignment</h4>
+                <form method="POST" class="space-y-3">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="update_assignment">
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-600 mb-1">Assigned Team</label>
+                        <select name="team_id" class="w-full px-3 py-2 text-xs border rounded-xl outline-none focus:ring-2 focus:ring-brand-500 bg-white">
+                            <option value="">Unassigned</option>
+                            {% for tm in teams %}
+                            <option value="{{ tm.id }}" {% if ticket.assigned_team_id == tm.id %}selected{% endif %}>{{ tm.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-600 mb-1">Assigned Agent</label>
+                        <select name="agent_id" class="w-full px-3 py-2 text-xs border rounded-xl outline-none focus:ring-2 focus:ring-brand-500 bg-white">
+                            <option value="">Unassigned</option>
+                            {% for m in staff_members %}
+                            <option value="{{ m.user.id }}" {% if ticket.assigned_agent_id == m.user.id %}selected{% endif %}>{{ m.user.full_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <button type="submit" class="w-full py-2 bg-brand-500 hover:bg-brand-600 text-white text-xs font-bold rounded-xl transition shadow-sm">
+                        Update Assignment
+                    </button>
+                </form>
+            </div>
+
+            <!-- Customer Card -->
+            <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm space-y-3">
+                <h4 class="text-xs font-bold uppercase tracking-wider text-gray-400 border-b border-gray-100 pb-2">Customer Profile</h4>
+                <div class="text-xs space-y-2">
+                    <div class="flex justify-between"><span class="text-gray-500">Name:</span> <span class="font-bold text-charcoal-900">{{ ticket.customer.name }}</span></div>
+                    <div class="flex justify-between"><span class="text-gray-500">Email:</span> <span class="font-mono text-gray-800">{{ ticket.customer.email|default:"Anonymous Visitor" }}</span></div>
+                    <div class="flex justify-between"><span class="text-gray-500">Created:</span> <span class="text-gray-600">{{ ticket.customer.created_at|date:"M d, Y" }}</span></div>
+                </div>
+            </div>
+
+            <!-- Timeline of Events -->
+            <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm space-y-3">
+                <h4 class="text-xs font-bold uppercase tracking-wider text-gray-400 border-b border-gray-100 pb-2">Event Timeline</h4>
+                <div class="space-y-3 max-h-60 overflow-y-auto text-xs">
+                    {% for ev in events %}
+                    <div class="flex items-start gap-2">
+                        <span class="w-1.5 h-1.5 rounded-full bg-brand-500 mt-1.5 flex-shrink-0"></span>
+                        <div>
+                            <p class="text-charcoal-900 font-semibold">{{ ev.description }}</p>
+                            <span class="text-[10px] text-gray-400">{{ ev.created_at|date:"M d, H:i" }}</span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

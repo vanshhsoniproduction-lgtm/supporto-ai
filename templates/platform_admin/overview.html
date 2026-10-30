@@ -1,0 +1,107 @@
+{% extends "platform_admin/base_admin.html" %}
+
+{% block admin_title %}Platform Overview{% endblock %}
+
+{% block admin_content %}
+<div class="space-y-8">
+    <!-- Stat Cards Grid -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+        <div class="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm flex flex-col justify-between">
+            <span class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Total Companies</span>
+            <div class="mt-2 flex items-baseline justify-between">
+                <span class="text-3xl font-extrabold text-charcoal-900">{{ metrics.total_companies }}</span>
+                <span class="material-symbols-outlined text-gray-400">apartment</span>
+            </div>
+        </div>
+
+        <div class="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm flex flex-col justify-between">
+            <span class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Active Workspaces</span>
+            <div class="mt-2 flex items-baseline justify-between">
+                <span class="text-3xl font-extrabold text-emerald-600">{{ metrics.active_companies }}</span>
+                <span class="material-symbols-outlined text-emerald-500">check_circle</span>
+            </div>
+        </div>
+
+        <div class="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm flex flex-col justify-between">
+            <span class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Total Staff Users</span>
+            <div class="mt-2 flex items-baseline justify-between">
+                <span class="text-3xl font-extrabold text-charcoal-900">{{ metrics.total_users }}</span>
+                <span class="material-symbols-outlined text-gray-400">group</span>
+            </div>
+        </div>
+
+        <div class="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm flex flex-col justify-between">
+            <span class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Total Tickets</span>
+            <div class="mt-2 flex items-baseline justify-between">
+                <span class="text-3xl font-extrabold text-charcoal-900">{{ metrics.total_tickets }}</span>
+                <span class="material-symbols-outlined text-gray-400">confirmation_number</span>
+            </div>
+        </div>
+
+        <div class="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm flex flex-col justify-between">
+            <span class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Open Tickets</span>
+            <div class="mt-2 flex items-baseline justify-between">
+                <span class="text-3xl font-extrabold text-brand-500">{{ metrics.open_tickets }}</span>
+                <span class="material-symbols-outlined text-brand-500">pending_actions</span>
+            </div>
+        </div>
+
+        <div class="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm flex flex-col justify-between">
+            <span class="text-xs font-semibold text-gray-500 uppercase tracking-wider">AI Model Status</span>
+            <div class="mt-2 flex items-baseline justify-between">
+                <span class="text-sm font-bold text-emerald-600">Active</span>
+                <span class="material-symbols-outlined text-purple-500">psychology</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Two Column: Workspaces and Audit Logs -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Recent Workspaces -->
+        <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm">
+            <div class="flex items-center justify-between pb-4 border-b border-gray-100">
+                <h3 class="font-bold text-charcoal-900 text-base">Recent Workspaces</h3>
+                <a href="{% url 'platform_admin_companies' %}" class="text-xs font-semibold text-brand-500 hover:text-brand-600">View All &rarr;</a>
+            </div>
+            <div class="divide-y divide-gray-100 mt-2">
+                {% for w in recent_workspaces %}
+                <div class="py-3 flex items-center justify-between">
+                    <div>
+                        <h4 class="font-semibold text-sm text-charcoal-900">{{ w.name }}</h4>
+                        <p class="text-xs text-gray-500">/{{ w.slug }}/ • {{ w.memberships.count }} members</p>
+                    </div>
+                    <span class="px-2.5 py-1 text-xs rounded-full font-semibold {% if w.status == 'ACTIVE' %}bg-emerald-50 text-emerald-700{% else %}bg-red-50 text-red-700{% endif %}">
+                        {{ w.status }}
+                    </span>
+                </div>
+                {% empty %}
+                <p class="text-sm text-gray-500 py-4 text-center">No workspaces created yet.</p>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Recent Audit Events -->
+        <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm">
+            <div class="flex items-center justify-between pb-4 border-b border-gray-100">
+                <h3 class="font-bold text-charcoal-900 text-base">Platform Activity</h3>
+                <a href="{% url 'platform_admin_activity' %}" class="text-xs font-semibold text-brand-500 hover:text-brand-600">Full Log &rarr;</a>
+            </div>
+            <div class="divide-y divide-gray-100 mt-2">
+                {% for log in recent_logs %}
+                <div class="py-3 flex items-start gap-3">
+                    <span class="material-symbols-outlined text-gray-400 text-sm mt-0.5">radio_button_checked</span>
+                    <div class="flex-1 text-xs">
+                        <span class="font-bold text-charcoal-900">{{ log.action }}</span>
+                        <span class="text-gray-500">on {{ log.resource_type }}</span>
+                        <p class="text-gray-400 mt-0.5">{{ log.created_at|date:"M d, H:i" }} by {{ log.actor.email|default:"System" }}</p>
+                    </div>
+                </div>
+                {% empty %}
+                <p class="text-sm text-gray-500 py-4 text-center">No audit logs recorded yet.</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

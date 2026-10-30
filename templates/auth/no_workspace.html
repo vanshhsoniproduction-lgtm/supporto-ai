@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block title %}No Active Workspaces - Supporto AI{% endblock %}
+
+{% block content %}
+<div class="min-h-full flex items-center justify-center py-12 px-4 bg-[#F7F8FA]">
+    <div class="max-w-md w-full bg-white p-8 rounded-2xl shadow-md border border-gray-200 text-center space-y-4">
+        <div class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-amber-50 text-amber-600 mb-2">
+            <span class="material-symbols-outlined text-2xl">domain_disabled</span>
+        </div>
+        <h3 class="text-xl font-bold text-charcoal-900">No Active Workspace Membership</h3>
+        <p class="text-sm text-gray-600">Your account ({{ request.user.email }}) is signed in, but has not yet been assigned to any active company workspace.</p>
+        <div class="pt-4 flex flex-col gap-2">
+            <form method="POST" action="{% url 'logout' %}">
+                {% csrf_token %}
+                <button type="submit" class="w-full py-2.5 px-4 bg-gray-100 hover:bg-gray-200 text-charcoal-800 rounded-xl text-sm font-semibold transition">
+                    Sign Out
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

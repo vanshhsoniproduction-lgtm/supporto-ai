@@ -1,0 +1,44 @@
+{% extends "platform_admin/base_admin.html" %}
+
+{% block admin_title %}Audit Activity Trail{% endblock %}
+
+{% block admin_content %}
+<div class="space-y-6">
+    <div>
+        <h3 class="text-xl font-bold text-charcoal-900">Platform Audit Trail</h3>
+        <p class="text-xs text-gray-500">Immutable security logs, workspace actions, ticket life cycles, and authorization changes</p>
+    </div>
+
+    <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse text-sm">
+                <thead>
+                    <tr class="bg-gray-50/50 border-b border-gray-200 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                        <th class="py-3.5 px-6">Timestamp</th>
+                        <th class="py-3.5 px-6">Action</th>
+                        <th class="py-3.5 px-6">Workspace</th>
+                        <th class="py-3.5 px-6">Actor</th>
+                        <th class="py-3.5 px-6">Details</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                    {% for l in logs %}
+                    <tr class="hover:bg-gray-50/80 transition text-xs">
+                        <td class="py-3.5 px-6 font-mono text-gray-400 whitespace-nowrap">{{ l.created_at|date:"Y-m-d H:i:s" }}</td>
+                        <td class="py-3.5 px-6 font-bold text-charcoal-900">{{ l.action }}</td>
+                        <td class="py-3.5 px-6 font-medium text-gray-600">{{ l.workspace.name|default:"Global" }}</td>
+                        <td class="py-3.5 px-6 text-gray-700 font-mono">{{ l.actor.email|default:"System" }}</td>
+                        <td class="py-3.5 px-6 font-mono text-gray-500 truncate max-w-xs">{{ l.details }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="py-8 text-center text-sm text-gray-500">No audit events recorded yet.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

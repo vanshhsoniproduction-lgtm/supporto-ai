@@ -1,0 +1,127 @@
+{
+  "source_jarvis_root": "/Users/vanshhsoni/Desktop/JARVIS",
+  "manifest_version": "1.0",
+  "entries": [
+    {
+      "model_type": "llm",
+      "name": "Qwen3-8B-Q4_K_M.gguf",
+      "path": "models/llm/Qwen3-8B-Q4_K_M.gguf",
+      "size_bytes": 5027783968,
+      "sha256": "b9059e3978453f50a8e9e45a825243abdb8739b2f4623e541fd5a392d9672c0f",
+      "status": "copied"
+    },
+    {
+      "source": "/Users/vanshhsoni/Desktop/JARVIS/models/whisper-small/model.bin",
+      "destination": "/Users/vanshhsoni/coding_dir/supporto ai /models/stt/whisper-small/model.bin",
+      "relative_dest": "stt/whisper-small/model.bin",
+      "size_bytes": 483546902,
+      "sha256": "3e305921506d8872816023e4c273e75d2419fb89b24da97b4fe7bce14170d671",
+      "status": "copied",
+      "model_type": "stt"
+    },
+    {
+      "source": "/Users/vanshhsoni/Desktop/JARVIS/models/whisper-small/config.json",
+      "destination": "/Users/vanshhsoni/coding_dir/supporto ai /models/stt/whisper-small/config.json",
+      "relative_dest": "stt/whisper-small/config.json",
+      "size_bytes": 2370,
+      "sha256": "b55496ac7940a7ae47d2c01eab40edfd8701feec1229d9cce3b40014383fb828",
+      "status": "copied",
+      "model_type": "stt"
+    },
+    {
+      "source": "/Users/vanshhsoni/Desktop/JARVIS/models/whisper-small/tokenizer.json",
+      "destination": "/Users/vanshhsoni/coding_dir/supporto ai /models/stt/whisper-small/tokenizer.json",
+      "relative_dest": "stt/whisper-small/tokenizer.json",
+      "size_bytes": 2203239,
+      "sha256": "fb7b63191e9bb045082c79fd742a3106a12c99513ab30df4a0d47fa6cb6fd0ab",
+      "status": "copied",
+      "model_type": "stt"
+    },
+    {
+      "source": "/Users/vanshhsoni/Desktop/JARVIS/models/whisper-small/vocabulary.txt",
+      "destination": "/Users/vanshhsoni/coding_dir/supporto ai /models/stt/whisper-small/vocabulary.txt",
+      "relative_dest": "stt/whisper-small/vocabulary.txt",
+      "size_bytes": 459861,
+      "sha256": "34ce3fe1c5041027b3f8d42912270993f986dbc4bb34cf27f951e34a1e453913",
+      "status": "copied",
+      "model_type": "stt"
+    },
+    {
+      "source": "/Users/vanshhsoni/Desktop/JARVIS/models/kokoro/voices.bin",
+      "destination": "/Users/vanshhsoni/coding_dir/supporto ai /models/tts/kokoro/voices.bin",
+      "relative_dest": "tts/kokoro/voices.bin",
+      "size_bytes": 5758648,
+      "sha256": "157eab2fa1dd1c91b46599ea6f514bf86f66944c0c760250ed324e6cd99af075",
+      "status": "copied",
+      "model_type": "tts"
+    },
+    {
+      "source": "/Users/vanshhsoni/Desktop/JARVIS/models/kokoro/onnx/kokoro-v0_19.onnx",
+      "destination": "/Users/vanshhsoni/coding_dir/supporto ai /models/tts/kokoro/onnx/kokoro-v0_19.onnx",
+      "relative_dest": "tts/kokoro/onnx/kokoro-v0_19.onnx",
+      "size_bytes": 325525180,
+      "sha256": "dece567789190ebe987bd245d95c09d5ac86de28ff0c325c2e3faaf3de04442c",
+      "status": "copied",
+      "model_type": "tts"
+    },
+    {
+      "source": "/Users/vanshhsoni/Desktop/JARVIS/models/kokoro/onnx/model.onnx",
+      "destination": "/Users/vanshhsoni/coding_dir/supporto ai /models/tts/kokoro/onnx/model.onnx",
+      "relative_dest": "tts/kokoro/onnx/model.onnx",
+      "size_bytes": 325525037,
+      "sha256": "53a71ac22a70778d57162e4f92eafc62852d9e04a4460b20638d2424796e6037",
+      "status": "copied",
+      "model_type": "tts"
+    },
+    {
+      "source": "/Users/vanshhsoni/Desktop/JARVIS/models/kokoro/voices/bm_lewis.bin",
+      "destination": "/Users/vanshhsoni/coding_dir/supporto ai /models/tts/kokoro/voices/bm_lewis.bin",
+      "relative_dest": "tts/kokoro/voices/bm_lewis.bin",
+      "size_bytes": 524288,
+      "sha256": "45b693a17544cc98013e54de34c405f92da207bbc63c8b8c3ef67614f887e48c",
+      "status": "copied",
+      "model_type": "tts"
+    },
+    {
+      "source": "/Users/vanshhsoni/Desktop/JARVIS/models/kokoro/voices/bm_george.bin",
+      "destination": "/Users/vanshhsoni/coding_dir/supporto ai /models/tts/kokoro/voices/bm_george.bin",
+      "relative_dest": "tts/kokoro/voices/bm_george.bin",
+      "size_bytes": 524288,
+      "sha256": "68736d5397fcbc46658696b2cb3bcba0b6748120d75399bc9e1aee338f8f8032",
+      "status": "copied",
+      "model_type": "tts"
+    },
+    {
+      "source": "/Users/vanshhsoni/Desktop/JARVIS/models/kokoro/voices/bm_george.pt",
+      "destination": "/Users/vanshhsoni/coding_dir/supporto ai /models/tts/kokoro/voices/bm_george.pt",
+      "relative_dest": "tts/kokoro/voices/bm_george.pt",
+      "size_bytes": 523430,
+      "sha256": "f1bc812213dc59774769e5c80004b13eeb79bd78130b11b2d7f934542dab811b",
+      "status": "copied",
+      "model_type": "tts"
+    },
+    {
+      "source": "/Users/vanshhsoni/Desktop/JARVIS/models/kokoro/voices/am_adam.bin",
+      "destination": "/Users/vanshhsoni/coding_dir/supporto ai /models/tts/kokoro/voices/am_adam.bin",
+      "relative_dest": "tts/kokoro/voices/am_adam.bin",
+      "size_bytes": 524288,
+      "sha256": "6d5255a4b4803f594bfa0c0d7539c4d8bb0829c7f190f0f6a8fa0afa0023b6e4",
+      "status": "copied",
+      "model_type": "tts"
+    },
+    {
+      "source": "/Users/vanshhsoni/Desktop/JARVIS/models/kokoro/voices/af_sky.bin",
+      "destination": "/Users/vanshhsoni/coding_dir/supporto ai /models/tts/kokoro/voices/af_sky.bin",
+      "relative_dest": "tts/kokoro/voices/af_sky.bin",
+      "size_bytes": 524288,
+      "sha256": "f8017c8507ec6a55e75a04e345f5e6e736e79c104566d191c9b3c4503383ef51",
+      "status": "copied",
+      "model_type": "tts"
+    }
+  ],
+  "summary": {
+    "copied": 13,
+    "skipped": 0,
+    "dry_run": 0
+  }
+}

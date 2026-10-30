@@ -1,0 +1,102 @@
+{% extends "workspace/base_workspace.html" %}
+
+{% block workspace_title %}{{ workspace.name }} - Voice & IVR Configuration{% endblock %}
+
+{% block workspace_content %}
+<div class="space-y-6 max-w-4xl">
+    <div>
+        <h3 class="text-xl font-bold text-charcoal-900">Browser Voice & IVR Settings</h3>
+        <p class="text-xs text-gray-500">Local Whisper speech-to-text and Kokoro text-to-speech audio customer experience</p>
+    </div>
+
+    <!-- Voice Settings Form -->
+    <form method="POST" class="bg-white p-6 sm:p-8 rounded-2xl border border-gray-200 shadow-sm space-y-6">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="save_config">
+
+        <div class="flex items-center gap-3">
+            <input type="checkbox" id="voice_enabled" name="is_enabled" {% if config.is_enabled %}checked{% endif %} class="w-4 h-4 text-brand-500 rounded focus:ring-brand-500">
+            <label for="voice_enabled" class="text-xs font-bold text-charcoal-900">Enable Browser Voice Support in Customer Widget</label>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+                <label class="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1">Kokoro TTS Voice</label>
+                <select name="voice_name" class="w-full px-3 py-2 border rounded-xl text-xs bg-white focus:ring-2 focus:ring-brand-500 outline-none">
+                    <option value="af_sarah" {% if config.voice_name == 'af_sarah' %}selected{% endif %}>Sarah (Female American)</option>
+                    <option value="af_heart" {% if config.voice_name == 'af_heart' %}selected{% endif %}>Heart (Warm Female)</option>
+                    <option value="am_adam" {% if config.voice_name == 'am_adam' %}selected{% endif %}>Adam (Male American)</option>
+                    <option value="am_michael" {% if config.voice_name == 'am_michael' %}selected{% endif %}>Michael (Male American)</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1">Speech Speed Rate</label>
+                <input type="number" step="0.1" min="0.7" max="1.5" name="speed" value="{{ config.speed }}" class="w-full px-4 py-2 border rounded-xl text-xs focus:ring-2 focus:ring-brand-500 outline-none">
+            </div>
+        </div>
+
+        <div>
+            <label class="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1">Welcome Voice Greeting</label>
+            <input type="text" name="welcome_voice_text" value="{{ config.welcome_voice_text }}" class="w-full px-4 py-2 border rounded-xl text-xs focus:ring-2 focus:ring-brand-500 outline-none">
+        </div>
+
+        <div class="flex justify-end">
+            <button type="submit" class="px-5 py-2.5 bg-brand-500 hover:bg-brand-600 text-white font-bold text-xs rounded-xl shadow-md transition">
+                Save Voice Settings
+            </button>
+        </div>
+    </form>
+
+    <!-- Basic IVR Configuration -->
+    <div class="bg-white p-6 sm:p-8 rounded-2xl border border-gray-200 shadow-sm space-y-6">
+        <div class="flex items-center justify-between border-b border-gray-100 pb-3">
+            <div>
+                <h4 class="text-sm font-bold text-charcoal-900">Virtual IVR Menu</h4>
+                <p class="text-xs text-gray-500">Route customer voice queries to designated queues or automated AI actions</p>
+            </div>
+        </div>
+
+        <form method="POST" class="p-4 rounded-xl bg-gray-50 border border-gray-200 grid grid-cols-1 sm:grid-cols-4 gap-3 items-end">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="add_ivr_option">
+            <div>
+                <label class="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1">Key Digit</label>
+                <input type="number" min="1" max="9" name="digit" required placeholder="e.g. 1" class="w-full px-3 py-2 border rounded-xl text-xs bg-white">
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1">Menu Label</label>
+                <input type="text" name="label" required placeholder="e.g. Order Support" class="w-full px-3 py-2 border rounded-xl text-xs bg-white">
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1">Target Team</label>
+                <select name="target_team" class="w-full px-3 py-2 border rounded-xl text-xs bg-white">
+                    <option value="">None / AI</option>
+                    {% for tm in teams %}
+                    <option value="{{ tm.id }}">{{ tm.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <button type="submit" class="px-4 py-2 bg-charcoal-900 hover:bg-black text-white font-bold text-xs rounded-xl transition">
+                Add Option
+            </button>
+        </form>
+
+        <div class="divide-y divide-gray-100 text-xs">
+            {% for opt in options %}
+            <div class="py-3 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <span class="w-7 h-7 rounded-full bg-brand-50 text-brand-600 font-bold flex items-center justify-center font-mono">
+                        {{ opt.digit }}
+                    </span>
+                    <span class="font-bold text-charcoal-900">{{ opt.label }}</span>
+                </div>
+                <span class="text-gray-500">Routes to: <strong class="text-charcoal-800">{{ opt.target_team.name|default:"AI Assistant" }}</strong></span>
+            </div>
+            {% empty %}
+            <p class="text-gray-400 py-4 text-center">No IVR menu options defined yet.</p>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+

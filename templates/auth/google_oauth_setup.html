@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block title %}Google OAuth Setup - Supporto AI{% endblock %}
+
+{% block content %}
+<div class="min-h-full flex items-center justify-center py-12 px-4 bg-[#F7F8FA]">
+    <div class="max-w-xl w-full bg-white p-8 rounded-2xl shadow-md border border-gray-200 space-y-6">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-brand-50 text-brand-500 flex items-center justify-center">
+                <span class="material-symbols-outlined">key</span>
+            </div>
+            <div>
+                <h3 class="text-xl font-bold text-charcoal-900">Google OAuth Credentials Required</h3>
+                <p class="text-xs text-gray-500">Development mode configuration</p>
+            </div>
+        </div>
+
+        <p class="text-sm text-gray-600 leading-relaxed">
+            Google OAuth sign-in requires Google Cloud Console OAuth 2.0 Client credentials. 
+            The system runs in development mode with email/password authentication ready.
+        </p>
+
+        <div class="bg-gray-50 p-4 rounded-xl border border-gray-200 text-xs font-mono space-y-2">
+            <div class="text-gray-500 font-semibold mb-1">Add to your .env file:</div>
+            <div>GOOGLE_OAUTH_CLIENT_ID=&lt;your-client-id.apps.googleusercontent.com&gt;</div>
+            <div>GOOGLE_OAUTH_CLIENT_SECRET=&lt;your-client-secret&gt;</div>
+            <div>GOOGLE_OAUTH_REDIRECT_URI={{ redirect_uri }}</div>
+        </div>
+
+        <div class="flex justify-between items-center pt-4 border-t border-gray-100">
+            <a href="{% url 'login' %}" class="text-sm font-semibold text-brand-500 hover:text-brand-600">&larr; Back to Email Sign In</a>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
