@@ -3,35 +3,67 @@
 {% block title %}Supporto AI - Chat with {{ workspace.name }}{% endblock %}
 
 {% block content_layout %}
-<div class="h-full flex flex-col bg-[#F7F8FA] max-w-lg mx-auto shadow-2xl border-x border-gray-200">
+<div class="h-full flex flex-col bg-[#F7F8FA] max-w-3xl mx-auto shadow-2xl border-x border-gray-200 relative">
     <!-- Widget Header -->
     <header class="bg-charcoal-900 text-white p-4 flex items-center justify-between border-b border-charcoal-800 shadow-sm flex-shrink-0">
         <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-xl bg-brand-500/20 text-brand-500 flex items-center justify-center font-bold">
+            <div class="w-10 h-10 rounded-2xl bg-brand-500/20 text-brand-500 flex items-center justify-center font-bold">
                 <span class="material-symbols-outlined text-2xl">support_agent</span>
             </div>
             <div>
-                <h3 class="font-bold text-sm text-white">{{ workspace.name }} Support</h3>
-                <p class="text-[10px] text-emerald-400 flex items-center gap-1 font-medium">
-                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                    Supporto AI Online
+                <div class="flex items-center gap-2">
+                    <h3 class="font-bold text-sm text-white">{{ workspace.name }} Support</h3>
+                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                        Online
+                    </span>
+                </div>
+                <p class="text-[11px] text-gray-400">
+                    {% if customer_name %}Hello, <strong class="text-gray-200">{{ customer_name }}</strong>{% else %}24/7 AI-Powered Customer Helpdesk{% endif %}
                 </p>
             </div>
         </div>
+
         <div class="flex items-center gap-2">
-            <button id="endChatBtn" onclick="completeConversation()" title="End conversation and create ticket" class="px-2.5 py-1 bg-charcoal-800 hover:bg-charcoal-700 text-gray-300 hover:text-white text-xs font-semibold rounded-lg transition border border-charcoal-700">
-                End & Submit Ticket
+            <!-- Voice Calling Button -->
+            <button onclick="startVoiceCall()" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl transition flex items-center gap-1.5 shadow-md">
+                <span class="material-symbols-outlined text-base">call</span>
+                Voice Call AI
+            </button>
+
+            <!-- End Chat / Ticket Button -->
+            <button id="endChatBtn" onclick="completeConversation()" title="End conversation and save support ticket" class="px-3 py-1.5 bg-charcoal-800 hover:bg-charcoal-700 text-gray-300 hover:text-white text-xs font-semibold rounded-xl transition border border-charcoal-700">
+                End Chat
             </button>
         </div>
     </header>
 
     <!-- Chat Stream Area -->
-    <div id="chatStream" class="flex-1 p-4 overflow-y-auto space-y-3 text-xs sm:text-sm">
+    <div id="chatStream" class="flex-1 p-4 sm:p-6 overflow-y-auto space-y-4 text-xs sm:text-sm">
         <!-- Welcome Message -->
         <div class="flex flex-col items-start">
-            <span class="text-[10px] text-gray-400 mb-1 px-1">Supporto AI</span>
-            <div class="max-w-[85%] rounded-2xl rounded-tl-none bg-white p-3.5 shadow-xs border border-gray-100 text-charcoal-900 leading-relaxed">
-                {{ settings.welcome_message|default:"Hello! How can we help you today? You can type your question or click 'Talk with AI' to speak." }}
+            <div class="flex items-center gap-1.5 text-[10px] text-gray-400 mb-1 px-1">
+                <span class="material-symbols-outlined text-xs text-brand-500">smart_toy</span>
+                Supporto AI
+            </div>
+            <div class="max-w-[85%] rounded-2xl rounded-tl-none bg-white p-4 shadow-sm border border-gray-100 text-charcoal-900 leading-relaxed space-y-2">
+                <p>
+                    {% if customer_name %}
+                    Welcome {{ customer_name }}! How can our AI assistant help you with your order, returns, shipping, or billing today?
+                    {% else %}
+                    {{ settings.welcome_message|default:"Welcome to ShopEase Support! How can our AI assistant help you with your order, returns, or billing today?" }}
+                    {% endif %}
+                </p>
+                <div class="flex flex-wrap gap-2 pt-1 text-[11px]">
+                    <button onclick="quickAsk('Where is my order SE-84920?')" class="px-2.5 py-1 bg-gray-50 hover:bg-gray-100 rounded-lg border border-gray-200 text-gray-700 transition">
+                        📦 Track Order SE-84920
+                    </button>
+                    <button onclick="quickAsk('What is your return and refund policy?')" class="px-2.5 py-1 bg-gray-50 hover:bg-gray-100 rounded-lg border border-gray-200 text-gray-700 transition">
+                        🔄 Return Policy
+                    </button>
+                    <button onclick="quickAsk('My card was charged twice')" class="px-2.5 py-1 bg-gray-50 hover:bg-gray-100 rounded-lg border border-gray-200 text-gray-700 transition">
+                        💳 Billing Inquiry
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -51,39 +83,104 @@
             <span class="material-symbols-outlined text-sm">check_circle</span>
             Ticket Created: <span id="ticketNumberDisplay" class="font-mono"></span>
         </span>
-        <span class="text-[11px] text-emerald-600">Saved to Queue</span>
+        <span class="text-[11px] text-emerald-600">Routed to Staff Queue</span>
     </div>
 
-    <!-- Input Box & Voice Controls -->
-    <div class="p-3 bg-white border-t border-gray-200 flex-shrink-0 space-y-2">
+    <!-- Input Box & Controls -->
+    <div class="p-4 bg-white border-t border-gray-200 flex-shrink-0 space-y-2">
         <form id="chatForm" onsubmit="sendChatMessage(event)" class="flex items-center gap-2">
-            <input type="text" id="chatInput" placeholder="Ask a question or report an issue..." autocomplete="off" class="flex-1 px-3.5 py-2.5 text-xs sm:text-sm border border-gray-200 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none">
-            <button type="submit" id="sendBtn" class="bg-brand-500 hover:bg-brand-600 text-white p-2.5 rounded-xl transition flex items-center justify-center shadow-xs">
+            <input type="text" id="chatInput" placeholder="Type your message or ask about your order..." autocomplete="off" class="flex-1 px-4 py-3 text-xs sm:text-sm border border-gray-200 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none">
+            <button type="submit" id="sendBtn" class="bg-brand-500 hover:bg-brand-600 text-white p-3 rounded-xl transition flex items-center justify-center shadow-md">
                 <span class="material-symbols-outlined text-base">send</span>
             </button>
         </form>
 
-        <!-- Browser Voice Support (Push to Talk) -->
-        {% if voice_config.is_enabled %}
         <div class="flex items-center justify-between pt-1">
             <button type="button" id="voiceBtn" onclick="toggleVoiceRecording()" class="flex items-center gap-1.5 text-xs font-semibold text-charcoal-800 hover:text-brand-500 bg-gray-50 hover:bg-gray-100 px-3 py-1.5 rounded-lg border border-gray-200 transition">
                 <span id="voiceIcon" class="material-symbols-outlined text-sm text-brand-500">mic</span>
-                <span id="voiceLabel">Talk with AI</span>
+                <span id="voiceLabel">Push-to-Talk</span>
             </button>
-            <span id="voiceStatus" class="text-[10px] text-gray-400 italic">Push-to-talk voice ready</span>
+            <span id="voiceStatus" class="text-[11px] text-gray-400">Push-to-talk ready</span>
         </div>
-        {% endif %}
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- MOBILE PHONE CALL SCREEN OVERLAY (Live Voice Call Interface)             -->
+    <!-- ========================================================================= -->
+    <div id="phoneCallModal" class="hidden fixed inset-0 z-50 bg-charcoal-950 flex flex-col justify-between p-6 sm:p-10 text-white animate-fade-in">
+        <!-- Call Header -->
+        <div class="flex items-center justify-between text-xs text-gray-400">
+            <div class="flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping"></span>
+                <span class="font-bold text-gray-200">Live Voice Call</span>
+            </div>
+            <span id="callTimer" class="font-mono text-emerald-400 font-bold text-base">00:00</span>
+        </div>
+
+        <!-- Assistant Profile & Calling Visualizer -->
+        <div class="flex flex-col items-center justify-center space-y-6 my-auto">
+            <div class="relative">
+                <div id="callPulseRing" class="absolute -inset-4 rounded-full bg-emerald-500/20 animate-pulse"></div>
+                <div class="w-28 h-28 rounded-full bg-gradient-to-tr from-brand-500 to-indigo-600 p-1 flex items-center justify-center shadow-2xl relative z-10">
+                    <div class="w-full h-full rounded-full bg-charcoal-900 flex items-center justify-center text-brand-400">
+                        <span class="material-symbols-outlined text-5xl">support_agent</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="text-center space-y-1">
+                <h2 class="text-xl sm:text-2xl font-black text-white">{{ workspace.name }} AI Voice Agent</h2>
+                <p id="callStatusText" class="text-xs text-emerald-400 font-semibold">Call Connected • Listening</p>
+            </div>
+
+            <!-- Animated Sound Wave Visualizer -->
+            <div id="soundWave" class="flex items-center gap-1.5 h-10">
+                <span class="w-1.5 bg-emerald-400 rounded-full h-4 animate-bounce"></span>
+                <span class="w-1.5 bg-emerald-400 rounded-full h-8 animate-bounce delay-100"></span>
+                <span class="w-1.5 bg-emerald-400 rounded-full h-6 animate-bounce delay-200"></span>
+                <span class="w-1.5 bg-emerald-400 rounded-full h-10 animate-bounce delay-75"></span>
+                <span class="w-1.5 bg-emerald-400 rounded-full h-5 animate-bounce delay-150"></span>
+            </div>
+
+            <!-- Live Speech Bubble -->
+            <div class="max-w-md w-full bg-charcoal-900/90 p-4 rounded-2xl border border-charcoal-800 text-center min-h-[75px] flex items-center justify-center shadow-inner">
+                <p id="callTranscriptLive" class="text-xs text-gray-300 italic leading-relaxed">
+                    "Hello! I am your AI assistant. Tap 'Speak' and ask me anything about your order or returns."
+                </p>
+            </div>
+        </div>
+
+        <!-- Call Action Controls -->
+        <div class="flex items-center justify-center gap-8 pt-6">
+            <!-- Speak / Mic Button -->
+            <button type="button" id="callMicBtn" onclick="toggleCallSpeaking()" class="w-20 h-20 rounded-full bg-emerald-500 hover:bg-emerald-400 text-white flex flex-col items-center justify-center shadow-2xl transition transform hover:scale-105 border-4 border-emerald-400/30">
+                <span id="callMicIcon" class="material-symbols-outlined text-3xl">mic</span>
+                <span id="callMicText" class="text-[9px] font-bold uppercase tracking-wider mt-0.5">Speak</span>
+            </button>
+
+            <!-- End Call Button -->
+            <button type="button" onclick="endVoiceCall()" class="w-16 h-16 rounded-full bg-rose-600 hover:bg-rose-500 text-white flex items-center justify-center shadow-xl transition transform hover:scale-105 border-2 border-rose-400/30" title="End Call">
+                <span class="material-symbols-outlined text-3xl">call_end</span>
+            </button>
+        </div>
     </div>
 </div>
 
 <script>
     const publicKey = "{{ public_key }}";
+    const custName = "{{ customer_name|default:'' }}";
+    const custEmail = "{{ customer_email|default:'' }}";
     let sessionToken = localStorage.getItem(`supporto_session_${publicKey}`) || "";
     let mediaRecorder = null;
     let audioChunks = [];
     let isRecording = false;
     let recognition = null;
     let liveBrowserTranscript = "";
+
+    // Live Call Timer & State
+    let callTimerInterval = null;
+    let callSeconds = 0;
+    let isCallActive = false;
 
     // Initialize browser SpeechRecognition if available
     if ("webkitSpeechRecognition" in window || "SpeechRecognition" in window) {
@@ -97,8 +194,20 @@
             for (let i = e.resultIndex; i < e.results.length; ++i) {
                 interim += e.results[i][0].transcript;
             }
-            if (interim) liveBrowserTranscript = interim.trim();
+            if (interim) {
+                liveBrowserTranscript = interim.trim();
+                const callLive = document.getElementById("callTranscriptLive");
+                if (callLive && isCallActive) {
+                    callLive.textContent = `You: "${liveBrowserTranscript}"`;
+                }
+            }
         };
+    }
+
+    function quickAsk(text) {
+        const input = document.getElementById("chatInput");
+        input.value = text;
+        sendChatMessage();
     }
 
     // Send text message
@@ -118,7 +227,12 @@
             const resp = await fetch(`/widget/${publicKey}/message/`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ message: text, session_token: sessionToken })
+                body: JSON.stringify({
+                    message: text,
+                    session_token: sessionToken,
+                    customer_name: custName || "Visitor",
+                    customer_email: custEmail
+                })
             });
             const data = await resp.json();
             removeTypingIndicator(typingId);
@@ -139,7 +253,7 @@
         }
     }
 
-    // Toggle voice recording
+    // Push to talk in main chat
     async function toggleVoiceRecording() {
         if (!isRecording) {
             startRecording();
@@ -178,7 +292,7 @@
             if (recognition) {
                 try { recognition.stop(); } catch(e) {}
             }
-            document.getElementById("voiceLabel").textContent = "Talk with AI";
+            document.getElementById("voiceLabel").textContent = "Push-to-Talk";
             document.getElementById("voiceIcon").classList.remove("text-red-500", "animate-pulse");
             document.getElementById("voiceStatus").textContent = "Processing speech...";
         }
@@ -202,7 +316,7 @@
             });
             const data = await resp.json();
             removeTypingIndicator(typingId);
-            document.getElementById("voiceStatus").textContent = "Push-to-talk voice ready";
+            document.getElementById("voiceStatus").textContent = "Push-to-talk ready";
 
             if (data.session_token) {
                 sessionToken = data.session_token;
@@ -223,6 +337,129 @@
         }
     }
 
+    // =========================================================================
+    // MOBILE VOICE CALL SCREEN LOGIC
+    // =========================================================================
+    function startVoiceCall() {
+        isCallActive = true;
+        callSeconds = 0;
+        document.getElementById("phoneCallModal").classList.remove("hidden");
+        document.getElementById("callTimer").textContent = "00:00";
+        document.getElementById("callStatusText").textContent = "Call Connected • Tap Speak";
+
+        callTimerInterval = setInterval(() => {
+            callSeconds++;
+            const mins = String(Math.floor(callSeconds / 60)).padStart(2, '0');
+            const secs = String(callSeconds % 60).padStart(2, '0');
+            document.getElementById("callTimer").textContent = `${mins}:${secs}`;
+        }, 1000);
+
+        // Greet customer
+        const welcomeSpeech = "Hello! I am your AI support specialist. Tap the Speak button to ask anything about your orders or returns.";
+        document.getElementById("callTranscriptLive").textContent = `AI: "${welcomeSpeech}"`;
+        playVoiceResponse("", welcomeSpeech);
+    }
+
+    async function toggleCallSpeaking() {
+        const btn = document.getElementById("callMicBtn");
+        const icon = document.getElementById("callMicIcon");
+        const text = document.getElementById("callMicText");
+
+        if (!isRecording) {
+            // Start speaking
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                mediaRecorder = new MediaRecorder(stream);
+                audioChunks = [];
+                mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+                mediaRecorder.onstop = uploadCallAudio;
+                mediaRecorder.start();
+                isRecording = true;
+                liveBrowserTranscript = "";
+                if (recognition) {
+                    try { recognition.start(); } catch(e) {}
+                }
+
+                btn.classList.remove("bg-emerald-500", "hover:bg-emerald-400");
+                btn.classList.add("bg-rose-500", "animate-pulse");
+                text.textContent = "Done";
+                document.getElementById("callStatusText").textContent = "Listening to you...";
+            } catch (err) {
+                alert("Microphone permission required: " + err.message);
+            }
+        } else {
+            // Done speaking
+            if (mediaRecorder && isRecording) {
+                mediaRecorder.stop();
+                isRecording = false;
+                if (recognition) {
+                    try { recognition.stop(); } catch(e) {}
+                }
+                btn.classList.remove("bg-rose-500", "animate-pulse");
+                btn.classList.add("bg-emerald-500", "hover:bg-emerald-400");
+                text.textContent = "Speak";
+                document.getElementById("callStatusText").textContent = "AI is thinking...";
+            }
+        }
+    }
+
+    async function uploadCallAudio() {
+        const audioBlob = new Blob(audioChunks, { type: "audio/webm" });
+        const formData = new FormData();
+        formData.append("audio", audioBlob, "call_recording.webm");
+        formData.append("session_token", sessionToken);
+        if (liveBrowserTranscript) {
+            formData.append("browser_transcript", liveBrowserTranscript);
+        }
+
+        try {
+            const resp = await fetch(`/widget/${publicKey}/voice/`, {
+                method: "POST",
+                body: formData
+            });
+            const data = await resp.json();
+
+            if (data.session_token) {
+                sessionToken = data.session_token;
+                localStorage.setItem(`supporto_session_${publicKey}`, sessionToken);
+            }
+
+            if (data.transcription) {
+                appendMessage("CUSTOMER", data.transcription);
+            }
+            if (data.ai_message) {
+                appendMessage("AI", data.ai_message);
+                document.getElementById("callTranscriptLive").textContent = `AI: "${data.ai_message}"`;
+            }
+
+            document.getElementById("callStatusText").textContent = "Call Connected • Tap Speak";
+            playVoiceResponse(data.audio_url, data.ai_message);
+
+            if (data.is_escalated && data.escalation_ticket) {
+                showTicketBanner(data.escalation_ticket);
+            }
+        } catch (err) {
+            document.getElementById("callStatusText").textContent = "Voice error. Tap Speak again.";
+        }
+    }
+
+    function endVoiceCall() {
+        isCallActive = false;
+        clearInterval(callTimerInterval);
+        if (mediaRecorder && isRecording) {
+            mediaRecorder.stop();
+            isRecording = false;
+        }
+        if (recognition) {
+            try { recognition.stop(); } catch(e) {}
+        }
+        if ("speechSynthesis" in window) {
+            window.speechSynthesis.cancel();
+        }
+        document.getElementById("phoneCallModal").classList.add("hidden");
+        appendMessage("AI", `[Voice Call Ended — Call duration: ${document.getElementById("callTimer").textContent}]`);
+    }
+
     function playVoiceResponse(audioUrl, fallbackText) {
         if (audioUrl) {
             const container = document.getElementById("audioPlayerContainer");
@@ -231,9 +468,10 @@
             container.classList.remove("hidden");
             player.play().catch(e => console.log("Audio autoplay prevented", e));
         } else if (fallbackText && "speechSynthesis" in window) {
-            // High fidelity browser speech synthesis fallback
-            const utterance = new SpeechSynthesisUtterance(fallbackText);
-            utterance.rate = 1.0;
+            window.speechSynthesis.cancel();
+            const clean = fallbackText.replace(/<[^>]+>/g, '').replace(/\*+/g, '');
+            const utterance = new SpeechSynthesisUtterance(clean);
+            utterance.rate = 1.05;
             utterance.pitch = 1.0;
             window.speechSynthesis.speak(utterance);
         }
@@ -253,41 +491,52 @@
             const data = await resp.json();
             if (data.ticket_number) {
                 showTicketBanner(data.ticket_number);
-                appendMessage("AI", `Your support ticket has been created: #${data.ticket_number}. Our team will review this shortly.`);
+                appendMessage("AI", `Support conversation ended. Ticket #${data.ticket_number} created and assigned to team.`);
+            } else {
+                appendMessage("AI", data.message || "Conversation ended.");
             }
-        } catch (e) {
-            console.error(e);
+        } catch (err) {
+            console.error("Error finalizing:", err);
         }
-    }
-
-    function showTicketBanner(num) {
-        const banner = document.getElementById("ticketBanner");
-        document.getElementById("ticketNumberDisplay").textContent = num;
-        banner.classList.remove("hidden");
     }
 
     function appendMessage(sender, text) {
         const stream = document.getElementById("chatStream");
-        const isCustomer = sender === "CUSTOMER";
-        const msgDiv = document.createElement("div");
-        msgDiv.className = `flex flex-col ${isCustomer ? "items-end" : "items-start"}`;
-        msgDiv.innerHTML = `
-            <span class="text-[10px] text-gray-400 mb-1 px-1">${isCustomer ? "You" : "Supporto AI"}</span>
-            <div class="max-w-[85%] rounded-2xl ${isCustomer ? "rounded-tr-none bg-brand-500 text-white" : "rounded-tl-none bg-white border border-gray-100 text-charcoal-900"} p-3.5 shadow-xs whitespace-pre-line leading-relaxed">
-                ${escapeHTML(text)}
+        const div = document.createElement("div");
+        div.className = `flex flex-col ${sender === "CUSTOMER" ? "items-end" : "items-start"}`;
+
+        const isAi = sender === "AI";
+        const bg = isAi ? "bg-white text-charcoal-900 border border-gray-100 rounded-tl-none shadow-sm" : "bg-brand-500 text-white rounded-tr-none shadow-md";
+        const senderLabel = isAi ? "Supporto AI" : (custName || "You");
+
+        div.innerHTML = `
+            <div class="flex items-center gap-1 text-[10px] text-gray-400 mb-1 px-1">
+                ${isAi ? '<span class="material-symbols-outlined text-xs text-brand-500">smart_toy</span>' : '<span class="material-symbols-outlined text-xs text-gray-400">person</span>'}
+                ${senderLabel}
+            </div>
+            <div class="max-w-[85%] rounded-2xl ${bg} p-3.5 leading-relaxed">
+                ${escapeHtml(text).replace(/\n/g, '<br>')}
             </div>
         `;
-        stream.appendChild(msgDiv);
+        stream.appendChild(div);
         stream.scrollTop = stream.scrollHeight;
     }
 
     function appendTypingIndicator() {
-        const id = "typing_" + Date.now();
         const stream = document.getElementById("chatStream");
+        const id = `typing_${Date.now()}`;
         const div = document.createElement("div");
         div.id = id;
-        div.className = "flex items-center gap-1.5 p-3 text-xs text-gray-400 italic";
-        div.innerHTML = `<span class="w-1.5 h-1.5 bg-brand-500 rounded-full animate-bounce"></span> Supporto AI is thinking...`;
+        div.className = "flex flex-col items-start";
+        div.innerHTML = `
+            <span class="text-[10px] text-gray-400 mb-1 px-1">Supporto AI</span>
+            <div class="bg-white p-3 rounded-2xl rounded-tl-none border border-gray-100 shadow-sm flex items-center gap-1.5 text-xs text-gray-400">
+                <span class="w-1.5 h-1.5 rounded-full bg-brand-500 animate-bounce"></span>
+                <span class="w-1.5 h-1.5 rounded-full bg-brand-500 animate-bounce delay-100"></span>
+                <span class="w-1.5 h-1.5 rounded-full bg-brand-500 animate-bounce delay-200"></span>
+                <span class="text-[11px] text-gray-400 ml-1">AI is thinking...</span>
+            </div>
+        `;
         stream.appendChild(div);
         stream.scrollTop = stream.scrollHeight;
         return id;
@@ -298,11 +547,17 @@
         if (el) el.remove();
     }
 
-    function escapeHTML(str) {
-        const p = document.createElement("p");
-        p.appendChild(document.createTextNode(str));
-        return p.innerHTML;
+    function showTicketBanner(ticketNum) {
+        const banner = document.getElementById("ticketBanner");
+        const display = document.getElementById("ticketNumberDisplay");
+        display.textContent = ticketNum;
+        banner.classList.remove("hidden");
+    }
+
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
     }
 </script>
 {% endblock %}
-

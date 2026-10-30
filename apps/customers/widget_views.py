@@ -21,12 +21,16 @@ def widget_view(request, public_key):
     workspace = get_object_or_404(Workspace, public_key=public_key, status=Workspace.Status.ACTIVE)
     settings_obj = getattr(workspace, "settings", None)
     voice_config = getattr(workspace, "voice_config", None)
+    customer_name = request.GET.get("name", "").strip()
+    customer_email = request.GET.get("email", "").strip()
 
     return render(request, "widget/widget_frame.html", {
         "workspace": workspace,
         "settings": settings_obj,
         "voice_config": voice_config,
         "public_key": str(public_key),
+        "customer_name": customer_name,
+        "customer_email": customer_email,
     })
 
 

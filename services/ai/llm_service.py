@@ -6,6 +6,7 @@ from apps.teams.models import Team
 from services.ai.model_manager import model_manager
 from services.ai.rag_service import rag_service
 from services.ai.prompt_builder import prompt_builder
+from services.ai.tool_registry import tool_registry
 
 logger = logging.getLogger(__name__)
 
@@ -13,7 +14,7 @@ class LLMService:
     """
     LLM Inference Service for Supporto AI.
     Integrates with local Qwen 8B GGUF model when llama-cpp-python is available,
-    with an intelligent fallback engine for high reliability.
+    with tool-calling capabilities and an intelligent fallback engine.
     """
 
     @classmethod
@@ -23,8 +24,33 @@ class LLMService:
 
         config, _ = AgentConfiguration.objects.get_or_create(workspace=workspace)
         system_prompt = config.system_prompt
-        retrieved = rag_service.retrieve_context(workspace.id, customer_message, top_k=3)
+        msg_lower = customer_message.lower()
 
+        # 1. Tool Calling: Check if customer asks about an order (e.g., SE-84920 or "my order")
+        order_match = re.search(r'\b(se-?\d{4,6})\b', msg_lower)
+        order_data = None
+        if order_match or "my order" in msg_lower or "track order" in msg_lower:
+            order_code = order_match.group(1).upper() if order_match else "SE-84920"
+            tool_res = tool_registry.lookup_order(workspace.id, order_code)
+            if tool_res.get("success"):
+                order_data = tool_res["order"]
+
+        # 2. Retrieve relevant Knowledge Base context
+        retrieved = rag_service.retrieve_context(workspace.id, customer_message, top_k=3)
+        if order_data:
+            # Prepend live order details to context for grounded answer
+            retrieved.insert(0, {
+                "title": f"Live Order Details for {order_data['order_number']}",
+                "content": (
+                    f"Item: {order_data['item']} | Price: {order_data['amount']}\n"
+                    f"Status: {order_data['status']} | Carrier: {order_data['carrier']}\n"
+                    f"Delivery Date: {order_data['estimated_delivery']}\n"
+                    f"Eligible for cancellation: {order_data['can_cancel']} | Eligible for return: {order_data['can_return']}"
+                ),
+                "doc_type": "ORDER_TOOL"
+            })
+
+        # 3. LLM Inference via Qwen
         llm = model_manager.get_llm()
         if llm:
             try:
@@ -37,23 +63,29 @@ class LLMService:
                 )
                 output = llm(
                     prompt,
-                    max_tokens=config.max_tokens,
-                    temperature=config.temperature,
-                    stop=["<|im_end|>", "<|endoftext|>"]
+                    max_tokens=min(config.max_tokens or 160, 160),
+                    temperature=0.1,  # Low temperature for fast, deterministic, concise responses
+                    stop=["<|im_end|>", "<|endoftext|>", "Customer:", "\nUser:"]
                 )
-                text = output["choices"][0]["text"].strip()
-                tokens = output.get("usage", {}).get("total_tokens", 0)
-                return {
-                    "text": text,
-                    "retrieved_docs": retrieved,
-                    "tokens_used": tokens,
-                    "source": "qwen_local_llm"
-                }
+                raw_text = output["choices"][0]["text"].strip()
+
+                # Clean out <think> ... </think> or <thought> ... </thought> tags from reasoning models
+                cleaned_text = re.sub(r"<think>.*?</think>", "", raw_text, flags=re.DOTALL).strip()
+                cleaned_text = re.sub(r"<thought>.*?</thought>", "", cleaned_text, flags=re.DOTALL).strip()
+
+                if cleaned_text:
+                    tokens = output.get("usage", {}).get("total_tokens", 0)
+                    return {
+                        "text": cleaned_text,
+                        "retrieved_docs": retrieved,
+                        "tokens_used": tokens,
+                        "source": "qwen_local_llm"
+                    }
             except Exception as e:
                 logger.error(f"Error executing Qwen inference: {e}")
 
-        # Intelligent RAG-grounded fallback response generator
-        response_text = cls._generate_grounded_fallback(workspace, customer_message, retrieved)
+        # 4. Intelligent RAG-grounded fallback response generator
+        response_text = cls._generate_grounded_fallback(workspace, customer_message, retrieved, order_data)
         return {
             "text": response_text,
             "retrieved_docs": retrieved,
@@ -62,28 +94,44 @@ class LLMService:
         }
 
     @staticmethod
-    def _generate_grounded_fallback(workspace, message: str, retrieved_docs: list[dict]) -> str:
+    def _generate_grounded_fallback(workspace, message: str, retrieved_docs: list[dict], order_data: dict = None) -> str:
         msg_lower = message.lower()
 
-        # Urgent pattern detection
+        # Order lookup response
+        if order_data:
+            num = order_data["order_number"]
+            item = order_data["item"]
+            status = order_data["status"]
+            carrier = order_data["carrier"]
+            delivery = order_data["estimated_delivery"]
+
+            if "cancel" in msg_lower:
+                if order_data["can_cancel"]:
+                    return f"Your order {num} ({item}) is currently in processing and can be cancelled. I will notify our Order Support team to cancel it."
+                else:
+                    return f"Order {num} ({item}) is already {status.lower()} with {carrier} and cannot be cancelled mid-shipment. Once it arrives, you can return it within 30 days under our return policy."
+
+            return f"Your order {num} ({item}) is currently **{status}** via {carrier}. Estimated delivery: **{delivery}**."
+
+        # Urgent billing / fraud pattern detection
         urgent_keywords = ["deducted twice", "double charged", "charged twice", "unauthorized charge", "fraud", "scam", "overcharged", "money stolen"]
         if any(k in msg_lower for k in urgent_keywords):
             return (
-                f"I understand you are reporting an urgent billing concern ({message.strip()}). "
-                f"I have flagged this as critical and escalated your case directly to our Billing Support team. "
-                "A specialist is reviewing your account immediately."
+                f"I understand you are reporting an urgent billing issue ({message.strip()}). "
+                f"I have flagged this as critical and created an immediate ticket for our Billing Support team. "
+                "A specialist is reviewing your account right now."
             )
+
+        if any(w in msg_lower for w in ["hello", "hi", "hey", "help"]):
+            return f"Hello! Welcome to {workspace.name} support. How can I help you with your order, shipping, or returns today?"
 
         if retrieved_docs:
             top_doc = retrieved_docs[0]
             answer = top_doc.get("content", "")
-            return f"Based on {workspace.name}'s support documentation for '{top_doc['title']}':\n\n{answer}\n\nDoes this resolve your question?"
-
-        if any(w in msg_lower for w in ["hello", "hi", "hey", "help"]):
-            return f"Hello! Welcome to {workspace.name} customer support. How can I help you today?"
+            return f"According to {workspace.name}'s support policy for '{top_doc['title']}':\n\n{answer}"
 
         return (
-            f"Thank you for contacting {workspace.name}. I have logged your inquiry: '{message[:80]}...'. "
+            f"Thank you for reaching out to {workspace.name}. I have logged your inquiry: '{message[:80]}'. "
             "Our support team has received your ticket and will assist you shortly."
         )
 
@@ -94,38 +142,41 @@ class LLMService:
 
         # Urgency & Escalation check
         critical_terms = ["deducted twice", "double charge", "charged twice", "unauthorized", "legal", "urgent", "stolen", "lawyer", "refund immediately"]
-        high_terms = ["broken", "not working", "fail", "error", "damaged", "wrong item", "cancel order"]
+        high_terms = ["broken", "not working", "fail", "error", "damaged", "wrong item", "cancel order", "cancel", "refund"]
 
         urgency = "LOW"
         is_escalated = False
 
-        if any(term in t_lower for term in critical_terms):
+        if any(w in t_lower for w in critical_terms):
             urgency = "CRITICAL"
             is_escalated = True
-        elif any(term in t_lower for term in high_terms):
+        elif any(w in t_lower for w in high_terms):
             urgency = "HIGH"
+            is_escalated = True
 
-        # Sentiment check
-        if any(term in t_lower for term in ["angry", "horrible", "worst", "terrible", "hate", "scam", "cheat"]):
+        # Intent detection
+        intent = "GENERAL"
+        if any(w in t_lower for w in ["pay", "charge", "refund", "bill", "invoice", "price", "money", "deducted", "deduct"]):
+            intent = "BILLING"
+        elif any(w in t_lower for w in ["ship", "track", "delivery", "arrive", "order", "package", "fedex", "courier"]):
+            intent = "SHIPPING"
+        elif any(w in t_lower for w in ["return", "exchange", "replace"]):
+            intent = "RETURNS"
+        elif any(w in t_lower for w in ["broken", "damage", "defect", "faulty", "quality"]):
+            intent = "DEFECT"
+
+        # Sentiment detection
+        sentiment = "NEUTRAL"
+        angry_words = ["terrible", "awful", "scam", "cheat", "furious", "worst", "hate", "lawsuit", "sue", "unacceptable"]
+        frustrated_words = ["slow", "waiting", "delayed", "useless", "annoying", "bad", "disappointed", "again"]
+        positive_words = ["thank", "thanks", "great", "awesome", "perfect", "good", "helpful", "appreciate", "love"]
+
+        if any(w in t_lower for w in angry_words):
+            sentiment = "ANGRY"
+        elif any(w in t_lower for w in frustrated_words):
             sentiment = "FRUSTRATED"
-        elif any(term in t_lower for term in ["bad", "wrong", "disappointed", "problem", "issue"]):
-            sentiment = "NEGATIVE"
-        elif any(term in t_lower for term in ["great", "thank", "awesome", "good", "solved", "love"]):
+        elif any(w in t_lower for w in positive_words):
             sentiment = "POSITIVE"
-        else:
-            sentiment = "NEUTRAL"
-
-        # Intent
-        if any(term in t_lower for term in ["bill", "charge", "payment", "invoice", "refund", "receipt"]):
-            intent = "Billing & Payments"
-        elif any(term in t_lower for term in ["order", "track", "delivery", "shipping", "package", "arrival"]):
-            intent = "Order Tracking & Delivery"
-        elif any(term in t_lower for term in ["return", "exchange", "replace"]):
-            intent = "Returns & Exchanges"
-        elif any(term in t_lower for term in ["login", "password", "account", "profile"]):
-            intent = "Account & Access"
-        else:
-            intent = "General Inquiry"
 
         return {
             "intent": intent,
@@ -134,40 +185,4 @@ class LLMService:
             "is_escalated": is_escalated
         }
 
-    @classmethod
-    def recommend_team_routing(cls, workspace, intent_or_text: str):
-        """Matches intent or inquiry to the best team in the workspace."""
-        text_lower = intent_or_text.lower()
-        teams = Team.objects.filter(workspace=workspace, is_active=True)
-
-        if any(w in text_lower for w in ["bill", "payment", "charge", "refund", "invoice"]):
-            billing_team = teams.filter(name__icontains="bill").first()
-            if billing_team:
-                return billing_team
-
-        if any(w in text_lower for w in ["order", "deliver", "ship", "tracking", "package"]):
-            order_team = teams.filter(name__icontains="order").first()
-            if order_team:
-                return order_team
-
-        if any(w in text_lower for w in ["tech", "bug", "code", "crash", "api"]):
-            tech_team = teams.filter(name__icontains="tech").first()
-            if tech_team:
-                return tech_team
-
-        return teams.first()
-
-    @classmethod
-    def summarize_conversation(cls, messages: list[dict]) -> str:
-        """Summarizes conversation transcript."""
-        if not messages:
-            return "No conversation history available."
-        customer_msgs = [m["content"] for m in messages if m.get("sender_type") == "CUSTOMER"]
-        if not customer_msgs:
-            return "Customer initiated contact with no follow-up queries."
-        first_issue = customer_msgs[0][:150]
-        total_turns = len(messages)
-        return f"Customer inquiry regarding: '{first_issue}'. Total interaction turns: {total_turns}."
-
 llm_service = LLMService()
-

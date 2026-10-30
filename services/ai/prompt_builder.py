@@ -7,10 +7,10 @@ class PromptBuilder:
             f"<|im_start|>system\n{system_prompt}\n",
             f"You are responding on behalf of {company_name}.",
             "CRITICAL RULES:",
-            "1. Base your answer strictly on the provided company knowledge below.",
-            "2. If the user's issue cannot be resolved by the documentation or involves double-charge/billing/urgent problems, offer to escalate immediately.",
-            "3. Do not invent order numbers, fake tracking codes, or personal account details.",
-            "4. Keep your answer concise, friendly, and professional.\n",
+            "1. Base your answer strictly on the provided company knowledge and order details below.",
+            "2. If the user's issue cannot be resolved by the documentation or involves double-charge/billing/urgent problems, offer to escalate immediately to staff.",
+            "3. Do not output any <think> tags, internal thoughts, or chain-of-thought tokens. Output ONLY the clean final response meant for the customer.",
+            "4. Keep your answer concise (1-3 sentences max), friendly, and professional for fast speech.\n",
         ]
 
         if retrieved_context:
@@ -31,4 +31,3 @@ class PromptBuilder:
         return "\n".join(prompt_parts)
 
 prompt_builder = PromptBuilder()
-

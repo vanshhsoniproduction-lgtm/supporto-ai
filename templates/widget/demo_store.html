@@ -32,53 +32,65 @@
                 <span class="px-3 py-1 rounded-full text-xs font-bold bg-brand-500 text-white">Live AI Support Demonstration</span>
                 <h2 class="text-3xl sm:text-4xl font-extrabold tracking-tight">Experience Instant Customer Support</h2>
                 <p class="text-sm text-gray-300 leading-relaxed">
-                    Test the embedded Supporto AI widget using the floating bubble at the bottom right.
-                    Ask about shipping, return policies, or test urgent billing escalation (e.g., "my payment was deducted twice").
+                    Test the embedded Supporto AI widget using the button below or the floating bubble.
+                    Ask about shipping, live order status (e.g. <code>#SE-84920</code>), return policies, or test live voice calling!
                 </p>
                 <div class="pt-2">
-                    <button onclick="toggleWidgetModal()" class="px-5 py-3 bg-brand-500 hover:bg-brand-600 text-white font-bold text-xs rounded-xl shadow-lg transition flex items-center gap-2">
+                    <button onclick="openCustomerModal()" class="px-5 py-3 bg-brand-500 hover:bg-brand-600 text-white font-bold text-xs rounded-xl shadow-lg transition flex items-center gap-2">
                         <span class="material-symbols-outlined text-sm">chat</span>
-                        Open Customer Support Chat
+                        Launch Full-Screen AI Support Session
                     </button>
                 </div>
             </div>
         </div>
 
-        <!-- Sample Products -->
+        <!-- Sample Products with Order Tracking IDs -->
         <div class="space-y-4">
-            <h3 class="text-lg font-bold text-charcoal-900">Featured Products</h3>
+            <div class="flex items-center justify-between">
+                <h3 class="text-lg font-bold text-charcoal-900">Your Recent Orders (Try asking the AI about these!)</h3>
+                <span class="text-xs text-gray-500 font-semibold">Test tool-calling by typing or speaking order IDs</span>
+            </div>
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                <!-- Product 1 -->
                 <div class="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm space-y-3">
                     <div class="h-40 bg-gray-100 rounded-xl flex items-center justify-center text-gray-400">
-                        <span class="material-symbols-outlined text-5xl">headphones</span>
+                        <span class="material-symbols-outlined text-5xl text-brand-500">headphones</span>
                     </div>
                     <div class="flex justify-between items-center">
                         <h4 class="font-bold text-sm text-charcoal-900">Wireless Noise-Canceling Headphones</h4>
                         <span class="text-sm font-extrabold text-brand-500">$199</span>
                     </div>
-                    <p class="text-xs text-gray-500">Order #SE-84920 • 30-Day Money Back Guarantee</p>
+                    <div class="p-2 rounded-lg bg-blue-50 border border-blue-100 text-[11px] text-blue-900">
+                        <strong>Order #SE-84920</strong> • In Transit (FedEx)
+                    </div>
                 </div>
 
+                <!-- Product 2 -->
                 <div class="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm space-y-3">
                     <div class="h-40 bg-gray-100 rounded-xl flex items-center justify-center text-gray-400">
-                        <span class="material-symbols-outlined text-5xl">laptop_mac</span>
+                        <span class="material-symbols-outlined text-5xl text-indigo-500">laptop_mac</span>
                     </div>
                     <div class="flex justify-between items-center">
                         <h4 class="font-bold text-sm text-charcoal-900">Ultra-Slim Laptop Air 15"</h4>
                         <span class="text-sm font-extrabold text-brand-500">$1,199</span>
                     </div>
-                    <p class="text-xs text-gray-500">Order #SE-84921 • Standard 2-Year Warranty</p>
+                    <div class="p-2 rounded-lg bg-amber-50 border border-amber-100 text-[11px] text-amber-900">
+                        <strong>Order #SE-84921</strong> • Processing in Warehouse
+                    </div>
                 </div>
 
+                <!-- Product 3 -->
                 <div class="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm space-y-3">
                     <div class="h-40 bg-gray-100 rounded-xl flex items-center justify-center text-gray-400">
-                        <span class="material-symbols-outlined text-5xl">watch</span>
+                        <span class="material-symbols-outlined text-5xl text-emerald-500">watch</span>
                     </div>
                     <div class="flex justify-between items-center">
                         <h4 class="font-bold text-sm text-charcoal-900">Smart Fitness Watch Pro</h4>
                         <span class="text-sm font-extrabold text-brand-500">$149</span>
                     </div>
-                    <p class="text-xs text-gray-500">Order #SE-84922 • Waterproof & GPS</p>
+                    <div class="p-2 rounded-lg bg-emerald-50 border border-emerald-100 text-[11px] text-emerald-900">
+                        <strong>Order #SE-84922</strong> • Delivered 2 days ago
+                    </div>
                 </div>
             </div>
         </div>
@@ -86,13 +98,61 @@
 
     <!-- Floating Supporto AI Widget Button -->
     <div class="fixed bottom-6 right-6 z-40">
-        <button onclick="toggleWidgetModal()" class="flex items-center gap-2.5 bg-brand-500 hover:bg-brand-600 text-white font-bold py-3.5 px-5 rounded-full shadow-2xl transition transform hover:scale-105 group border-2 border-white">
+        <button onclick="openCustomerModal()" class="flex items-center gap-2.5 bg-brand-500 hover:bg-brand-600 text-white font-bold py-3.5 px-5 rounded-full shadow-2xl transition transform hover:scale-105 group border-2 border-white">
             <span class="material-symbols-outlined text-2xl group-hover:rotate-12 transition">support_agent</span>
             <span class="text-sm">Need Help?</span>
         </button>
     </div>
 
-    <!-- Floating Widget Modal / Drawer -->
+    <!-- Customer Details Modal before launching Full-Screen Chat -->
+    <div id="customerModal" class="hidden fixed inset-0 z-50 bg-charcoal-950/80 backdrop-blur-xs flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-md w-full p-6 sm:p-8 shadow-2xl border border-gray-100 space-y-5 animate-fade-in">
+            <div class="flex items-center justify-between pb-3 border-b border-gray-100">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-2xl bg-brand-500/10 text-brand-500 flex items-center justify-center">
+                        <span class="material-symbols-outlined text-2xl">support_agent</span>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-base text-charcoal-900">{{ workspace.name }} Live Support</h3>
+                        <p class="text-xs text-emerald-600 font-semibold flex items-center gap-1">
+                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                            AI Assistant Online
+                        </p>
+                    </div>
+                </div>
+                <button onclick="closeCustomerModal()" class="text-gray-400 hover:text-gray-600">
+                    <span class="material-symbols-outlined text-xl">close</span>
+                </button>
+            </div>
+
+            <p class="text-xs text-gray-600 leading-relaxed">
+                Enter your details to launch a live AI chat and voice session with order tracking and automatic ticket escalation:
+            </p>
+
+            <form onsubmit="launchFullScreenChat(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold uppercase text-gray-700 tracking-wider mb-1">Your Full Name</label>
+                    <input type="text" id="custNameInput" required placeholder="e.g. Vansh Soni" class="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:ring-2 focus:ring-brand-500 outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold uppercase text-gray-700 tracking-wider mb-1">Your Email Address</label>
+                    <input type="email" id="custEmailInput" placeholder="e.g. vansh@example.com" class="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:ring-2 focus:ring-brand-500 outline-none">
+                </div>
+
+                <div class="pt-2 space-y-2">
+                    <button type="submit" class="w-full py-3 bg-brand-500 hover:bg-brand-600 text-white font-bold text-sm rounded-xl shadow-lg transition flex items-center justify-center gap-2">
+                        <span class="material-symbols-outlined text-base">open_in_new</span>
+                        Start Support in Full Tab
+                    </button>
+                    <button type="button" onclick="openEmbeddedDrawer()" class="w-full py-2 text-xs font-semibold text-gray-500 hover:text-charcoal-900 transition text-center">
+                        or open inside this page
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Floating Widget Modal / Drawer (Optional in-page fallback) -->
     <div id="widgetDrawer" class="hidden fixed bottom-24 right-6 z-50 w-full max-w-sm sm:max-w-md h-[560px] bg-white rounded-3xl shadow-2xl border border-gray-200 overflow-hidden flex flex-col">
         <div class="h-10 bg-charcoal-950 px-4 flex items-center justify-between text-white text-xs">
             <span class="font-bold flex items-center gap-1.5 text-brand-500">
@@ -100,23 +160,52 @@
                 Supporto AI Widget
             </span>
             <div class="flex items-center gap-2">
-                <a href="{% url 'widget_embed' public_key=public_key %}" target="_blank" title="Open full screen in new tab" class="text-gray-400 hover:text-white flex items-center">
+                <a id="drawerPopoutLink" href="{% url 'widget_embed' public_key=public_key %}" target="_blank" title="Open full screen in new tab" class="text-gray-400 hover:text-white flex items-center">
                     <span class="material-symbols-outlined text-sm">open_in_new</span>
                 </a>
-                <button onclick="toggleWidgetModal()" class="text-gray-400 hover:text-white flex items-center">
+                <button onclick="toggleDrawer()" class="text-gray-400 hover:text-white flex items-center">
                     <span class="material-symbols-outlined text-base">close</span>
                 </button>
             </div>
         </div>
-        <iframe src="{% url 'widget_embed' public_key=public_key %}" class="flex-1 w-full border-none"></iframe>
+        <iframe id="widgetIframe" src="{% url 'widget_embed' public_key=public_key %}" class="flex-1 w-full border-none"></iframe>
     </div>
 </div>
 
 <script>
-    function toggleWidgetModal() {
-        const drawer = document.getElementById("widgetDrawer");
-        drawer.classList.toggle("hidden");
+    const widgetEmbedBase = "{% url 'widget_embed' public_key=public_key %}";
+
+    function openCustomerModal() {
+        document.getElementById("customerModal").classList.remove("hidden");
+    }
+
+    function closeCustomerModal() {
+        document.getElementById("customerModal").classList.add("hidden");
+    }
+
+    function launchFullScreenChat(e) {
+        if (e) e.preventDefault();
+        const name = document.getElementById("custNameInput").value.trim();
+        const email = document.getElementById("custEmailInput").value.trim();
+        const targetUrl = `${widgetEmbedBase}?name=${encodeURIComponent(name)}&email=${encodeURIComponent(email)}`;
+        window.open(targetUrl, "_blank");
+        closeCustomerModal();
+    }
+
+    function openEmbeddedDrawer() {
+        const name = document.getElementById("custNameInput").value.trim();
+        const email = document.getElementById("custEmailInput").value.trim();
+        const iframe = document.getElementById("widgetIframe");
+        const popout = document.getElementById("drawerPopoutLink");
+        const targetUrl = `${widgetEmbedBase}?name=${encodeURIComponent(name)}&email=${encodeURIComponent(email)}`;
+        iframe.src = targetUrl;
+        popout.href = targetUrl;
+        closeCustomerModal();
+        document.getElementById("widgetDrawer").classList.remove("hidden");
+    }
+
+    function toggleDrawer() {
+        document.getElementById("widgetDrawer").classList.toggle("hidden");
     }
 </script>
 {% endblock %}
-
