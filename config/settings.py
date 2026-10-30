@@ -37,6 +37,8 @@ INSTALLED_APPS = [
     "apps.emails.apps.EmailsConfig",
 ]
 
+X_FRAME_OPTIONS = "SAMEORIGIN"
+
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",

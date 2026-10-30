@@ -6,6 +6,7 @@ from django.shortcuts import render, get_object_or_404
 from django.http import JsonResponse, HttpResponseBadRequest
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
+from django.views.decorators.clickjacking import xframe_options_exempt
 from apps.workspaces.models import Workspace, WorkspaceSettings
 from apps.conversations.models import Conversation
 from apps.customers.models import Customer
@@ -15,6 +16,7 @@ from services.ai.stt_service import stt_service
 from services.ai.tts_service import tts_service
 from services.ai.model_manager import model_manager
 
+@xframe_options_exempt
 def widget_view(request, public_key):
     workspace = get_object_or_404(Workspace, public_key=public_key, status=Workspace.Status.ACTIVE)
     settings_obj = getattr(workspace, "settings", None)

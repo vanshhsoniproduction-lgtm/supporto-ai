@@ -99,9 +99,14 @@
                 <span class="material-symbols-outlined text-sm">chat_bubble</span>
                 Supporto AI Widget
             </span>
-            <button onclick="toggleWidgetModal()" class="text-gray-400 hover:text-white">
-                <span class="material-symbols-outlined text-base">close</span>
-            </button>
+            <div class="flex items-center gap-2">
+                <a href="{% url 'widget_embed' public_key=public_key %}" target="_blank" title="Open full screen in new tab" class="text-gray-400 hover:text-white flex items-center">
+                    <span class="material-symbols-outlined text-sm">open_in_new</span>
+                </a>
+                <button onclick="toggleWidgetModal()" class="text-gray-400 hover:text-white flex items-center">
+                    <span class="material-symbols-outlined text-base">close</span>
+                </button>
+            </div>
         </div>
         <iframe src="{% url 'widget_embed' public_key=public_key %}" class="flex-1 w-full border-none"></iframe>
     </div>
