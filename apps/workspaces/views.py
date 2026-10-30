@@ -69,23 +69,70 @@ def workspace_settings_view(request, company_slug):
     settings_obj, _ = WorkspaceSettings.objects.get_or_create(workspace=workspace)
 
     if request.method == "POST":
+        action = request.POST.get("action", "save_settings")
+
+        if action == "add_authorized_email":
+            email_to_add = request.POST.get("email", "").strip().lower()
+            role_to_assign = request.POST.get("assigned_role", WorkspaceMembership.Role.AGENT)
+            if email_to_add:
+                auth_rec, created = WorkspaceAuthorizedEmail.objects.get_or_create(
+                    workspace=workspace,
+                    normalized_email=email_to_add,
+                    defaults={
+                        "email": email_to_add,
+                        "assigned_role": role_to_assign,
+                        "status": WorkspaceAuthorizedEmail.Status.AUTHORIZED,
+                        "invited_by": request.user,
+                    }
+                )
+                if not created:
+                    auth_rec.assigned_role = role_to_assign
+                    auth_rec.status = WorkspaceAuthorizedEmail.Status.AUTHORIZED
+                    auth_rec.save(update_fields=["assigned_role", "status"])
+                messages.success(request, f"Google email '{email_to_add}' successfully authorized with role {role_to_assign}!")
+            return redirect("workspace_settings", company_slug=workspace.slug)
+
+        elif action == "revoke_authorized_email":
+            email_id = request.POST.get("email_id")
+            WorkspaceAuthorizedEmail.objects.filter(workspace=workspace, id=email_id).delete()
+            messages.info(request, "Authorized email removed.")
+            return redirect("workspace_settings", company_slug=workspace.slug)
+
+        # Default: Save general settings
         workspace.name = request.POST.get("name", workspace.name).strip()
         workspace.description = request.POST.get("description", workspace.description).strip()
         workspace.save(update_fields=["name", "description", "updated_at"])
 
+        support_email = request.POST.get("support_email", "").strip().lower()
         settings_obj.company_website = request.POST.get("company_website", "").strip()
-        settings_obj.support_email = request.POST.get("support_email", "").strip()
+        settings_obj.support_email = support_email
         settings_obj.welcome_message = request.POST.get("welcome_message", settings_obj.welcome_message).strip()
         settings_obj.sla_urgent_minutes = int(request.POST.get("sla_urgent_minutes", 30))
         settings_obj.sla_standard_hours = int(request.POST.get("sla_standard_hours", 24))
         settings_obj.ticket_auto_assignment = bool(request.POST.get("ticket_auto_assignment"))
         settings_obj.save()
 
+        # If support_email is provided, ensure it is automatically authorized as OWNER
+        if support_email:
+            WorkspaceAuthorizedEmail.objects.get_or_create(
+                workspace=workspace,
+                normalized_email=support_email,
+                defaults={
+                    "email": support_email,
+                    "assigned_role": WorkspaceMembership.Role.OWNER,
+                    "status": WorkspaceAuthorizedEmail.Status.AUTHORIZED,
+                    "invited_by": request.user,
+                }
+            )
+
         messages.success(request, "Company settings saved successfully.")
         return redirect("workspace_settings", company_slug=workspace.slug)
+
+    authorized_emails = WorkspaceAuthorizedEmail.objects.filter(workspace=workspace).order_by("-created_at")
 
     return render(request, "workspace/settings.html", {
         "workspace": workspace,
         "settings": settings_obj,
+        "authorized_emails": authorized_emails,
         "active_nav": "company_settings"
     })

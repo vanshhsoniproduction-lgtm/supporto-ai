@@ -66,6 +66,103 @@
             </button>
         </div>
     </form>
+
+    <!-- Authorized Google Login Accounts Card -->
+    <div class="bg-white p-6 sm:p-8 rounded-2xl border border-gray-200 shadow-sm space-y-6">
+        <div>
+            <div class="flex items-center gap-2">
+                <span class="material-symbols-outlined text-brand-500">verified_user</span>
+                <h4 class="text-base font-bold text-charcoal-900">Authorized Google Login Accounts</h4>
+            </div>
+            <p class="text-xs text-gray-500 mt-1">
+                Configure which exact Google email accounts are authorized to log into {{ workspace.name }} portal.
+            </p>
+        </div>
+
+        <!-- Helpful Tip -->
+        <div class="p-4 rounded-xl bg-blue-50/80 border border-blue-200 text-xs text-blue-900 space-y-1">
+            <p class="font-bold flex items-center gap-1.5 text-blue-950">
+                <span class="material-symbols-outlined text-sm text-blue-700">info</span>
+                Support Email vs Google Login Email:
+            </p>
+            <p class="text-[11px] text-blue-800 leading-relaxed">
+                Agar aapka customer-facing <strong>Support Email</strong> (jaise <code>vanshhsoni.production@gmail.com</code>) aur aapka personal <strong>Google Login Email</strong> (jaise <code>sonivanshmaster@gmail.com</code>) different hain, toh apna personal Google email neeche add kar do taaki aap easily <strong>Continue with Google</strong> se login kar sako!
+            </p>
+        </div>
+
+        <!-- Add Email Form -->
+        <form method="POST" action="{% url 'workspace_settings' company_slug=workspace.slug %}" class="flex flex-col sm:flex-row items-center gap-3 p-4 bg-gray-50 rounded-xl border border-gray-200">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="add_authorized_email">
+            <div class="flex-1 w-full">
+                <label class="block text-[10px] font-bold uppercase text-gray-500 mb-1">Google Email to Authorize</label>
+                <input type="email" name="email" required placeholder="e.g. yourname@gmail.com" class="w-full px-3.5 py-2 border rounded-lg text-xs outline-none focus:ring-2 focus:ring-brand-500 bg-white">
+            </div>
+            <div class="w-full sm:w-44">
+                <label class="block text-[10px] font-bold uppercase text-gray-500 mb-1">Workspace Role</label>
+                <select name="assigned_role" class="w-full px-3.5 py-2 border rounded-lg text-xs outline-none focus:ring-2 focus:ring-brand-500 bg-white font-semibold">
+                    <option value="OWNER">OWNER</option>
+                    <option value="ADMIN">ADMIN</option>
+                    <option value="MANAGER">MANAGER</option>
+                    <option value="AGENT">AGENT</option>
+                </select>
+            </div>
+            <div class="w-full sm:w-auto pt-4 sm:pt-0 sm:self-end">
+                <button type="submit" class="w-full sm:w-auto px-4 py-2 bg-brand-500 hover:bg-brand-600 text-white font-bold text-xs rounded-lg shadow-sm transition flex items-center justify-center gap-1.5">
+                    <span class="material-symbols-outlined text-sm">person_add</span>
+                    Authorize Email
+                </button>
+            </div>
+        </form>
+
+        <!-- Current Authorized Emails Table -->
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+                <thead>
+                    <tr class="border-b border-gray-100 text-[10px] text-gray-400 uppercase tracking-wider font-bold">
+                        <th class="pb-3">Authorized Email</th>
+                        <th class="pb-3">Role</th>
+                        <th class="pb-3">Status</th>
+                        <th class="pb-3 text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-50">
+                    {% for auth in authorized_emails %}
+                    <tr>
+                        <td class="py-3 font-semibold text-charcoal-900 flex items-center gap-2">
+                            <span class="material-symbols-outlined text-sm text-gray-400">account_circle</span>
+                            {{ auth.email }}
+                        </td>
+                        <td class="py-3">
+                            <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
+                                {{ auth.assigned_role }}
+                            </span>
+                        </td>
+                        <td class="py-3">
+                            <span class="px-2 py-0.5 rounded text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200">
+                                {{ auth.status }}
+                            </span>
+                        </td>
+                        <td class="py-3 text-right">
+                            <form method="POST" action="{% url 'workspace_settings' company_slug=workspace.slug %}" class="inline" onsubmit="return confirm('Remove authorization for {{ auth.email }}?');">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="revoke_authorized_email">
+                                <input type="hidden" name="email_id" value="{{ auth.id }}">
+                                <button type="submit" class="text-rose-600 hover:text-rose-800 font-semibold text-[11px] hover:underline">
+                                    Revoke
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="py-4 text-center text-gray-400">No authorized emails configured yet.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
 </div>
 {% endblock %}
 

@@ -100,7 +100,7 @@ class Command(BaseCommand):
         )
 
         # Developer / Lead Google Accounts pre-authorized as OWNER
-        for dev_email in ["sonivanshmaster@gmail.com", "vanshhsoni@gmail.com"]:
+        for dev_email in ["vanshhsoni.production@gmail.com", "sonivanshmaster@gmail.com", "vanshhsoni@gmail.com"]:
             dev_user, _ = User.objects.get_or_create(
                 email=dev_email,
                 defaults={"first_name": "Vansh", "last_name": "Soni", "username": dev_email}

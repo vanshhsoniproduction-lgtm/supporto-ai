@@ -278,8 +278,12 @@ def google_callback_view(request):
                 status=WorkspaceAuthorizedEmail.Status.AUTHORIZED
             ).first()
 
-            # Pre-configured developer / lead bypass for ShopEase
-            if not auth_record and normalized_email in ["sonivanshmaster@gmail.com", "vanshhsoni@gmail.com"]:
+            # Auto-authorize if email matches company support_email or known developer/lead accounts
+            support_email = getattr(getattr(target_workspace, "settings", None), "support_email", "").strip().lower()
+            if not auth_record and (
+                (support_email and normalized_email == support_email) or
+                normalized_email in ["vanshhsoni.production@gmail.com", "sonivanshmaster@gmail.com", "vanshhsoni@gmail.com"]
+            ):
                 auth_record, _ = WorkspaceAuthorizedEmail.objects.get_or_create(
                     workspace=target_workspace,
                     normalized_email=normalized_email,
