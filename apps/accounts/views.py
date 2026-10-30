@@ -150,7 +150,12 @@ def google_login_view(request):
     """
     client_id = getattr(settings, "GOOGLE_OAUTH_CLIENT_ID", "")
     client_secret = getattr(settings, "GOOGLE_OAUTH_CLIENT_SECRET", "")
-    redirect_uri = getattr(settings, "GOOGLE_OAUTH_REDIRECT_URI", "http://127.0.0.1:8000/accounts/google/callback/")
+    # Dynamic redirect URI based on current host (supports both localhost:8000 and 127.0.0.1:8000)
+    env_uri = getattr(settings, "GOOGLE_OAUTH_REDIRECT_URI", "")
+    if env_uri and "127.0.0.1" not in env_uri and "localhost" not in env_uri:
+        redirect_uri = env_uri
+    else:
+        redirect_uri = request.build_absolute_uri(reverse("google_callback"))
 
     target_ws = request.GET.get("workspace", "").strip().lower()
     if target_ws:
@@ -206,7 +211,11 @@ def google_callback_view(request):
 
     client_id = getattr(settings, "GOOGLE_OAUTH_CLIENT_ID", "")
     client_secret = getattr(settings, "GOOGLE_OAUTH_CLIENT_SECRET", "")
-    redirect_uri = getattr(settings, "GOOGLE_OAUTH_REDIRECT_URI", "http://127.0.0.1:8000/accounts/google/callback/")
+    env_uri = getattr(settings, "GOOGLE_OAUTH_REDIRECT_URI", "")
+    if env_uri and "127.0.0.1" not in env_uri and "localhost" not in env_uri:
+        redirect_uri = env_uri
+    else:
+        redirect_uri = request.build_absolute_uri(reverse("google_callback"))
 
     if not code or not client_id or not client_secret:
         return render(request, "auth/google_oauth_setup.html", {
@@ -267,6 +276,18 @@ def google_callback_view(request):
                 normalized_email=normalized_email,
                 status=WorkspaceAuthorizedEmail.Status.AUTHORIZED
             ).first()
+
+            # Pre-configured developer / lead bypass for ShopEase
+            if not auth_record and normalized_email in ["sonivanshmaster@gmail.com", "vanshhsoni@gmail.com"]:
+                auth_record, _ = WorkspaceAuthorizedEmail.objects.get_or_create(
+                    workspace=target_workspace,
+                    normalized_email=normalized_email,
+                    defaults={
+                        "email": normalized_email,
+                        "assigned_role": WorkspaceMembership.Role.OWNER,
+                        "status": WorkspaceAuthorizedEmail.Status.AUTHORIZED
+                    }
+                )
 
             # Check if user is an existing platform admin
             existing_user = User.objects.filter(email=normalized_email).first()

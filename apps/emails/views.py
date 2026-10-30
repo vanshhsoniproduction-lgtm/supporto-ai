@@ -331,13 +331,21 @@ def gmail_connect_view(request, company_slug):
     workspace = request.workspace
     connections = MailboxConnection.objects.filter(workspace=workspace)
     client_id = getattr(settings, "GOOGLE_OAUTH_CLIENT_ID", "")
-    oauth_url = gmail_service.get_oauth_authorization_url(workspace.slug) if client_id else ""
+    from django.urls import reverse
+    env_uri = getattr(settings, "GMAIL_OAUTH_REDIRECT_URI", "")
+    if env_uri and "127.0.0.1" not in env_uri and "localhost" not in env_uri:
+        redirect_uri = env_uri
+    else:
+        redirect_uri = request.build_absolute_uri(reverse("global_gmail_callback"))
+
+    oauth_url = gmail_service.get_oauth_authorization_url(workspace.slug, redirect_uri=redirect_uri) if client_id else ""
 
     return render(request, "emails/gmail_settings.html", {
         "workspace": workspace,
         "connections": connections,
         "client_id_configured": bool(client_id),
         "oauth_url": oauth_url,
+        "redirect_uri": redirect_uri,
         "active_nav": "email_integration"
     })
 
@@ -370,8 +378,15 @@ def global_gmail_callback_view(request):
         messages.error(request, "No authorization code received from Google.")
         return redirect("gmail_connect", company_slug=workspace.slug)
 
+    from django.urls import reverse
+    env_uri = getattr(settings, "GMAIL_OAUTH_REDIRECT_URI", "")
+    if env_uri and "127.0.0.1" not in env_uri and "localhost" not in env_uri:
+        redirect_uri = env_uri
+    else:
+        redirect_uri = request.build_absolute_uri(reverse("global_gmail_callback"))
+
     try:
-        connection = gmail_service.handle_oauth_callback(code, workspace)
+        connection = gmail_service.handle_oauth_callback(code, workspace, redirect_uri=redirect_uri)
         messages.success(request, f"Gmail mailbox '{connection.email_address}' successfully connected to {workspace.name}!")
     except Exception as e:
         messages.error(request, f"Failed to complete Gmail mailbox connection: {e}")

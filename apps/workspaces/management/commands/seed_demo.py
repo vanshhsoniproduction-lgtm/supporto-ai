@@ -99,6 +99,29 @@ class Command(BaseCommand):
             }
         )
 
+        # Developer / Lead Google Accounts pre-authorized as OWNER
+        for dev_email in ["sonivanshmaster@gmail.com", "vanshhsoni@gmail.com"]:
+            dev_user, _ = User.objects.get_or_create(
+                email=dev_email,
+                defaults={"first_name": "Vansh", "last_name": "Soni", "username": dev_email}
+            )
+            WorkspaceMembership.objects.get_or_create(
+                workspace=workspace,
+                user=dev_user,
+                defaults={"role": WorkspaceMembership.Role.OWNER, "is_active": True}
+            )
+            WorkspaceAuthorizedEmail.objects.update_or_create(
+                workspace=workspace,
+                normalized_email=dev_email,
+                defaults={
+                    "email": dev_email,
+                    "assigned_role": WorkspaceMembership.Role.OWNER,
+                    "status": WorkspaceAuthorizedEmail.Status.AUTHORIZED,
+                    "linked_user": dev_user,
+                    "invited_by": admin_user,
+                }
+            )
+
         # 4. Staff Users & Explicit Platform-Admin Email Authorizations
         staff_data = [
             ("agent.one@shopease.com", "Sarah", "Connor", WorkspaceMembership.Role.AGENT, [order_team]),

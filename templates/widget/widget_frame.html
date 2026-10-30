@@ -82,6 +82,24 @@
     let mediaRecorder = null;
     let audioChunks = [];
     let isRecording = false;
+    let recognition = null;
+    let liveBrowserTranscript = "";
+
+    // Initialize browser SpeechRecognition if available
+    if ("webkitSpeechRecognition" in window || "SpeechRecognition" in window) {
+        const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+        recognition = new SpeechRec();
+        recognition.continuous = true;
+        recognition.interimResults = true;
+        recognition.lang = "en-US";
+        recognition.onresult = (e) => {
+            let interim = "";
+            for (let i = e.resultIndex; i < e.results.length; ++i) {
+                interim += e.results[i][0].transcript;
+            }
+            if (interim) liveBrowserTranscript = interim.trim();
+        };
+    }
 
     // Send text message
     async function sendChatMessage(e) {
@@ -141,6 +159,10 @@
 
             mediaRecorder.start();
             isRecording = true;
+            liveBrowserTranscript = "";
+            if (recognition) {
+                try { recognition.start(); } catch(e) {}
+            }
             document.getElementById("voiceLabel").textContent = "Stop & Send Audio";
             document.getElementById("voiceIcon").classList.add("text-red-500", "animate-pulse");
             document.getElementById("voiceStatus").textContent = "Listening... Speak now";
@@ -153,6 +175,9 @@
         if (mediaRecorder && isRecording) {
             mediaRecorder.stop();
             isRecording = false;
+            if (recognition) {
+                try { recognition.stop(); } catch(e) {}
+            }
             document.getElementById("voiceLabel").textContent = "Talk with AI";
             document.getElementById("voiceIcon").classList.remove("text-red-500", "animate-pulse");
             document.getElementById("voiceStatus").textContent = "Processing speech...";
@@ -164,6 +189,9 @@
         const formData = new FormData();
         formData.append("audio", audioBlob, "voice_recording.webm");
         formData.append("session_token", sessionToken);
+        if (liveBrowserTranscript) {
+            formData.append("browser_transcript", liveBrowserTranscript);
+        }
 
         const typingId = appendTypingIndicator();
 
@@ -187,9 +215,7 @@
             if (data.ai_message) {
                 appendMessage("AI", data.ai_message);
             }
-            if (data.audio_url) {
-                playVoiceResponse(data.audio_url);
-            }
+            playVoiceResponse(data.audio_url, data.ai_message);
         } catch (err) {
             removeTypingIndicator(typingId);
             document.getElementById("voiceStatus").textContent = "Voice error";
@@ -197,12 +223,20 @@
         }
     }
 
-    function playVoiceResponse(audioUrl) {
-        const container = document.getElementById("audioPlayerContainer");
-        const player = document.getElementById("audioPlayer");
-        player.src = audioUrl;
-        container.classList.remove("hidden");
-        player.play().catch(e => console.log("Audio autoplay prevented", e));
+    function playVoiceResponse(audioUrl, fallbackText) {
+        if (audioUrl) {
+            const container = document.getElementById("audioPlayerContainer");
+            const player = document.getElementById("audioPlayer");
+            player.src = audioUrl;
+            container.classList.remove("hidden");
+            player.play().catch(e => console.log("Audio autoplay prevented", e));
+        } else if (fallbackText && "speechSynthesis" in window) {
+            // High fidelity browser speech synthesis fallback
+            const utterance = new SpeechSynthesisUtterance(fallbackText);
+            utterance.rate = 1.0;
+            utterance.pitch = 1.0;
+            window.speechSynthesis.speak(utterance);
+        }
     }
 
     async function completeConversation() {

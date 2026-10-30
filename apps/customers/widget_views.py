@@ -103,9 +103,13 @@ def widget_voice_api(request, public_key):
         temp_audio_path = temp_audio.name
 
     try:
-        # 1. Transcribe with Whisper
+        # 1. Transcribe with Whisper, with graceful WebSpeech fallback from client
         stt_result = stt_service.transcribe_audio(temp_audio_path)
         transcribed_text = stt_result.get("text", "").strip()
+        browser_transcript = request.POST.get("browser_transcript", "").strip()
+
+        if not transcribed_text and browser_transcript:
+            transcribed_text = browser_transcript
 
         if not transcribed_text:
             return JsonResponse({

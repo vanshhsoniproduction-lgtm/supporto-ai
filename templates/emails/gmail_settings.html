@@ -49,6 +49,22 @@
             {% endif %}
         </div>
 
+        <!-- Google Cloud Console Redirect URI Guide -->
+        <div class="p-4 rounded-2xl bg-amber-50/80 border border-amber-200 text-xs text-amber-900 space-y-2">
+            <div class="flex items-center gap-1.5 font-bold text-amber-950">
+                <span class="material-symbols-outlined text-sm text-amber-700">link</span>
+                Google Cloud Console Redirect URI Configuration
+            </div>
+            <p class="text-[11px] text-amber-800">
+                Agar Google <code>Error 400: redirect_uri_mismatch</code> de, toh apne Google Cloud Console me <strong>APIs & Services &rarr; Credentials &rarr; OAuth 2.0 Client IDs</strong> me jakar <em>Authorized redirect URIs</em> me ye dono exact URIs add kar do:
+            </p>
+            <div class="space-y-1">
+                <code class="block bg-white p-2 rounded-lg border border-amber-300 font-mono text-[11px] font-bold text-charcoal-900 select-all">{{ redirect_uri }}</code>
+                <code class="block bg-white p-2 rounded-lg border border-amber-300 font-mono text-[11px] font-bold text-charcoal-900 select-all">http://localhost:8000/integrations/gmail/callback/</code>
+                <code class="block bg-white p-2 rounded-lg border border-amber-300 font-mono text-[11px] font-bold text-charcoal-900 select-all">http://127.0.0.1:8000/integrations/gmail/callback/</code>
+            </div>
+        </div>
+
         <div class="p-4 rounded-2xl bg-gray-50 border border-gray-100 text-xs text-gray-600 space-y-2 leading-relaxed">
             <p class="font-bold text-charcoal-900">Important Security Separation:</p>
             <ul class="list-disc list-inside space-y-1 text-[11px] text-gray-500">
