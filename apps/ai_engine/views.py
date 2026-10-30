@@ -30,3 +30,15 @@ def ai_settings_view(request, company_slug):
         "active_nav": "ai_settings"
     })
 
+
+@require_workspace_roles("OWNER", "ADMIN", "MANAGER", "AGENT")
+def company_ai_health_view(request, company_slug):
+    """Company-level AI diagnostics and runtime health status."""
+    workspace = request.workspace
+    health = model_manager.get_health_status()
+
+    return render(request, "ai_engine/health.html", {
+        "workspace": workspace,
+        "health": health,
+        "active_nav": "ai_health"
+    })

@@ -1,0 +1,155 @@
+{% extends "workspace/base_workspace.html" %}
+
+{% block workspace_title %}{{ workspace.name }} — Weekly AI Insights & Sentiment{% endblock %}
+
+{% block workspace_content %}
+<div class="space-y-8">
+    <!-- Top Header -->
+    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div>
+            <div class="flex items-center gap-2">
+                <h1 class="text-2xl font-black text-charcoal-900">Weekly Executive Insights & Sentiment Report</h1>
+                <span class="px-2.5 py-1 rounded-full text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
+                    Last 7 Days
+                </span>
+            </div>
+            <p class="text-xs text-gray-500 mt-1">
+                Reporting Period: <strong class="text-charcoal-800">{{ report.period }}</strong> • Calculated strictly from real database records.
+            </p>
+        </div>
+
+        <div class="flex items-center gap-3">
+            <a href="{% url 'export_weekly_csv' company_slug=workspace.slug %}" class="px-4 py-2 rounded-xl text-xs font-bold text-charcoal-800 bg-white border border-gray-200 hover:bg-gray-50 shadow-sm transition flex items-center gap-1.5">
+                <span class="material-symbols-outlined text-sm">download</span>
+                Export Report (CSV)
+            </a>
+            <a href="{% url 'workspace_analytics' company_slug=workspace.slug %}" class="px-3.5 py-2 rounded-xl text-xs font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 transition">
+                &larr; Standard Metrics
+            </a>
+        </div>
+    </div>
+
+    <!-- AI Executive Written Summary Card -->
+    <div class="bg-gradient-to-br from-indigo-900 via-slate-900 to-charcoal-900 text-white p-6 sm:p-8 rounded-3xl shadow-xl space-y-4">
+        <div class="flex items-center gap-2 text-brand-400 text-xs font-bold uppercase tracking-wider">
+            <span class="material-symbols-outlined text-lg">auto_awesome</span>
+            AI-Generated Executive Weekly Summary
+        </div>
+        <p class="text-sm text-slate-200 leading-relaxed font-normal">
+            {{ report.summary_text }}
+        </p>
+        <div class="pt-2 flex items-center gap-4 text-[11px] text-slate-400 border-t border-slate-800">
+            <span>Model: <strong class="text-slate-300">Supporto Analytics Engine</strong></span>
+            <span>Grounding: <strong class="text-slate-300">100% Verified DB Metrics</strong></span>
+        </div>
+    </div>
+
+    <!-- KPI Metric Cards Grid -->
+    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+        <div class="bg-white p-5 rounded-2xl border border-gray-200 shadow-xs">
+            <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Incoming Emails</span>
+            <span class="text-2xl font-black text-charcoal-900 mt-1 block">{{ report.total_emails }}</span>
+        </div>
+        <div class="bg-white p-5 rounded-2xl border border-gray-200 shadow-xs">
+            <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Live Chats / Voice</span>
+            <span class="text-2xl font-black text-charcoal-900 mt-1 block">{{ report.total_conversations }}</span>
+        </div>
+        <div class="bg-white p-5 rounded-2xl border border-gray-200 shadow-xs">
+            <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Tickets Created</span>
+            <span class="text-2xl font-black text-brand-500 mt-1 block">{{ report.total_tickets }}</span>
+        </div>
+        <div class="bg-white p-5 rounded-2xl border border-gray-200 shadow-xs">
+            <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Staff Approved</span>
+            <span class="text-2xl font-black text-emerald-600 mt-1 block">{{ report.tickets_approved }}</span>
+        </div>
+        <div class="bg-white p-5 rounded-2xl border border-gray-200 shadow-xs">
+            <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Urgent Cases</span>
+            <span class="text-2xl font-black text-rose-600 mt-1 block">{{ report.urgent_count }}</span>
+        </div>
+        <div class="bg-white p-5 rounded-2xl border border-gray-200 shadow-xs">
+            <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Avg Res. Hours</span>
+            <span class="text-2xl font-black text-indigo-600 mt-1 block">{{ report.avg_resolution_hours }}h</span>
+        </div>
+    </div>
+
+    <!-- Sentiment & Topics Breakdown -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <!-- Sentiment Distribution -->
+        <div class="bg-white p-6 sm:p-8 rounded-3xl border border-gray-200 shadow-sm space-y-5">
+            <div class="flex items-center justify-between pb-3 border-b border-gray-100">
+                <h3 class="font-bold text-sm text-charcoal-900">Sentiment Distribution</h3>
+                <span class="text-xs text-gray-400">{{ report.total_sentiment_events }} signals recorded</span>
+            </div>
+
+            <div class="space-y-3">
+                {% for sent_label, count in report.sentiments.items %}
+                <div class="space-y-1">
+                    <div class="flex items-center justify-between text-xs">
+                        <span class="font-bold {% if sent_label == 'POSITIVE' %}text-emerald-700{% elif sent_label == 'NEUTRAL' %}text-gray-700{% elif sent_label == 'NEGATIVE' %}text-amber-700{% else %}text-rose-700{% endif %}">
+                            {{ sent_label }}
+                        </span>
+                        <span class="font-semibold text-gray-600">{{ count }} event(s)</span>
+                    </div>
+                    <div class="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
+                        <div class="h-2 rounded-full {% if sent_label == 'POSITIVE' %}bg-emerald-500{% elif sent_label == 'NEUTRAL' %}bg-gray-400{% elif sent_label == 'NEGATIVE' %}bg-amber-500{% else %}bg-rose-500{% endif %}" style="width: {% if report.total_sentiment_events > 0 %}{% widthratio count report.total_sentiment_events 100 %}{% else %}0{% endif %}%;"></div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Top Complaint / Inquiry Topics -->
+        <div class="bg-white p-6 sm:p-8 rounded-3xl border border-gray-200 shadow-sm space-y-5">
+            <div class="flex items-center justify-between pb-3 border-b border-gray-100">
+                <h3 class="font-bold text-sm text-charcoal-900">Most Common Customer Complaint Topics</h3>
+                <span class="text-xs text-gray-400">Classified by AI Engine</span>
+            </div>
+
+            <div class="space-y-2">
+                {% for topic in report.complaint_topics %}
+                <div class="p-3.5 rounded-2xl border border-gray-100 bg-gray-50/50 flex items-center justify-between">
+                    <span class="font-bold text-xs text-charcoal-800">{{ topic.ai_intent }}</span>
+                    <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-white border border-gray-200 text-charcoal-900">
+                        {{ topic.count }} inquiry
+                    </span>
+                </div>
+                {% empty %}
+                <p class="text-xs text-gray-400 py-6 text-center">No complaint patterns recorded this week.</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Team Workload & Active Backlog -->
+    <div class="bg-white p-6 sm:p-8 rounded-3xl border border-gray-200 shadow-sm space-y-4">
+        <h3 class="font-bold text-sm text-charcoal-900">Team Workload Distribution</h3>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+                <thead>
+                    <tr class="border-b border-gray-100 text-[10px] text-gray-400 uppercase tracking-wider font-bold">
+                        <th class="pb-3">Team</th>
+                        <th class="pb-3">Tickets Assigned This Week</th>
+                        <th class="pb-3">Active Backlog (Open / In Progress)</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-50">
+                    {% for tw in report.team_workload %}
+                    <tr>
+                        <td class="py-3 font-bold text-charcoal-900">{{ tw.team_name }}</td>
+                        <td class="py-3 font-semibold text-charcoal-800">{{ tw.assigned_this_week }}</td>
+                        <td class="py-3 font-bold {% if tw.active_backlog > 5 %}text-amber-600{% else %}text-emerald-600{% endif %}">
+                            {{ tw.active_backlog }}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="3" class="py-4 text-center text-gray-400 text-xs">No team workload recorded.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

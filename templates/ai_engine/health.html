@@ -1,0 +1,111 @@
+{% extends "workspace/base_workspace.html" %}
+
+{% block workspace_title %}{{ workspace.name }} — AI Health & Diagnostics{% endblock %}
+
+{% block workspace_content %}
+<div class="space-y-8">
+    <div>
+        <h1 class="text-2xl font-black text-charcoal-900">Local AI Health & Diagnostics</h1>
+        <p class="text-xs text-gray-500 mt-0.5">
+            Real-time status of local models (Qwen LLM, Whisper STT, Kokoro TTS). Fallback engine guarantees 100% web app availability.
+        </p>
+    </div>
+
+    <!-- Models Status Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <!-- LLM: Qwen -->
+        <div class="bg-white p-6 rounded-3xl border border-gray-200 shadow-sm space-y-4">
+            <div class="flex items-center justify-between pb-3 border-b border-gray-100">
+                <div class="flex items-center gap-2">
+                    <span class="material-symbols-outlined text-purple-600 text-xl">psychology</span>
+                    <h3 class="font-bold text-sm text-charcoal-900">LLM Engine</h3>
+                </div>
+                <span class="px-2.5 py-1 rounded-lg text-[10px] font-black {% if health.llm.status == 'ONLINE' %}bg-emerald-50 text-emerald-700 border border-emerald-200{% elif health.llm.status == 'NOT INITIALIZED' %}bg-blue-50 text-blue-700 border border-blue-200{% else %}bg-amber-50 text-amber-700 border border-amber-200{% endif %}">
+                    {{ health.llm.status }}
+                </span>
+            </div>
+            <div class="space-y-2 text-xs">
+                <div class="flex justify-between text-gray-500">
+                    <span>Model:</span>
+                    <strong class="text-charcoal-900">{{ health.llm.name }}</strong>
+                </div>
+                <div class="flex justify-between text-gray-500">
+                    <span>File Found:</span>
+                    <strong class="{% if health.llm.file_exists %}text-emerald-600{% else %}text-rose-600{% endif %}">{{ health.llm.file_exists }}</strong>
+                </div>
+                <div class="flex justify-between text-gray-500">
+                    <span>Runtime:</span>
+                    <strong class="{% if health.llm.runtime_installed %}text-emerald-600{% else %}text-amber-600{% endif %}">{% if health.llm.runtime_installed %}llama-cpp-python{% else %}Missing (Heuristic RAG Active){% endif %}</strong>
+                </div>
+                <div class="flex justify-between text-gray-500">
+                    <span>Mode:</span>
+                    <strong class="text-indigo-600">{{ health.llm.fallback_mode }}</strong>
+                </div>
+            </div>
+        </div>
+
+        <!-- STT: Whisper -->
+        <div class="bg-white p-6 rounded-3xl border border-gray-200 shadow-sm space-y-4">
+            <div class="flex items-center justify-between pb-3 border-b border-gray-100">
+                <div class="flex items-center gap-2">
+                    <span class="material-symbols-outlined text-blue-600 text-xl">mic</span>
+                    <h3 class="font-bold text-sm text-charcoal-900">Speech-to-Text</h3>
+                </div>
+                <span class="px-2.5 py-1 rounded-lg text-[10px] font-black {% if health.stt.status == 'ONLINE' %}bg-emerald-50 text-emerald-700 border border-emerald-200{% else %}bg-amber-50 text-amber-700 border border-amber-200{% endif %}">
+                    {{ health.stt.status }}
+                </span>
+            </div>
+            <div class="space-y-2 text-xs">
+                <div class="flex justify-between text-gray-500">
+                    <span>Model:</span>
+                    <strong class="text-charcoal-900">{{ health.stt.name }}</strong>
+                </div>
+                <div class="flex justify-between text-gray-500">
+                    <span>Directory:</span>
+                    <strong class="{% if health.stt.dir_exists %}text-emerald-600{% else %}text-rose-600{% endif %}">{{ health.stt.dir_exists }}</strong>
+                </div>
+                <div class="flex justify-between text-gray-500">
+                    <span>Runtime:</span>
+                    <strong class="{% if health.stt.runtime_installed %}text-emerald-600{% else %}text-amber-600{% endif %}">{% if health.stt.runtime_installed %}faster-whisper{% else %}Missing (Browser WebSpeech Active){% endif %}</strong>
+                </div>
+                <div class="flex justify-between text-gray-500">
+                    <span>Mode:</span>
+                    <strong class="text-indigo-600">{{ health.stt.fallback_mode }}</strong>
+                </div>
+            </div>
+        </div>
+
+        <!-- TTS: Kokoro -->
+        <div class="bg-white p-6 rounded-3xl border border-gray-200 shadow-sm space-y-4">
+            <div class="flex items-center justify-between pb-3 border-b border-gray-100">
+                <div class="flex items-center gap-2">
+                    <span class="material-symbols-outlined text-emerald-600 text-xl">volume_up</span>
+                    <h3 class="font-bold text-sm text-charcoal-900">Text-to-Speech</h3>
+                </div>
+                <span class="px-2.5 py-1 rounded-lg text-[10px] font-black {% if health.tts.status == 'ONLINE' %}bg-emerald-50 text-emerald-700 border border-emerald-200{% else %}bg-amber-50 text-amber-700 border border-amber-200{% endif %}">
+                    {{ health.tts.status }}
+                </span>
+            </div>
+            <div class="space-y-2 text-xs">
+                <div class="flex justify-between text-gray-500">
+                    <span>Model:</span>
+                    <strong class="text-charcoal-900">{{ health.tts.name }}</strong>
+                </div>
+                <div class="flex justify-between text-gray-500">
+                    <span>Directory:</span>
+                    <strong class="{% if health.tts.dir_exists %}text-emerald-600{% else %}text-rose-600{% endif %}">{{ health.tts.dir_exists }}</strong>
+                </div>
+                <div class="flex justify-between text-gray-500">
+                    <span>Runtime:</span>
+                    <strong class="{% if health.tts.runtime_installed %}text-emerald-600{% else %}text-amber-600{% endif %}">{% if health.tts.runtime_installed %}kokoro-onnx{% else %}Missing (Browser SpeechSynth Active){% endif %}</strong>
+                </div>
+                <div class="flex justify-between text-gray-500">
+                    <span>Mode:</span>
+                    <strong class="text-indigo-600">{{ health.tts.fallback_mode }}</strong>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

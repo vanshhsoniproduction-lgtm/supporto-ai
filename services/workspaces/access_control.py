@@ -15,6 +15,7 @@ RESERVED_ROOT_PATHS = {
     "media",
     "select-workspace",
     "accounts",
+    "integrations",
     "favicon.ico",
 }
 
@@ -38,14 +39,13 @@ class TenantContextMiddleware:
                     workspace = Workspace.objects.get(slug=first_part)
                     request.workspace = workspace
                 except Workspace.DoesNotExist:
-                    # Return 404 for nonexistent company slug
                     raise Http404(f"Workspace '{first_part}' not found.")
 
                 # If this is a company portal route (e.g. /<slug>/...)
                 # Check user authentication and workspace membership
                 if not request.user.is_authenticated:
                     if len(path_parts) == 1:
-                        # Allow company landing / login view to render
+                        # Allow company landing / Google login view to render
                         return self.get_response(request)
                     return redirect(f"/{first_part}/")
 
@@ -61,7 +61,10 @@ class TenantContextMiddleware:
                 is_platform_admin = getattr(request.user, "is_platform_admin", False)
 
                 if not membership and not is_platform_admin:
-                    return HttpResponseForbidden("Access Denied: You are not an active member of this workspace.")
+                    if len(path_parts) == 1:
+                        # Allow company landing to render so unauthorized template displays
+                        return self.get_response(request)
+                    return HttpResponseForbidden(f"Access Denied: You are not an authorized member of {workspace.name}.")
 
                 request.membership = membership
 
@@ -70,11 +73,14 @@ class TenantContextMiddleware:
 
 
 def require_platform_admin(view_func):
-    """Decorator ensuring only explicit platform administrators can access view."""
+    """
+    Decorator ensuring only explicit platform administrators can access view.
+    Redirects unauthenticated requests to dedicated /admin/login/ route.
+    """
     @wraps(view_func)
     def _wrapped_view(request, *args, **kwargs):
         if not request.user.is_authenticated:
-            return redirect(f"/login/?next={request.path}")
+            return redirect(f"/admin/login/?next={request.path}")
         if not getattr(request.user, "is_platform_admin", False):
             raise PermissionDenied("Platform administrator access required.")
         return view_func(request, *args, **kwargs)
@@ -90,7 +96,8 @@ def require_workspace_roles(*allowed_roles):
         @wraps(view_func)
         def _wrapped_view(request, *args, **kwargs):
             if not request.user.is_authenticated:
-                return redirect(f"/login/?next={request.path}")
+                workspace_slug = kwargs.get("company_slug", "")
+                return redirect(f"/{workspace_slug}/" if workspace_slug else "/landing")
             if getattr(request.user, "is_platform_admin", False):
                 return view_func(request, *args, **kwargs)
 
@@ -103,19 +110,9 @@ def require_workspace_roles(*allowed_roles):
 
 
 def workspace_context_processor(request):
-    """Context processor providing current workspace, user role, and user's other workspaces."""
-    context = {
+    """Context processor making workspace and user membership available to templates."""
+    return {
         "current_workspace": getattr(request, "workspace", None),
-        "user_membership": getattr(request, "membership", None),
+        "current_membership": getattr(request, "membership", None),
         "is_platform_admin": getattr(request.user, "is_platform_admin", False) if request.user.is_authenticated else False,
-        "user_workspaces": [],
     }
-    if request.user.is_authenticated:
-        memberships = WorkspaceMembership.objects.filter(
-            user=request.user,
-            is_active=True,
-            workspace__status=Workspace.Status.ACTIVE
-        ).select_related("workspace")
-        context["user_workspaces"] = [m.workspace for m in memberships]
-    return context
-

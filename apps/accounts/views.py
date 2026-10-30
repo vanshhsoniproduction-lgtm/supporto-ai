@@ -1,21 +1,59 @@
 import requests
-from urllib.parse import urlparse
-from django.shortcuts import render, redirect
+import logging
+from urllib.parse import urlparse, urlencode
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login, logout, get_user_model
 from django.contrib import messages
 from django.views.decorators.http import require_POST
 from django.conf import settings
+from django.utils import timezone
 from apps.accounts.forms import LoginForm
-from apps.workspaces.models import WorkspaceMembership, Workspace
+from apps.workspaces.models import WorkspaceMembership, Workspace, WorkspaceAuthorizedEmail
+from apps.teams.models import TeamMembership
+from apps.analytics.models import AuditLog
 
+logger = logging.getLogger(__name__)
 User = get_user_model()
 
 def login_view(request):
+    """
+    Legacy /login/ route:
+    Company staff must use Google OAuth at their company slug URL (e.g. /shopease/).
+    Platform administrators should log in at /admin/login/.
+    Redirects to landing or provides workspace guidance.
+    """
+    next_url = request.GET.get("next", "")
+
+    # If the user was trying to access /admin/, send them directly to /admin/login/
+    if next_url.startswith("/admin"):
+        return redirect(f"/admin/login/?next={next_url}")
+
     if request.user.is_authenticated:
         return redirect("login_redirect")
 
+    # Render a clean workspace entry / guidance page without staff password login
+    workspaces = Workspace.objects.filter(status=Workspace.Status.ACTIVE)
+    return render(request, "auth/login_selector.html", {
+        "workspaces": workspaces,
+        "next": next_url,
+    })
+
+
+def admin_login_view(request):
+    """
+    Dedicated private login view for Supporto AI Platform Administrators at /admin/login/.
+    Requires explicit platform_role == PLATFORM_ADMIN or is_superuser.
+    """
+    if request.user.is_authenticated:
+        if getattr(request.user, "is_platform_admin", False):
+            next_url = request.GET.get("next", "/admin/")
+            return redirect(next_url if next_url.startswith("/admin") else "/admin/")
+        else:
+            messages.error(request, "Access Denied: Your account does not have Platform Administrator privileges.")
+            return redirect("landing")
+
     form = LoginForm(request.POST or None)
-    next_url = request.GET.get("next", "")
+    next_url = request.GET.get("next", "/admin/")
 
     if request.method == "POST" and form.is_valid():
         ident = (form.cleaned_data.get("username_or_email") or form.cleaned_data.get("email", "")).strip()
@@ -23,22 +61,26 @@ def login_view(request):
         user = authenticate(request, username=ident, password=password)
 
         if user is not None:
-            if not user.is_active:
-                messages.error(request, "This account is inactive. Please contact your administrator.")
+            if not getattr(user, "is_platform_admin", False):
+                messages.error(request, "Access Denied: You do not have Platform Administrator privileges.")
+            elif not user.is_active:
+                messages.error(request, "This administrator account is inactive.")
             else:
                 login(request, user)
-                if next_url:
-                    parsed = urlparse(next_url)
-                    if not parsed.netloc and next_url.startswith("/"):
-                        return redirect(next_url)
-                return redirect("login_redirect")
+                AuditLog.objects.create(
+                    actor=user,
+                    action="PLATFORM_ADMIN_LOGIN",
+                    resource_type="User",
+                    resource_id=str(user.id),
+                    ip_address=request.META.get("REMOTE_ADDR")
+                )
+                return redirect(next_url if next_url.startswith("/admin") else "/admin/")
         else:
-            messages.error(request, "Invalid email or password.")
+            messages.error(request, "Invalid administrator credentials.")
 
-    return render(request, "auth/login.html", {
+    return render(request, "platform_admin/login.html", {
         "form": form,
         "next": next_url,
-        "google_enabled": bool(settings.GOOGLE_OAUTH_CLIENT_ID),
     })
 
 
@@ -51,7 +93,7 @@ def login_redirect_view(request):
     - No active workspaces -> deny or show guidance
     """
     if not request.user.is_authenticated:
-        return redirect("login")
+        return redirect("landing")
 
     user = request.user
     memberships = WorkspaceMembership.objects.filter(
@@ -73,12 +115,14 @@ def login_redirect_view(request):
         if getattr(user, "is_platform_admin", False):
             return redirect("platform_admin_overview")
         messages.error(request, "You do not currently belong to any active company workspace.")
-        return render(request, "auth/no_workspace.html")
+        return render(request, "auth/unauthorized_workspace.html", {
+            "user_email": user.email
+        }, status=403)
 
 
 def select_workspace_view(request):
     if not request.user.is_authenticated:
-        return redirect("login")
+        return redirect("landing")
 
     memberships = WorkspaceMembership.objects.filter(
         user=request.user,
@@ -96,58 +140,98 @@ def select_workspace_view(request):
 def logout_view(request):
     logout(request)
     messages.info(request, "You have been securely signed out.")
-    return redirect("login")
+    return redirect("landing")
 
 
 def google_login_view(request):
-    """Initiates Google OAuth or shows friendly setup guide in dev mode."""
-    if not settings.GOOGLE_OAUTH_CLIENT_ID or not settings.GOOGLE_OAUTH_CLIENT_SECRET:
+    """
+    Initiates Google OAuth with preserved target workspace context.
+    Securely stores target workspace in state and session.
+    """
+    client_id = getattr(settings, "GOOGLE_OAUTH_CLIENT_ID", "")
+    client_secret = getattr(settings, "GOOGLE_OAUTH_CLIENT_SECRET", "")
+    redirect_uri = getattr(settings, "GOOGLE_OAUTH_REDIRECT_URI", "http://127.0.0.1:8000/accounts/google/callback/")
+
+    target_ws = request.GET.get("workspace", "").strip().lower()
+    if target_ws:
+        request.session["oauth_target_workspace"] = target_ws
+
+    if not client_id or not client_secret:
         return render(request, "auth/google_oauth_setup.html", {
-            "client_id": settings.GOOGLE_OAUTH_CLIENT_ID,
-            "redirect_uri": settings.GOOGLE_OAUTH_REDIRECT_URI,
+            "client_id": client_id,
+            "redirect_uri": redirect_uri,
+            "target_workspace": target_ws,
         })
 
-    # Google OAuth flow URL
-    google_auth_url = (
-        f"https://accounts.google.com/o/oauth2/v2/auth?"
-        f"response_type=code&client_id={settings.GOOGLE_OAUTH_CLIENT_ID}&"
-        f"redirect_uri={settings.GOOGLE_OAUTH_REDIRECT_URI}&"
-        f"scope=openid%20email%20profile&access_type=offline&prompt=select_account"
-    )
+    # Encode target workspace into state
+    state = f"ws:{target_ws}" if target_ws else "ws:none"
+
+    params = {
+        "client_id": client_id,
+        "redirect_uri": redirect_uri,
+        "response_type": "code",
+        "scope": "openid email profile",
+        "access_type": "offline",
+        "prompt": "select_account",
+        "state": state,
+    }
+    google_auth_url = f"https://accounts.google.com/o/oauth2/v2/auth?{urlencode(params)}"
     return redirect(google_auth_url)
 
 
 def google_callback_view(request):
-    """Handles OAuth callback, exchanges authorization code, verifies email, and logs user in."""
+    """
+    Handles Google OAuth Callback with Strict Platform-Admin Authorization:
+    1. Verifies Google code and email
+    2. Enforces email_verified == True
+    3. Normalizes email
+    4. Enforces strict WorkspaceAuthorizedEmail verification for target workspace
+    5. Rejects unauthorized Google accounts with clear messaging and audit log
+    6. Creates/links user and WorkspaceMembership with explicitly assigned role
+    """
     error = request.GET.get("error")
     if error:
-        messages.error(request, f"Google OAuth failed: {error}")
-        return redirect("login")
+        messages.error(request, f"Google authentication failed: {error}")
+        return redirect("landing")
 
     code = request.GET.get("code")
-    if not code:
+    state = request.GET.get("state", "")
+
+    # Resolve target workspace from state or session
+    target_slug = ""
+    if state and state.startswith("ws:"):
+        target_slug = state.split(":", 1)[1]
+    if (not target_slug or target_slug == "none") and "oauth_target_workspace" in request.session:
+        target_slug = request.session.pop("oauth_target_workspace", "")
+
+    client_id = getattr(settings, "GOOGLE_OAUTH_CLIENT_ID", "")
+    client_secret = getattr(settings, "GOOGLE_OAUTH_CLIENT_SECRET", "")
+    redirect_uri = getattr(settings, "GOOGLE_OAUTH_REDIRECT_URI", "http://127.0.0.1:8000/accounts/google/callback/")
+
+    if not code or not client_id or not client_secret:
         return render(request, "auth/google_oauth_setup.html", {
-            "redirect_uri": settings.GOOGLE_OAUTH_REDIRECT_URI,
+            "redirect_uri": redirect_uri,
+            "target_workspace": target_slug,
         })
 
-    # Exchange authorization code for access token
+    # Exchange authorization code for token
     token_url = "https://oauth2.googleapis.com/token"
     token_payload = {
         "code": code,
-        "client_id": settings.GOOGLE_OAUTH_CLIENT_ID,
-        "client_secret": settings.GOOGLE_OAUTH_CLIENT_SECRET,
-        "redirect_uri": settings.GOOGLE_OAUTH_REDIRECT_URI,
+        "client_id": client_id,
+        "client_secret": client_secret,
+        "redirect_uri": redirect_uri,
         "grant_type": "authorization_code",
     }
 
     try:
-        token_resp = requests.post(token_url, data=token_payload, timeout=10)
+        token_resp = requests.post(token_url, data=token_payload, timeout=12)
         token_data = token_resp.json()
         access_token = token_data.get("access_token")
 
         if not access_token:
             messages.error(request, f"Could not obtain access token from Google: {token_data.get('error_description', 'Unknown error')}")
-            return redirect("login")
+            return redirect(f"/{target_slug}/" if target_slug else "landing")
 
         # Fetch verified user profile
         userinfo_resp = requests.get(
@@ -160,49 +244,138 @@ def google_callback_view(request):
         email_verified = userinfo.get("email_verified", False)
 
         if not email or not email_verified:
-            messages.error(request, "Google email is unverified or unavailable.")
-            return redirect("login")
+            messages.error(request, "Google email is unverified or unavailable. Access denied.")
+            return redirect(f"/{target_slug}/" if target_slug else "landing")
 
-        # Check existing user
-        user = User.objects.filter(email=email).first()
-        if not user:
-            # Create user on first Google sign-in
-            user = User.objects.create_user(
-                email=email,
-                username=email,
-                first_name=userinfo.get("given_name", "Google"),
-                last_name=userinfo.get("family_name", "User"),
-            )
-            # In development mode, auto-associate with active demo workspace as AGENT
-            demo_ws = Workspace.objects.filter(status=Workspace.Status.ACTIVE).first()
-            if demo_ws:
-                WorkspaceMembership.objects.create(
-                    workspace=demo_ws,
-                    user=user,
-                    role=WorkspaceMembership.Role.AGENT,
-                    is_active=True
+        # Normalize email
+        normalized_email = email.strip().lower()
+
+        # If logging in to a specific company workspace
+        if target_slug and target_slug != "none":
+            target_workspace = Workspace.objects.filter(slug=target_slug).first()
+            if not target_workspace:
+                messages.error(request, f"Workspace '{target_slug}' does not exist.")
+                return redirect("landing")
+
+            if target_workspace.status != Workspace.Status.ACTIVE:
+                messages.error(request, f"Workspace '{target_workspace.name}' is currently suspended or inactive.")
+                return redirect(f"/{target_slug}/")
+
+            # Verify authorization against WorkspaceAuthorizedEmail
+            auth_record = WorkspaceAuthorizedEmail.objects.filter(
+                workspace=target_workspace,
+                normalized_email=normalized_email,
+                status=WorkspaceAuthorizedEmail.Status.AUTHORIZED
+            ).first()
+
+            # Check if user is an existing platform admin
+            existing_user = User.objects.filter(email=normalized_email).first()
+            is_platform_admin = existing_user and getattr(existing_user, "is_platform_admin", False)
+
+            if not auth_record and not is_platform_admin:
+                # DENY ACCESS - Log denied event without exposing tokens
+                AuditLog.objects.create(
+                    workspace=target_workspace,
+                    actor=existing_user,
+                    action="UNAUTHORIZED_GOOGLE_LOGIN_ATTEMPT",
+                    resource_type="Workspace",
+                    resource_id=str(target_workspace.id),
+                    details={"attempted_email": normalized_email, "workspace": target_workspace.slug},
+                    ip_address=request.META.get("REMOTE_ADDR")
+                )
+                logger.warning(f"Unauthorized Google login attempt: {normalized_email} for workspace {target_workspace.slug}")
+                messages.error(
+                    request,
+                    "This Google account has not been authorized for this workspace. Please contact your Supporto AI administrator."
+                )
+                return redirect(f"/{target_slug}/")
+
+            # Authorized! Link or create User
+            if not existing_user:
+                existing_user = User.objects.create_user(
+                    email=normalized_email,
+                    username=normalized_email,
+                    first_name=userinfo.get("given_name", "Google"),
+                    last_name=userinfo.get("family_name", "User"),
                 )
 
-        if not user.is_active:
-            messages.error(request, "Your account is currently inactive. Contact your administrator.")
-            return redirect("login")
+            # Assign membership role explicitly from authorization record
+            role = auth_record.assigned_role if auth_record else WorkspaceMembership.Role.ADMIN
+            membership, _ = WorkspaceMembership.objects.update_or_create(
+                workspace=target_workspace,
+                user=existing_user,
+                defaults={"role": role, "is_active": True}
+            )
 
-        # Check membership or platform role
-        has_active_workspace = WorkspaceMembership.objects.filter(
-            user=user,
-            is_active=True,
-            workspace__status=Workspace.Status.ACTIVE
-        ).exists()
+            # Assign pre-configured teams if any
+            if auth_record and auth_record.assigned_teams.exists():
+                for team in auth_record.assigned_teams.all():
+                    TeamMembership.objects.get_or_create(
+                        team=team,
+                        user=existing_user,
+                        defaults={"role": TeamMembership.Role.MEMBER}
+                    )
 
-        if not has_active_workspace and not getattr(user, "is_platform_admin", False):
-            messages.error(request, f"User {email} has no active assigned workspaces.")
-            return redirect("login")
+            # Link authorized email record to User
+            if auth_record:
+                auth_record.linked_user = existing_user
+                auth_record.save(update_fields=["linked_user"])
 
-        # Successful authentication
-        login(request, user, backend="django.contrib.auth.backends.ModelBackend")
-        messages.success(request, f"Signed in with Google as {email}!")
-        return redirect("login_redirect")
+            # Log user in
+            login(request, existing_user, backend="django.contrib.auth.backends.ModelBackend")
+            AuditLog.objects.create(
+                workspace=target_workspace,
+                actor=existing_user,
+                action="AUTHORIZED_GOOGLE_LOGIN",
+                resource_type="Workspace",
+                resource_id=str(target_workspace.id),
+                details={"email": normalized_email, "role": role},
+                ip_address=request.META.get("REMOTE_ADDR")
+            )
+            messages.success(request, f"Welcome to {target_workspace.name}, {existing_user.first_name}!")
+            return redirect(f"/{target_slug}/")
+
+        else:
+            # Login without specific workspace context
+            existing_user = User.objects.filter(email=normalized_email).first()
+            if existing_user and getattr(existing_user, "is_platform_admin", False):
+                login(request, existing_user, backend="django.contrib.auth.backends.ModelBackend")
+                return redirect("platform_admin_overview")
+
+            # Check if authorized in ANY workspace
+            auth_records = WorkspaceAuthorizedEmail.objects.filter(
+                normalized_email=normalized_email,
+                status=WorkspaceAuthorizedEmail.Status.AUTHORIZED,
+                workspace__status=Workspace.Status.ACTIVE
+            ).select_related("workspace")
+
+            if auth_records.exists():
+                if not existing_user:
+                    existing_user = User.objects.create_user(
+                        email=normalized_email,
+                        username=normalized_email,
+                        first_name=userinfo.get("given_name", "Google"),
+                        last_name=userinfo.get("family_name", "User"),
+                    )
+
+                for rec in auth_records:
+                    WorkspaceMembership.objects.update_or_create(
+                        workspace=rec.workspace,
+                        user=existing_user,
+                        defaults={"role": rec.assigned_role, "is_active": True}
+                    )
+                    rec.linked_user = existing_user
+                    rec.save(update_fields=["linked_user"])
+
+                login(request, existing_user, backend="django.contrib.auth.backends.ModelBackend")
+                if auth_records.count() == 1:
+                    return redirect(f"/{auth_records.first().workspace.slug}/")
+                return redirect("select_workspace")
+
+            messages.error(request, f"Google account {normalized_email} has not been authorized for any Supporto AI workspace.")
+            return redirect("landing")
 
     except Exception as e:
+        logger.error(f"Google OAuth exchange failed: {e}")
         messages.error(request, f"Google OAuth exchange failed: {e}")
-        return redirect("login")
+        return redirect(f"/{target_slug}/" if target_slug else "landing")

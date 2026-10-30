@@ -9,7 +9,15 @@ class ModelManager:
     """
     Centralized singleton manager for local AI models (LLM, Whisper STT, Kokoro TTS).
     Features lazy-loading, memory conservation for 16 GB Apple Silicon Mac,
-    and granular health reporting.
+    and granular health reporting matching strict hackathon status states:
+    - NOT CONFIGURED
+    - FILE MISSING
+    - RUNTIME MISSING
+    - NOT INITIALIZED
+    - INITIALIZING
+    - ONLINE
+    - INFERENCE FAILED
+    - FALLBACK ACTIVE
     """
     _instance = None
 
@@ -25,6 +33,9 @@ class ModelManager:
         self._llm = None
         self._stt = None
         self._tts = None
+        self._llm_status = None
+        self._stt_status = None
+        self._tts_status = None
         self._initialized = True
 
     @property
@@ -41,6 +52,14 @@ class ModelManager:
 
     def get_health_status(self) -> dict:
         """Inspects disk paths, dependencies, and loaded states without forcing initialization."""
+        if not getattr(settings, "AI_ENABLED", True):
+            return {
+                "ai_enabled": False,
+                "llm": {"name": "Qwen 3 8B (Q4_K_M)", "path": str(self.llm_path), "file_exists": False, "file_size_gb": 0, "runtime_installed": False, "loaded": False, "status": "NOT CONFIGURED"},
+                "stt": {"name": "Whisper Small", "path": str(self.stt_path), "dir_exists": False, "runtime_installed": False, "loaded": False, "status": "NOT CONFIGURED"},
+                "tts": {"name": "Kokoro TTS", "path": str(self.tts_path), "dir_exists": False, "runtime_installed": False, "loaded": False, "status": "NOT CONFIGURED"}
+            }
+
         llm_exists = self.llm_path.exists() and self.llm_path.is_file()
         stt_exists = self.stt_path.exists() and self.stt_path.is_dir()
         tts_exists = self.tts_path.exists() and self.tts_path.is_dir()
@@ -66,6 +85,36 @@ class ModelManager:
         except ImportError:
             pass
 
+        # Determine LLM status
+        if not llm_exists:
+            llm_status = "FILE MISSING"
+        elif not llama_cpp_installed:
+            llm_status = "RUNTIME MISSING"
+        elif self._llm is not None:
+            llm_status = "ONLINE"
+        else:
+            llm_status = "NOT INITIALIZED"
+
+        # Determine STT status
+        if not stt_exists:
+            stt_status = "FILE MISSING"
+        elif not whisper_installed:
+            stt_status = "RUNTIME MISSING"
+        elif self._stt is not None:
+            stt_status = "ONLINE"
+        else:
+            stt_status = "NOT INITIALIZED"
+
+        # Determine TTS status
+        if not tts_exists:
+            tts_status = "FILE MISSING"
+        elif not kokoro_installed:
+            tts_status = "RUNTIME MISSING"
+        elif self._tts is not None:
+            tts_status = "ONLINE"
+        else:
+            tts_status = "NOT INITIALIZED"
+
         return {
             "ai_enabled": settings.AI_ENABLED,
             "llm": {
@@ -75,7 +124,8 @@ class ModelManager:
                 "file_size_gb": round(self.llm_path.stat().st_size / (1024**3), 2) if llm_exists else 0,
                 "runtime_installed": llama_cpp_installed,
                 "loaded": self._llm is not None,
-                "status": "Ready" if (llm_exists and llama_cpp_installed) else ("File Ready (Heuristic Fallback active)" if llm_exists else "Missing Model File")
+                "status": llm_status,
+                "fallback_mode": "FALLBACK ACTIVE" if llm_status != "ONLINE" else "DIRECT"
             },
             "stt": {
                 "name": "Whisper Small",
@@ -83,7 +133,8 @@ class ModelManager:
                 "dir_exists": stt_exists,
                 "runtime_installed": whisper_installed,
                 "loaded": self._stt is not None,
-                "status": "Ready" if (stt_exists and whisper_installed) else ("Runtime Missing" if stt_exists else "Directory Missing")
+                "status": stt_status,
+                "fallback_mode": "FALLBACK ACTIVE" if stt_status != "ONLINE" else "DIRECT"
             },
             "tts": {
                 "name": "Kokoro TTS",
@@ -91,13 +142,14 @@ class ModelManager:
                 "dir_exists": tts_exists,
                 "runtime_installed": kokoro_installed,
                 "loaded": self._tts is not None,
-                "status": "Ready" if (tts_exists and kokoro_installed) else ("Runtime Missing" if tts_exists else "Directory Missing")
+                "status": tts_status,
+                "fallback_mode": "FALLBACK ACTIVE" if tts_status != "ONLINE" else "DIRECT"
             }
         }
 
     def get_llm(self):
         """Lazy loader for Qwen LLM using llama-cpp-python if available."""
-        if not settings.AI_ENABLED:
+        if not getattr(settings, "AI_ENABLED", True):
             return None
         if self._llm is not None:
             return self._llm
@@ -112,7 +164,7 @@ class ModelManager:
             self._llm = Llama(
                 model_path=str(self.llm_path),
                 n_ctx=2048,
-                n_gpu_layers=1, # Metal offload on Apple Silicon
+                n_gpu_layers=1,
                 verbose=False
             )
             return self._llm
@@ -122,7 +174,7 @@ class ModelManager:
 
     def get_stt(self):
         """Lazy loader for Whisper Small using faster-whisper."""
-        if not settings.AI_ENABLED:
+        if not getattr(settings, "AI_ENABLED", True):
             return None
         if self._stt is not None:
             return self._stt
@@ -146,7 +198,7 @@ class ModelManager:
 
     def get_tts(self):
         """Lazy loader for Kokoro ONNX."""
-        if not settings.AI_ENABLED:
+        if not getattr(settings, "AI_ENABLED", True):
             return None
         if self._tts is not None:
             return self._tts
@@ -157,7 +209,6 @@ class ModelManager:
 
         try:
             from kokoro_onnx import Kokoro
-            # Search for onnx model and voices.bin
             onnx_file = self.tts_path / "onnx" / "model.onnx"
             if not onnx_file.exists():
                 onnx_file = self.tts_path / "onnx" / "kokoro-v0_19.onnx"
@@ -175,11 +226,10 @@ class ModelManager:
             return None
 
     def unload_models(self):
-        """Release models to free memory if needed."""
+        """Release models to free memory."""
         self._llm = None
         self._stt = None
         self._tts = None
 
 # Global access
 model_manager = ModelManager()
-

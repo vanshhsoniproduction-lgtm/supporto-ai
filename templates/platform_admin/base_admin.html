@@ -26,15 +26,15 @@
                 </a>
                 <a href="{% url 'platform_admin_users' %}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition {% if active_tab == 'users' %}bg-brand-500 text-white font-semibold{% else %}text-gray-300 hover:bg-charcoal-800 hover:text-white{% endif %}">
                     <span class="material-symbols-outlined text-xl">group</span>
-                    Users & Roles
+                    Users
                 </a>
                 <a href="{% url 'platform_admin_ai_models' %}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition {% if active_tab == 'ai_models' %}bg-brand-500 text-white font-semibold{% else %}text-gray-300 hover:bg-charcoal-800 hover:text-white{% endif %}">
                     <span class="material-symbols-outlined text-xl">psychology</span>
-                    AI Models Health
+                    AI Health
                 </a>
                 <a href="{% url 'platform_admin_activity' %}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition {% if active_tab == 'activity' %}bg-brand-500 text-white font-semibold{% else %}text-gray-300 hover:bg-charcoal-800 hover:text-white{% endif %}">
                     <span class="material-symbols-outlined text-xl">history</span>
-                    Audit Activity
+                    Activity
                 </a>
             </nav>
         </div>
@@ -47,7 +47,7 @@
                 </div>
                 <div class="flex-1 truncate">
                     <p class="text-xs font-semibold text-white truncate">{{ request.user.email }}</p>
-                    <p class="text-[10px] text-gray-400">Super Administrator</p>
+                    <p class="text-[10px] text-gray-400">Platform Administrator</p>
                 </div>
             </div>
             <form method="POST" action="{% url 'logout' %}">
@@ -65,9 +65,9 @@
         <header class="h-16 bg-white border-b border-gray-200 px-6 sm:px-8 flex items-center justify-between">
             <h2 class="text-lg font-bold text-charcoal-900">{% block admin_title %}Platform Administration{% endblock %}</h2>
             <div class="flex items-center gap-3">
-                <a href="{% url 'select_workspace' %}" class="text-xs font-semibold text-charcoal-800 hover:text-brand-500 flex items-center gap-1 bg-gray-100 hover:bg-gray-200 px-3 py-1.5 rounded-lg transition">
-                    <span class="material-symbols-outlined text-sm">storefront</span>
-                    Company Portals
+                <a href="{% url 'landing' %}" target="_blank" class="text-xs font-semibold text-charcoal-800 hover:text-brand-500 flex items-center gap-1 bg-gray-100 hover:bg-gray-200 px-3 py-1.5 rounded-lg transition">
+                    <span class="material-symbols-outlined text-sm">open_in_new</span>
+                    Public Site
                 </a>
             </div>
         </header>
@@ -78,4 +78,3 @@
     </main>
 </div>
 {% endblock %}
-

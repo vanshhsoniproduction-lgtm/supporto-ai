@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+
+{% block title %}Access Denied - Supporto AI{% endblock %}
+
+{% block content %}
+<div class="min-h-full flex flex-col justify-center py-16 sm:px-6 lg:px-8 bg-[#F7F8FA]">
+    <div class="sm:mx-auto sm:w-full sm:max-w-md">
+        <div class="bg-white p-8 sm:p-10 rounded-3xl shadow-xl border border-gray-100 text-center space-y-6">
+            <div class="w-16 h-16 rounded-2xl bg-amber-50 text-amber-600 font-black mx-auto flex items-center justify-center text-3xl shadow-inner border border-amber-200">
+                <span class="material-symbols-outlined text-3xl">lock_person</span>
+            </div>
+
+            <div class="space-y-2">
+                <h2 class="text-2xl font-black text-charcoal-900">Authorization Required</h2>
+                <p class="text-sm font-semibold text-charcoal-800 leading-relaxed bg-amber-50/80 p-4 rounded-2xl border border-amber-200/80">
+                    This Google account has not been authorized for this workspace. Please contact your Supporto AI administrator.
+                </p>
+                {% if user_email %}
+                <p class="text-xs text-gray-500 font-mono pt-1">
+                    Authenticated account: <span class="font-bold text-gray-700">{{ user_email }}</span>
+                </p>
+                {% endif %}
+                {% if workspace %}
+                <p class="text-xs text-gray-400">
+                    Workspace: <span class="font-semibold text-charcoal-800">{{ workspace.name }}</span> ({{ workspace.slug }})
+                </p>
+                {% endif %}
+            </div>
+
+            <div class="pt-4 border-t border-gray-100 space-y-3">
+                {% if workspace %}
+                <a href="/{{ workspace.slug }}/" class="w-full py-3 px-4 rounded-xl text-xs font-bold text-white bg-brand-500 hover:bg-brand-600 transition block">
+                    Try Another Google Account
+                </a>
+                {% endif %}
+                <a href="/" class="w-full py-2.5 px-4 rounded-xl text-xs font-bold text-gray-600 hover:text-charcoal-900 transition block">
+                    &larr; Back to Platform Home
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

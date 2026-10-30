@@ -1,0 +1,168 @@
+{% extends "workspace/base_workspace.html" %}
+
+{% block workspace_title %}{{ workspace.name }} — Customer 360 Profile{% endblock %}
+
+{% block workspace_content %}
+<div class="space-y-8">
+    <!-- Header with breadcrumb -->
+    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div>
+            <div class="flex items-center gap-2 text-xs text-gray-500 mb-1">
+                <a href="{% url 'customer_list' company_slug=workspace.slug %}" class="hover:text-brand-500 transition">Customers</a>
+                <span>&rsaquo;</span>
+                <span class="text-charcoal-900 font-bold">{{ customer.display_name }}</span>
+            </div>
+            <h1 class="text-2xl font-black text-charcoal-900">{{ customer.display_name }}</h1>
+            <p class="text-xs text-gray-500 mt-0.5">Customer 360 Profile • First Seen: {{ customer.first_seen|date:"M d, Y" }}</p>
+        </div>
+
+        <a href="{% url 'customer_list' company_slug=workspace.slug %}" class="px-3.5 py-2 rounded-xl text-xs font-bold text-gray-600 bg-white border border-gray-200 hover:bg-gray-50 transition">
+            &larr; Back to Customers
+        </a>
+    </div>
+
+    {% if messages %}
+    <div class="space-y-2">
+        {% for message in messages %}
+        <div class="p-3.5 rounded-xl text-xs font-semibold flex items-center gap-2 bg-emerald-50 text-emerald-700 border border-emerald-200">
+            <span class="material-symbols-outlined text-base">check_circle</span>
+            <span>{{ message }}</span>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+        <!-- Customer Info & Internal Notes (Left Column) -->
+        <div class="space-y-6">
+            <div class="bg-white p-6 rounded-3xl border border-gray-200 shadow-sm space-y-4">
+                <div class="flex items-center gap-3 pb-3 border-b border-gray-100">
+                    <div class="w-12 h-12 rounded-2xl bg-brand-50 text-brand-500 flex items-center justify-center font-bold text-lg">
+                        {{ customer.display_name|slice:":1"|upper }}
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-base text-charcoal-900">{{ customer.display_name }}</h3>
+                        <span class="text-xs text-gray-400 font-mono">{{ customer.email|default:"No email" }}</span>
+                    </div>
+                </div>
+
+                <form method="POST" class="space-y-3">
+                    {% csrf_token %}
+                    <div>
+                        <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1">Full Name</label>
+                        <input type="text" name="name" value="{{ customer.name }}" class="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs outline-none focus:ring-2 focus:ring-brand-500">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1">Phone</label>
+                        <input type="text" name="phone" value="{{ customer.phone }}" class="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs outline-none focus:ring-2 focus:ring-brand-500">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1">Company / Organization</label>
+                        <input type="text" name="company" value="{{ customer.company }}" class="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs outline-none focus:ring-2 focus:ring-brand-500">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1">Internal Staff Notes</label>
+                        <textarea name="internal_notes" rows="3" class="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs outline-none focus:ring-2 focus:ring-brand-500">{{ customer.internal_notes }}</textarea>
+                    </div>
+                    <button type="submit" class="w-full py-2.5 px-4 rounded-xl text-xs font-bold text-white bg-brand-500 hover:bg-brand-600 transition">
+                        Save Notes & Profile
+                    </button>
+                </form>
+            </div>
+
+            <!-- Sentiment & Activity Metrics -->
+            <div class="bg-white p-6 rounded-3xl border border-gray-200 shadow-sm space-y-3">
+                <h4 class="font-bold text-xs uppercase tracking-wider text-gray-400">Interaction Signals</h4>
+                <div class="grid grid-cols-2 gap-2 text-center text-xs">
+                    <div class="p-2.5 rounded-xl bg-gray-50 border border-gray-100">
+                        <span class="text-[10px] text-gray-400 block">Total Tickets</span>
+                        <span class="font-bold text-charcoal-900 text-sm">{{ tickets.count }}</span>
+                    </div>
+                    <div class="p-2.5 rounded-xl bg-gray-50 border border-gray-100">
+                        <span class="text-[10px] text-gray-400 block">Open Tickets</span>
+                        <span class="font-bold text-amber-600 text-sm">{{ open_tickets|length }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- History & Activity (Right Column - 2 cols) -->
+        <div class="lg:col-span-2 space-y-6">
+            <!-- Tickets History -->
+            <div class="bg-white p-6 rounded-3xl border border-gray-200 shadow-sm space-y-4">
+                <div class="flex items-center justify-between pb-3 border-b border-gray-100">
+                    <h3 class="font-bold text-sm text-charcoal-900 flex items-center gap-2">
+                        <span class="material-symbols-outlined text-brand-500 text-lg">confirmation_number</span>
+                        Tickets History ({{ tickets.count }})
+                    </h3>
+                </div>
+                <div class="divide-y divide-gray-100">
+                    {% for t in tickets %}
+                    <div class="py-3 flex items-center justify-between text-xs">
+                        <div>
+                            <span class="font-bold font-mono text-charcoal-900">#{{ t.ticket_number }}</span>
+                            <h4 class="font-bold text-charcoal-800">{{ t.subject }}</h4>
+                            <p class="text-[10px] text-gray-400">Team: {{ t.assigned_team.name|default:"Unassigned" }} • Created {{ t.created_at|date:"M d, Y" }}</p>
+                        </div>
+                        <div class="text-right flex items-center gap-2">
+                            <span class="px-2 py-0.5 rounded text-[10px] font-bold {% if t.status == 'RESOLVED' or t.status == 'CLOSED' %}bg-emerald-50 text-emerald-700{% else %}bg-amber-50 text-amber-700{% endif %}">
+                                {{ t.status }}
+                            </span>
+                            <a href="{% url 'ticket_detail' company_slug=workspace.slug ticket_number=t.ticket_number %}" class="text-brand-600 font-bold hover:underline text-[11px]">View &rarr;</a>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <p class="text-xs text-gray-400 py-4 text-center">No tickets associated with this customer.</p>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Email Interactions -->
+            <div class="bg-white p-6 rounded-3xl border border-gray-200 shadow-sm space-y-4">
+                <h3 class="font-bold text-sm text-charcoal-900 flex items-center gap-2 pb-3 border-b border-gray-100">
+                    <span class="material-symbols-outlined text-blue-600 text-lg">mail</span>
+                    Incoming Emails ({{ emails.count }})
+                </h3>
+                <div class="divide-y divide-gray-100">
+                    {% for em in emails %}
+                    <div class="py-3 space-y-1 text-xs">
+                        <div class="flex items-center justify-between">
+                            <h4 class="font-bold text-charcoal-800">{{ em.subject }}</h4>
+                            <span class="text-[10px] text-gray-400">{{ em.received_at|date:"M d, Y H:i" }}</span>
+                        </div>
+                        <p class="text-[11px] text-gray-500 line-clamp-2">{{ em.normalized_text_body }}</p>
+                    </div>
+                    {% empty %}
+                    <p class="text-xs text-gray-400 py-4 text-center">No emails received from this customer.</p>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Chat & Voice Conversations -->
+            <div class="bg-white p-6 rounded-3xl border border-gray-200 shadow-sm space-y-4">
+                <h3 class="font-bold text-sm text-charcoal-900 flex items-center gap-2 pb-3 border-b border-gray-100">
+                    <span class="material-symbols-outlined text-indigo-600 text-lg">chat</span>
+                    Widget & Voice Conversations ({{ conversations.count }})
+                </h3>
+                <div class="divide-y divide-gray-100">
+                    {% for conv in conversations %}
+                    <div class="py-3 space-y-1 text-xs">
+                        <div class="flex items-center justify-between">
+                            <span class="font-bold text-charcoal-800 flex items-center gap-1.5">
+                                <span class="material-symbols-outlined text-sm">{% if conv.channel == 'BROWSER_VOICE' %}call{% else %}chat_bubble{% endif %}</span>
+                                {{ conv.get_channel_display }} #{{ conv.id }}
+                            </span>
+                            <span class="text-[10px] text-gray-400">{{ conv.created_at|date:"M d, Y" }}</span>
+                        </div>
+                        <p class="text-[11px] text-gray-500">{{ conv.summary|default:conv.intent|default:"No summary" }}</p>
+                    </div>
+                    {% empty %}
+                    <p class="text-xs text-gray-400 py-4 text-center">No live conversations on record.</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

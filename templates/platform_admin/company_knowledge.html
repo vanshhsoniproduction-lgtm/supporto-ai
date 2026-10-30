@@ -1,0 +1,122 @@
+{% extends "platform_admin/base_admin.html" %}
+
+{% block admin_title %}{{ workspace.name }} — Knowledge Base Management{% endblock %}
+
+{% block admin_content %}
+<div class="space-y-8">
+    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div>
+            <div class="flex items-center gap-2 text-xs text-gray-500 mb-1">
+                <a href="{% url 'platform_admin_companies' %}" class="hover:text-brand-500 transition">Companies</a>
+                <span>&rsaquo;</span>
+                <a href="{% url 'platform_admin_company_detail' slug=workspace.slug %}" class="hover:text-brand-500 transition">{{ workspace.name }}</a>
+                <span>&rsaquo;</span>
+                <span class="text-charcoal-900 font-bold">Knowledge Base</span>
+            </div>
+            <h1 class="text-2xl font-black text-charcoal-900">Workspace Knowledge Base (RAG)</h1>
+            <p class="text-xs text-gray-500 mt-0.5">Underlying documents and chunks shared seamlessly with the company's customer support portal.</p>
+        </div>
+
+        <a href="{% url 'platform_admin_company_detail' slug=workspace.slug %}" class="px-3.5 py-2 rounded-xl text-xs font-bold text-gray-600 bg-white border border-gray-200 hover:bg-gray-50 transition">
+            &larr; Back to Company
+        </a>
+    </div>
+
+    {% if messages %}
+    <div class="space-y-2">
+        {% for message in messages %}
+        <div class="p-3.5 rounded-xl text-xs font-semibold flex items-center gap-2 bg-emerald-50 text-emerald-700 border border-emerald-200">
+            <span class="material-symbols-outlined text-base">check_circle</span>
+            <span>{{ message }}</span>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <!-- Add FAQ & Upload -->
+        <div class="space-y-6">
+            <!-- Add FAQ -->
+            <div class="bg-white p-6 rounded-3xl border border-gray-200 shadow-sm space-y-4">
+                <h3 class="font-bold text-sm text-charcoal-900 flex items-center gap-2">
+                    <span class="material-symbols-outlined text-brand-500 text-lg">help</span>
+                    Add FAQ Item
+                </h3>
+                <form method="POST" action="{% url 'platform_admin_company_knowledge' slug=workspace.slug %}" class="space-y-3">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="add_faq">
+                    <div>
+                        <label class="block text-[11px] font-bold text-gray-600 uppercase mb-1">FAQ Title / Topic</label>
+                        <input type="text" name="title" placeholder="e.g. Return Policy" required class="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs outline-none focus:ring-2 focus:ring-brand-500">
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-bold text-gray-600 uppercase mb-1">Question</label>
+                        <textarea name="question" rows="2" placeholder="What is the policy...?" required class="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs outline-none focus:ring-2 focus:ring-brand-500"></textarea>
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-bold text-gray-600 uppercase mb-1">Answer</label>
+                        <textarea name="answer" rows="3" placeholder="We offer..." required class="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs outline-none focus:ring-2 focus:ring-brand-500"></textarea>
+                    </div>
+                    <button type="submit" class="w-full py-2.5 px-3 rounded-xl text-xs font-bold text-white bg-brand-500 hover:bg-brand-600 shadow-sm transition">
+                        Add & Index FAQ
+                    </button>
+                </form>
+            </div>
+
+            <!-- Upload Multiple Files -->
+            <div class="bg-white p-6 rounded-3xl border border-gray-200 shadow-sm space-y-4">
+                <h3 class="font-bold text-sm text-charcoal-900 flex items-center gap-2">
+                    <span class="material-symbols-outlined text-brand-500 text-lg">upload_file</span>
+                    Upload Documents (Batch)
+                </h3>
+                <form method="POST" action="{% url 'platform_admin_company_knowledge' slug=workspace.slug %}" enctype="multipart/form-data" class="space-y-3">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="upload_batch">
+                    <div>
+                        <label class="block text-[11px] font-bold text-gray-600 uppercase mb-1">Select Files (TXT, MD, PDF, DOCX, CSV)</label>
+                        <input type="file" name="files" multiple required class="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs file:mr-2 file:py-1 file:px-2 file:rounded-lg file:border-0 file:text-[11px] file:font-bold file:bg-brand-50 file:text-brand-600 hover:file:bg-brand-100">
+                    </div>
+                    <button type="submit" class="w-full py-2.5 px-3 rounded-xl text-xs font-bold text-charcoal-900 bg-gray-100 hover:bg-gray-200 transition">
+                        Upload & Chunk Index
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Documents Table -->
+        <div class="lg:col-span-2 bg-white p-6 rounded-3xl border border-gray-200 shadow-sm space-y-4">
+            <div class="flex items-center justify-between pb-3 border-b border-gray-100">
+                <h3 class="font-bold text-sm text-charcoal-900">Knowledge Documents & Chunks</h3>
+                <span class="text-xs font-bold px-2.5 py-1 rounded-lg bg-gray-100 text-charcoal-800">
+                    {{ documents.count }} Documents Total
+                </span>
+            </div>
+
+            <div class="divide-y divide-gray-100">
+                {% for doc in documents %}
+                <div class="py-4 space-y-2">
+                    <div class="flex items-start justify-between">
+                        <div>
+                            <span class="px-2 py-0.5 rounded text-[10px] font-bold {% if doc.doc_type == 'FAQ' %}bg-blue-50 text-blue-700{% else %}bg-purple-50 text-purple-700{% endif %}">
+                                {{ doc.doc_type }}
+                            </span>
+                            <h4 class="font-bold text-sm text-charcoal-900 mt-1">{{ doc.title }}</h4>
+                        </div>
+                        <span class="text-[11px] text-gray-400 font-mono">
+                            {{ doc.chunks.count }} chunk(s)
+                        </span>
+                    </div>
+                    <p class="text-xs text-gray-600 line-clamp-2">
+                        {% if doc.doc_type == 'FAQ' %}{{ doc.answer }}{% else %}{{ doc.content }}{% endif %}
+                    </p>
+                    <p class="text-[10px] text-gray-400">Updated: {{ doc.updated_at|date:"M d, Y H:i" }}</p>
+                </div>
+                {% empty %}
+                <p class="text-xs text-gray-400 py-8 text-center">No documents in {{ workspace.name }} Knowledge Base yet.</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

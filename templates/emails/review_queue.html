@@ -1,0 +1,264 @@
+{% extends "workspace/base_workspace.html" %}
+
+{% block workspace_title %}{{ workspace.name }} — Human Review Queue{% endblock %}
+
+{% block workspace_content %}
+<div class="space-y-8">
+    <!-- Top Header -->
+    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div>
+            <div class="flex items-center gap-2">
+                <h1 class="text-2xl font-black text-charcoal-900">Email Ticket Proposals — Human Review Queue</h1>
+                <span class="px-2.5 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800">
+                    {{ proposals|length }} Pending
+                </span>
+            </div>
+            <p class="text-xs text-gray-500 mt-1">
+                AI classifies incoming emails and drafts proposals. Human approval and team assignment are strictly mandatory before ticket generation.
+            </p>
+        </div>
+
+        <div class="flex items-center gap-2">
+            <a href="{% url 'email_inbox' company_slug=workspace.slug %}" class="px-3.5 py-2 rounded-xl text-xs font-bold text-gray-700 bg-white border border-gray-200 hover:bg-gray-50 transition flex items-center gap-1.5">
+                <span class="material-symbols-outlined text-sm">inbox</span>
+                Email Inbox
+            </a>
+            <a href="{% url 'ticket_list' company_slug=workspace.slug %}" class="px-3.5 py-2 rounded-xl text-xs font-bold text-brand-600 bg-brand-50 border border-brand-200 hover:bg-brand-100 transition flex items-center gap-1.5">
+                <span class="material-symbols-outlined text-sm">confirmation_number</span>
+                Tickets
+            </a>
+        </div>
+    </div>
+
+    {% if messages %}
+    <div class="space-y-2">
+        {% for message in messages %}
+        <div class="p-3.5 rounded-xl text-xs font-semibold flex items-center gap-2 {% if message.tags == 'error' %}bg-rose-50 text-rose-700 border border-rose-200{% elif message.tags == 'warning' %}bg-amber-50 text-amber-700 border border-amber-200{% else %}bg-emerald-50 text-emerald-700 border border-emerald-200{% endif %}">
+            <span class="material-symbols-outlined text-base">info</span>
+            <span>{{ message }}</span>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Proposals List -->
+    <div class="space-y-6">
+        {% for proposal in proposals %}
+        <div class="bg-white rounded-3xl border {% if proposal.ai_urgency == 'CRITICAL' %}border-red-300 ring-2 ring-red-100 shadow-md{% else %}border-gray-200 shadow-sm{% endif %} p-6 sm:p-8 space-y-6">
+            <!-- Proposal Top Row: Urgency badge & Sender -->
+            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-4 border-b border-gray-100">
+                <div class="flex items-center gap-3">
+                    {% if proposal.ai_urgency == 'CRITICAL' %}
+                    <span class="px-3 py-1 rounded-xl text-xs font-black uppercase bg-red-600 text-white shadow-sm flex items-center gap-1.5 animate-pulse">
+                        <span class="material-symbols-outlined text-sm">emergency</span>
+                        CRITICAL ALERT
+                    </span>
+                    {% elif proposal.ai_urgency == 'HIGH' %}
+                    <span class="px-3 py-1 rounded-xl text-xs font-black uppercase bg-amber-500 text-white flex items-center gap-1">
+                        <span class="material-symbols-outlined text-sm">priority_high</span>
+                        HIGH URGENCY
+                    </span>
+                    {% else %}
+                    <span class="px-3 py-1 rounded-xl text-xs font-bold uppercase bg-blue-50 text-blue-700">
+                        {{ proposal.ai_urgency }} URGENCY
+                    </span>
+                    {% endif %}
+
+                    <span class="text-xs font-bold px-2.5 py-1 rounded-lg bg-gray-100 text-charcoal-800">
+                        Intent: {{ proposal.ai_intent }}
+                    </span>
+                    <span class="text-xs text-gray-400">
+                        Confidence: <strong class="text-charcoal-800">{{ proposal.ai_confidence|floatformat:2 }}</strong>
+                    </span>
+                </div>
+
+                <div class="text-right text-xs text-gray-500">
+                    Received {{ proposal.inbound_email.received_at|date:"M d, Y H:i" }}
+                </div>
+            </div>
+
+            <!-- Subject & Customer Info -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="md:col-span-2 space-y-2">
+                    <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Customer Inquiry</span>
+                    <h3 class="text-lg font-black text-charcoal-900 leading-snug">{{ proposal.proposed_subject }}</h3>
+                    <div class="p-3.5 rounded-2xl bg-gray-50 border border-gray-100 text-xs text-charcoal-800 leading-relaxed max-h-40 overflow-y-auto whitespace-pre-wrap">
+                        {{ proposal.proposed_description }}
+                    </div>
+                </div>
+
+                <div class="space-y-3 p-4 rounded-2xl bg-[#F8FAFC] border border-slate-200">
+                    <span class="text-[10px] font-bold text-indigo-600 uppercase tracking-wider flex items-center gap-1">
+                        <span class="material-symbols-outlined text-sm">person</span>
+                        Customer Profile
+                    </span>
+                    <div>
+                        <h4 class="font-bold text-xs text-charcoal-900">{{ proposal.customer.display_name }}</h4>
+                        <p class="text-[11px] text-gray-500 font-mono">{{ proposal.customer.email }}</p>
+                    </div>
+                    <div class="pt-2 border-t border-slate-200/60 text-[11px] space-y-1">
+                        <div class="flex justify-between">
+                            <span class="text-gray-400">Sentiment:</span>
+                            <span class="font-bold text-charcoal-900">{{ proposal.ai_sentiment }}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-400">Recommended Team:</span>
+                            <span class="font-bold text-indigo-600">{{ proposal.ai_recommended_team.name|default:"Unassigned" }}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-400">Recommended Priority:</span>
+                            <span class="font-bold {% if proposal.proposed_priority == 'CRITICAL' %}text-red-600{% elif proposal.proposed_priority == 'HIGH' %}text-amber-600{% else %}text-charcoal-800{% endif %}">{{ proposal.proposed_priority }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- AI Summary & Suggested Reply -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- AI Summary -->
+                <div class="p-4 rounded-2xl bg-indigo-50/40 border border-indigo-100 space-y-2">
+                    <span class="text-[10px] font-bold text-indigo-700 uppercase tracking-wider flex items-center gap-1">
+                        <span class="material-symbols-outlined text-sm">auto_awesome</span>
+                        AI Summary
+                    </span>
+                    <p class="text-xs text-slate-700 leading-relaxed">{{ proposal.ai_summary }}</p>
+                    {% if proposal.kb_sources_used %}
+                    <div class="pt-2 border-t border-indigo-100 text-[10px] text-gray-500">
+                        <span class="font-semibold text-charcoal-800">KB Sources:</span>
+                        {% for src in proposal.kb_sources_used %}
+                        <span class="inline-block bg-white text-indigo-700 px-1.5 py-0.5 rounded border border-indigo-100 font-medium mr-1">{{ src }}</span>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Suggested Customer Reply (Draft) -->
+                <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
+                    <div class="flex items-center justify-between">
+                        <span class="text-[10px] font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1">
+                            <span class="material-symbols-outlined text-sm">drafts</span>
+                            Suggested Customer Reply (Draft)
+                        </span>
+                        <span class="text-[10px] text-gray-400">Draft only</span>
+                    </div>
+                    <div class="text-xs text-charcoal-800 whitespace-pre-wrap leading-relaxed max-h-36 overflow-y-auto bg-white p-3 rounded-xl border border-slate-100">
+                        {{ proposal.edited_suggested_reply|default:proposal.ai_suggested_reply }}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Mandatory Human Approval Form -->
+            <form method="POST" action="{% url 'proposal_action' company_slug=workspace.slug proposal_id=proposal.id %}" class="pt-4 border-t border-gray-100 space-y-4">
+                {% csrf_token %}
+                <div class="p-5 rounded-2xl bg-gray-50 border border-gray-200 space-y-4">
+                    <div class="flex items-center justify-between">
+                        <h4 class="font-bold text-xs uppercase tracking-wider text-charcoal-900 flex items-center gap-1.5">
+                            <span class="material-symbols-outlined text-base text-brand-500">check_circle</span>
+                            Ticket Approval Configuration
+                        </h4>
+                        <span class="text-[11px] font-bold text-red-600">* Team selection is mandatory</span>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <!-- Mandatory Team Assignment -->
+                        <div>
+                            <label class="block text-[11px] font-bold text-gray-700 uppercase mb-1">
+                                Assign Responsible Team <span class="text-red-600">*</span>
+                            </label>
+                            <select name="assigned_team_id" required class="w-full px-3 py-2 rounded-xl border border-gray-300 bg-white text-xs font-semibold focus:ring-2 focus:ring-brand-500 outline-none">
+                                <option value="">-- Choose Team --</option>
+                                {% for team in teams %}
+                                <option value="{{ team.id }}" {% if proposal.ai_recommended_team_id == team.id %}selected{% endif %}>
+                                    {{ team.name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <!-- Optional Agent Assignment -->
+                        <div>
+                            <label class="block text-[11px] font-bold text-gray-700 uppercase mb-1">
+                                Assign Agent (Optional)
+                            </label>
+                            <select name="assigned_agent_id" class="w-full px-3 py-2 rounded-xl border border-gray-300 bg-white text-xs focus:ring-2 focus:ring-brand-500 outline-none">
+                                <option value="">-- Unassigned (Team Queue) --</option>
+                                {% for team in teams %}
+                                <optgroup label="{{ team.name }}">
+                                    {% for m in team.memberships.all %}
+                                    <option value="{{ m.user.id }}">{{ m.user.full_name }} ({{ m.role }})</option>
+                                    {% endfor %}
+                                </optgroup>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <!-- Priority -->
+                        <div>
+                            <label class="block text-[11px] font-bold text-gray-700 uppercase mb-1">
+                                Priority
+                            </label>
+                            <select name="proposed_priority" class="w-full px-3 py-2 rounded-xl border border-gray-300 bg-white text-xs font-semibold focus:ring-2 focus:ring-brand-500 outline-none">
+                                <option value="LOW" {% if proposal.proposed_priority == 'LOW' %}selected{% endif %}>LOW</option>
+                                <option value="MEDIUM" {% if proposal.proposed_priority == 'MEDIUM' %}selected{% endif %}>MEDIUM</option>
+                                <option value="HIGH" {% if proposal.proposed_priority == 'HIGH' %}selected{% endif %}>HIGH</option>
+                                <option value="CRITICAL" {% if proposal.proposed_priority == 'CRITICAL' %}selected{% endif %}>CRITICAL</option>
+                            </select>
+                        </div>
+
+                        <!-- Category -->
+                        <div>
+                            <label class="block text-[11px] font-bold text-gray-700 uppercase mb-1">
+                                Category
+                            </label>
+                            <input type="text" name="proposed_category" value="{{ proposal.proposed_category }}" class="w-full px-3 py-2 rounded-xl border border-gray-300 bg-white text-xs outline-none focus:ring-2 focus:ring-brand-500">
+                        </div>
+                    </div>
+
+                    <!-- Review Notes -->
+                    <div>
+                        <label class="block text-[11px] font-bold text-gray-700 uppercase mb-1">Staff Review Notes / Rejection Reason</label>
+                        <input type="text" name="review_notes" placeholder="Optional notes for audit log, or required reason if rejecting proposal..." class="w-full px-3 py-2 rounded-xl border border-gray-300 bg-white text-xs outline-none focus:ring-2 focus:ring-brand-500">
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="flex flex-wrap items-center justify-between gap-3 pt-2">
+                        <div class="flex items-center gap-2">
+                            <button type="submit" name="action" value="approve" class="px-5 py-2.5 rounded-xl text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 shadow-sm transition flex items-center gap-1.5">
+                                <span class="material-symbols-outlined text-sm">check_circle</span>
+                                Approve & Create Ticket
+                            </button>
+                            <button type="submit" name="action" value="reject" onclick="return confirm('Reject this ticket proposal? (Original email will be preserved)');" class="px-4 py-2.5 rounded-xl text-xs font-bold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 transition flex items-center gap-1.5">
+                                <span class="material-symbols-outlined text-sm">cancel</span>
+                                Reject Proposal
+                            </button>
+                        </div>
+
+                        <div class="flex items-center gap-2">
+                            <button type="submit" name="action" value="no_ticket" class="px-3.5 py-2 rounded-xl text-xs font-bold text-gray-600 bg-white hover:bg-gray-100 border border-gray-200 transition">
+                                Mark No Ticket Required
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+        {% empty %}
+        <div class="bg-white rounded-3xl border border-gray-200 p-16 text-center space-y-3">
+            <div class="w-16 h-16 rounded-2xl bg-emerald-50 text-emerald-600 mx-auto flex items-center justify-center font-bold">
+                <span class="material-symbols-outlined text-3xl">task_alt</span>
+            </div>
+            <h3 class="font-black text-base text-charcoal-900">Review Queue is Clear!</h3>
+            <p class="text-xs text-gray-500 max-w-sm mx-auto">
+                All incoming customer email proposals have been reviewed and resolved. New emails triaged by Supporto AI will automatically appear here.
+            </p>
+            <div class="pt-2">
+                <a href="{% url 'email_inbox' company_slug=workspace.slug %}" class="px-4 py-2 rounded-xl text-xs font-bold text-brand-600 bg-brand-50 hover:bg-brand-100 border border-brand-200 transition inline-block">
+                    Back to Email Inbox
+                </a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
+

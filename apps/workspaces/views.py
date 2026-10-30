@@ -1,6 +1,6 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
-from django.contrib.auth import authenticate, login
+from django.conf import settings
 from django.http import HttpResponseForbidden
 from apps.workspaces.models import WorkspaceSettings, WorkspaceMembership
 from apps.tickets.models import Ticket
@@ -10,44 +10,39 @@ from services.analytics.metrics_service import metrics_service
 from services.workspaces.access_control import require_workspace_roles
 
 def workspace_dashboard(request, company_slug):
+    """
+    Company-specific access point: /<company_slug>/
+    - Unauthenticated: Displays company branding, welcome greeting, and ONLY 'Continue with Google' button.
+      NO email/password form is displayed.
+    - Authenticated: Displays the full Supporto AI workspace dashboard for authorized members.
+      Unauthorized Google accounts are denied.
+    """
     workspace = request.workspace
 
     # Handle unauthenticated visitors at /[company_slug]/
     if not request.user.is_authenticated:
-        if request.method == "POST":
-            ident = request.POST.get("username_or_email", "").strip()
-            password = request.POST.get("password", "")
-            user = authenticate(request, username=ident, password=password)
-
-            if user is not None:
-                if not user.is_active:
-                    messages.error(request, "This account is inactive. Please contact your administrator.")
-                else:
-                    is_member = WorkspaceMembership.objects.filter(
-                        workspace=workspace,
-                        user=user,
-                        is_active=True
-                    ).exists()
-                    is_platform_admin = getattr(user, "is_platform_admin", False)
-
-                    if not is_member and not is_platform_admin:
-                        messages.error(request, f"Access Denied: {ident} is not an authorized member of {workspace.name}.")
-                    else:
-                        login(request, user)
-                        messages.success(request, f"Welcome to {workspace.name} support portal, {user.first_name or user.username}!")
-                        return redirect("workspace_dashboard", company_slug=workspace.slug)
-            else:
-                messages.error(request, "Invalid username/email or password.")
+        # Build Google OAuth link targeting this workspace
+        google_login_url = f"/accounts/google/login/?workspace={workspace.slug}"
+        welcome_message = getattr(workspace, "settings", None)
+        welcome_text = welcome_message.welcome_message if welcome_message else "Welcome to Supporto AI Workspace"
 
         return render(request, "workspace/company_landing.html", {
-            "workspace": workspace
+            "workspace": workspace,
+            "welcome_message": welcome_text,
+            "google_login_url": google_login_url,
+            "google_configured": bool(getattr(settings, "GOOGLE_OAUTH_CLIENT_ID", "")),
         })
 
-    # User is authenticated - check workspace membership
+    # User is authenticated - verify authorized membership
     membership = getattr(request, "membership", None)
     is_platform_admin = getattr(request.user, "is_platform_admin", False)
+
     if not membership and not is_platform_admin:
-        return HttpResponseForbidden(f"Access Denied: You are not an active member of {workspace.name}.")
+        # User is authenticated via Google or session, but not authorized for THIS workspace
+        return render(request, "auth/unauthorized_workspace.html", {
+            "workspace": workspace,
+            "user_email": request.user.email,
+        }, status=403)
 
     metrics = metrics_service.get_workspace_metrics(workspace)
 
@@ -92,5 +87,5 @@ def workspace_settings_view(request, company_slug):
     return render(request, "workspace/settings.html", {
         "workspace": workspace,
         "settings": settings_obj,
-        "active_nav": "settings"
+        "active_nav": "company_settings"
     })

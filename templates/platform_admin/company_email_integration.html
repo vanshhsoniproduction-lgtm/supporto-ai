@@ -1,0 +1,57 @@
+{% extends "platform_admin/base_admin.html" %}
+
+{% block admin_title %}{{ workspace.name }} — Mailbox Integrations{% endblock %}
+
+{% block admin_content %}
+<div class="space-y-8">
+    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div>
+            <div class="flex items-center gap-2 text-xs text-gray-500 mb-1">
+                <a href="{% url 'platform_admin_companies' %}" class="hover:text-brand-500 transition">Companies</a>
+                <span>&rsaquo;</span>
+                <a href="{% url 'platform_admin_company_detail' slug=workspace.slug %}" class="hover:text-brand-500 transition">{{ workspace.name }}</a>
+                <span>&rsaquo;</span>
+                <span class="text-charcoal-900 font-bold">Mailboxes</span>
+            </div>
+            <h1 class="text-2xl font-black text-charcoal-900">Email & Gmail Mailbox Integrations</h1>
+            <p class="text-xs text-gray-500 mt-0.5">Platform administrator overview of connected support mailboxes.</p>
+        </div>
+
+        <a href="{% url 'platform_admin_company_detail' slug=workspace.slug %}" class="px-3.5 py-2 rounded-xl text-xs font-bold text-gray-600 bg-white border border-gray-200 hover:bg-gray-50 transition">
+            &larr; Back to Company
+        </a>
+    </div>
+
+    <div class="bg-white p-6 rounded-3xl border border-gray-200 shadow-sm space-y-4">
+        <h3 class="font-bold text-sm text-charcoal-900">Connected Mailboxes ({{ mailboxes.count }})</h3>
+        <div class="divide-y divide-gray-100">
+            {% for mb in mailboxes %}
+            <div class="py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
+                        <span class="material-symbols-outlined text-xl">mail</span>
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-sm text-charcoal-900">{{ mb.email_address }}</h4>
+                        <p class="text-[11px] text-gray-500">Provider: {{ mb.provider }} • Account ID: {{ mb.provider_account_id|default:"Pending" }}</p>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-4 text-xs">
+                    <div>
+                        <span class="text-gray-400 block text-[10px]">Last Successful Sync</span>
+                        <span class="font-semibold text-charcoal-800">{{ mb.last_successful_sync_at|date:"M d, H:i"|default:"Never" }}</span>
+                    </div>
+                    <span class="px-2.5 py-1 rounded-lg text-xs font-bold {% if mb.status == 'ACTIVE' %}bg-emerald-50 text-emerald-700 border border-emerald-200{% else %}bg-rose-50 text-rose-700 border border-rose-200{% endif %}">
+                        {{ mb.status }}
+                    </span>
+                </div>
+            </div>
+            {% empty %}
+            <p class="text-xs text-gray-400 py-8 text-center">No mailboxes connected for {{ workspace.name }} yet.</p>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+

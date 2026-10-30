@@ -34,6 +34,7 @@ INSTALLED_APPS = [
     "apps.ai_engine.apps.AiEngineConfig",
     "apps.voice_support.apps.VoiceSupportConfig",
     "apps.analytics.apps.AnalyticsConfig",
+    "apps.emails.apps.EmailsConfig",
 ]
 
 MIDDLEWARE = [
@@ -113,7 +114,7 @@ USE_TZ = True
 
 # Static files (CSS, JavaScript, Images)
 STATIC_URL = "/static/"
-STATICFILES_DIRS = [BASE_DIR / "static"]
+STATICFILES_DIRS = [BASE_DIR / "static"] if (BASE_DIR / "static").exists() else []
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
 MEDIA_URL = "/media/"
@@ -124,9 +125,9 @@ MEDIA_ROOT = BASE_DIR / "media"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # Auth Redirects
-LOGIN_URL = "/login/"
+LOGIN_URL = "/admin/login/"
 LOGIN_REDIRECT_URL = "/login/redirect/"
-LOGOUT_REDIRECT_URL = "/login/"
+LOGOUT_REDIRECT_URL = "/"
 
 # AI Settings
 AI_ENABLED = os.getenv("AI_ENABLED", "True").lower() in ("true", "1", "yes")
@@ -138,4 +139,5 @@ MODEL_TTS_PATH = BASE_DIR / os.getenv("MODEL_TTS_PATH", "models/tts/kokoro")
 GOOGLE_OAUTH_CLIENT_ID = os.getenv("GOOGLE_OAUTH_CLIENT_ID", "")
 GOOGLE_OAUTH_CLIENT_SECRET = os.getenv("GOOGLE_OAUTH_CLIENT_SECRET", "")
 GOOGLE_OAUTH_REDIRECT_URI = os.getenv("GOOGLE_OAUTH_REDIRECT_URI", "http://127.0.0.1:8000/accounts/google/callback/")
-
+GMAIL_OAUTH_REDIRECT_URI = os.getenv("GMAIL_OAUTH_REDIRECT_URI", "http://127.0.0.1:8000/integrations/gmail/callback/")
+ENCRYPTION_KEY = os.getenv("ENCRYPTION_KEY", "")

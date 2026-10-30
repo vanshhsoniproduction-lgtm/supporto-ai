@@ -1,22 +1,43 @@
 from django.core.management.base import BaseCommand
 from django.contrib.auth import get_user_model
 from django.utils import timezone
-from apps.workspaces.models import Workspace, WorkspaceMembership, WorkspaceSettings
+from apps.workspaces.models import Workspace, WorkspaceMembership, WorkspaceSettings, WorkspaceAuthorizedEmail
 from apps.teams.models import Team, TeamMembership
 from apps.customers.models import Customer
 from apps.conversations.models import Conversation, Message
-from apps.tickets.models import Ticket, TicketComment, TicketEvent
+from apps.tickets.models import Ticket, TicketComment, TicketEvent, TicketAssignment
 from apps.knowledge_base.models import KnowledgeDocument
+from apps.knowledge_base.services.document_processor import document_processor
 from apps.ai_engine.models import AgentConfiguration
 from apps.voice_support.models import VoiceConfiguration, IVRMenu, IVROption
+from apps.emails.models import MailboxConnection, InboundEmail, TicketProposal
+from apps.emails.services.email_triage import email_triage_service
 
 User = get_user_model()
 
 class Command(BaseCommand):
-    help = "Seeds initial development demo data including ShopEase workspace, teams, staff, and tickets."
+    help = "Seeds initial development demo data including ShopEase workspace, authorized emails, teams, staff, knowledge base chunks, and email triage proposals."
 
     def handle(self, *args, **options):
         self.stdout.write("[*] Seeding Supporto AI demo data...")
+
+        # 0. Platform Admin
+        admin_user, _ = User.objects.get_or_create(
+            email="admin@supporto.ai",
+            defaults={
+                "username": "admin@supporto.ai",
+                "first_name": "Platform",
+                "last_name": "Admin",
+                "is_staff": True,
+                "is_superuser": True,
+                "platform_role": User.PlatformRole.PLATFORM_ADMIN,
+            }
+        )
+        admin_user.set_password("Supporto@Admin123")
+        admin_user.is_staff = True
+        admin_user.is_superuser = True
+        admin_user.platform_role = User.PlatformRole.PLATFORM_ADMIN
+        admin_user.save()
 
         # 1. Create Workspace
         workspace, created = Workspace.objects.get_or_create(
@@ -40,7 +61,19 @@ class Command(BaseCommand):
             }
         )
 
-        # 2. Workspace Owner
+        # 2. Teams: Order Support & Billing Support
+        order_team, _ = Team.objects.get_or_create(
+            workspace=workspace,
+            slug="order-support",
+            defaults={"name": "Order Support", "description": "Handles shipments, fulfillment, order status, and delivery issues."}
+        )
+        billing_team, _ = Team.objects.get_or_create(
+            workspace=workspace,
+            slug="billing-support",
+            defaults={"name": "Billing Support", "description": "Handles payment discrepancies, refunds, duplicate charges, and invoices."}
+        )
+
+        # 3. Workspace Owner
         owner, _ = User.objects.get_or_create(
             email="owner@shopease.com",
             defaults={"first_name": "Elena", "last_name": "Vance", "username": "owner@shopease.com"}
@@ -54,16 +87,28 @@ class Command(BaseCommand):
             defaults={"role": WorkspaceMembership.Role.OWNER, "is_active": True}
         )
 
-        # 3. Staff Users
+        WorkspaceAuthorizedEmail.objects.get_or_create(
+            workspace=workspace,
+            normalized_email="owner@shopease.com",
+            defaults={
+                "email": "owner@shopease.com",
+                "assigned_role": WorkspaceMembership.Role.OWNER,
+                "status": WorkspaceAuthorizedEmail.Status.AUTHORIZED,
+                "linked_user": owner,
+                "invited_by": admin_user,
+            }
+        )
+
+        # 4. Staff Users & Explicit Platform-Admin Email Authorizations
         staff_data = [
-            ("agent.one@shopease.com", "Sarah", "Connor", WorkspaceMembership.Role.AGENT),
-            ("agent.two@shopease.com", "Marcus", "Wright", WorkspaceMembership.Role.AGENT), # Multi-team agent!
-            ("agent.three@shopease.com", "Kyle", "Reese", WorkspaceMembership.Role.AGENT),
-            ("manager@shopease.com", "John", "Connor", WorkspaceMembership.Role.MANAGER),
+            ("agent.one@shopease.com", "Sarah", "Connor", WorkspaceMembership.Role.AGENT, [order_team]),
+            ("agent.two@shopease.com", "Marcus", "Wright", WorkspaceMembership.Role.AGENT, [order_team, billing_team]),
+            ("agent.three@shopease.com", "Kyle", "Reese", WorkspaceMembership.Role.AGENT, [billing_team]),
+            ("manager@shopease.com", "John", "Connor", WorkspaceMembership.Role.MANAGER, [order_team, billing_team]),
         ]
 
         staff_users = {}
-        for email, fn, ln, role in staff_data:
+        for email, fn, ln, role, assigned_teams in staff_data:
             u, _ = User.objects.get_or_create(
                 email=email,
                 defaults={"first_name": fn, "last_name": ln, "username": email}
@@ -75,29 +120,28 @@ class Command(BaseCommand):
                 user=u,
                 defaults={"role": role, "is_active": True}
             )
+            auth_rec, _ = WorkspaceAuthorizedEmail.objects.get_or_create(
+                workspace=workspace,
+                normalized_email=email,
+                defaults={
+                    "email": email,
+                    "assigned_role": role,
+                    "status": WorkspaceAuthorizedEmail.Status.AUTHORIZED,
+                    "linked_user": u,
+                    "invited_by": admin_user,
+                }
+            )
+            auth_rec.assigned_teams.set(assigned_teams)
             staff_users[email] = u
 
-        # 4. Teams: Order Support & Billing Support
-        order_team, _ = Team.objects.get_or_create(
-            workspace=workspace,
-            slug="order-support",
-            defaults={"name": "Order Support", "description": "Handles shipments, fulfillment, order status, and delivery issues."}
-        )
-        billing_team, _ = Team.objects.get_or_create(
-            workspace=workspace,
-            slug="billing-support",
-            defaults={"name": "Billing Support", "description": "Handles payment discrepancies, refunds, duplicate charges, and invoices."}
-        )
+            for t in assigned_teams:
+                TeamMembership.objects.get_or_create(
+                    team=t,
+                    user=u,
+                    defaults={"role": TeamMembership.Role.MEMBER}
+                )
 
-        # Order Support members
-        TeamMembership.objects.get_or_create(team=order_team, user=staff_users["agent.one@shopease.com"], defaults={"role": TeamMembership.Role.MEMBER})
-        TeamMembership.objects.get_or_create(team=order_team, user=staff_users["agent.two@shopease.com"], defaults={"role": TeamMembership.Role.LEAD})
-
-        # Billing Support members (Marcus belongs to both teams!)
-        TeamMembership.objects.get_or_create(team=billing_team, user=staff_users["agent.two@shopease.com"], defaults={"role": TeamMembership.Role.MEMBER})
-        TeamMembership.objects.get_or_create(team=billing_team, user=staff_users["agent.three@shopease.com"], defaults={"role": TeamMembership.Role.LEAD})
-
-        # 5. Knowledge Base FAQs
+        # 5. Knowledge Base FAQs with Chunk Indexing
         faqs = [
             (
                 "Return & Exchange Policy",
@@ -121,7 +165,7 @@ class Command(BaseCommand):
             )
         ]
         for title, q, a in faqs:
-            KnowledgeDocument.objects.get_or_create(
+            doc, _ = KnowledgeDocument.objects.get_or_create(
                 workspace=workspace,
                 title=title,
                 defaults={
@@ -132,6 +176,7 @@ class Command(BaseCommand):
                     "is_active": True
                 }
             )
+            document_processor.chunk_and_index(doc)
 
         # 6. AI & Voice Configurations
         AgentConfiguration.objects.get_or_create(
@@ -149,51 +194,99 @@ class Command(BaseCommand):
                 "is_enabled": True,
                 "voice_name": "af_sarah",
                 "speed": 1.0,
-                "welcome_voice_text": "Thank you for contacting ShopEase support. How can I help you today?"
             }
         )
 
-        # IVR Menu
-        ivr_menu, _ = IVRMenu.objects.get_or_create(workspace=workspace, name="Main Support Menu")
-        IVROption.objects.get_or_create(menu=ivr_menu, digit=1, defaults={"label": "Order Tracking & Delivery", "target_team": order_team})
-        IVROption.objects.get_or_create(menu=ivr_menu, digit=2, defaults={"label": "Billing & Double Charges", "target_team": billing_team})
-        IVROption.objects.get_or_create(menu=ivr_menu, digit=3, defaults={"label": "Speak with AI Assistant", "action_type": IVROption.ActionType.ROUTE_AI})
+        # 7. Mailbox Connection & Seeded Inbound Emails
+        mailbox, _ = MailboxConnection.objects.get_or_create(
+            workspace=workspace,
+            email_address="support@shopease.com",
+            defaults={
+                "provider": MailboxConnection.Provider.GMAIL,
+                "status": MailboxConnection.Status.ACTIVE,
+                "provider_account_id": "shopease_support_inbox",
+                "last_successful_sync_at": timezone.now(),
+            }
+        )
 
-        # 7. Demo Customers & Conversations
+        # Demo Inbound Emails & Proposals
+        sample_emails = [
+            (
+                "msg_seed_001",
+                "alex.rivera@example.com",
+                "Alex Rivera",
+                "Double charge on my credit card for Order #SE-99124",
+                "Hello Support, I noticed my bank account was charged twice for $149.99 on Order #SE-99124. This is an unauthorized duplicate charge. Please refund the duplicate immediately as this is urgent.",
+                "CRITICAL",
+                "PAYMENT_ISSUE",
+                billing_team,
+            ),
+            (
+                "msg_seed_002",
+                "jordan.lee@example.com",
+                "Jordan Lee",
+                "Order status inquiry for package #SE-88210",
+                "Hi there, I placed an order three days ago for smart wireless headphones. Can you please check when it is scheduled to arrive at my address?",
+                "LOW",
+                "ORDER_STATUS",
+                order_team,
+            ),
+            (
+                "msg_seed_003",
+                "sam.taylor@example.com",
+                "Sam Taylor",
+                "Application crashing on checkout page",
+                "Whenever I click proceed to payment, the page freezes and shows a 500 server error. I have tried clearing cookies but it still fails.",
+                "HIGH",
+                "TECHNICAL_SUPPORT",
+                order_team,
+            ),
+        ]
+
+        for p_id, s_email, s_name, subj, body, urg, intent, rec_team in sample_emails:
+            inbound_email, _ = InboundEmail.objects.get_or_create(
+                workspace=workspace,
+                provider_message_id=p_id,
+                defaults={
+                    "mailbox_connection": mailbox,
+                    "sender_email": s_email,
+                    "sender_name": s_name,
+                    "recipient": "support@shopease.com",
+                    "subject": subj,
+                    "original_text_body": body,
+                    "normalized_text_body": body,
+                    "received_at": timezone.now(),
+                    "processing_status": InboundEmail.ProcessingStatus.TICKET_PROPOSED,
+                }
+            )
+            # Run triage pipeline to link customer, conversation, and create proposal
+            email_triage_service.process_inbound_email(inbound_email)
+
+        # 8. Sample Customers and Historical Tickets
         c1, _ = Customer.objects.get_or_create(
             workspace=workspace,
-            email="alice.morgan@example.com",
-            defaults={"name": "Alice Morgan", "is_anonymous": False, "session_token": "demo-sess-alice-1"}
+            normalized_email="elena.fisher@example.com",
+            defaults={"name": "Elena Fisher", "email": "elena.fisher@example.com", "is_anonymous": False, "source": Customer.Source.WIDGET}
         )
         c2, _ = Customer.objects.get_or_create(
             workspace=workspace,
-            email="david.miller@example.com",
-            defaults={"name": "David Miller", "is_anonymous": False, "session_token": "demo-sess-david-2"}
-        )
-        c3, _ = Customer.objects.get_or_create(
-            workspace=workspace,
-            name="Anonymous Buyer",
-            defaults={"is_anonymous": True, "session_token": "demo-sess-anon-3"}
+            normalized_email="nathan.drake@example.com",
+            defaults={"name": "Nathan Drake", "email": "nathan.drake@example.com", "is_anonymous": False, "source": Customer.Source.VOICE}
         )
 
-        # Conversation 1: Critical Billing Issue
         conv1, _ = Conversation.objects.get_or_create(
             workspace=workspace,
             customer=c1,
             defaults={
                 "channel": Conversation.Channel.WEB_CHAT,
-                "status": Conversation.Status.COMPLETED,
-                "intent": "Billing & Payments",
+                "status": Conversation.Status.ACTIVE,
+                "intent": "Duplicate Payment Discrepancy",
                 "sentiment": Conversation.Sentiment.FRUSTRATED,
                 "urgency": Conversation.Urgency.CRITICAL,
-                "is_escalated": True,
-                "summary": "Customer reports being charged twice for headphones (Order #SE-84920). Urgent billing escalation triggered."
+                "summary": "Customer reported being charged $89.99 twice for order #SE-84920."
             }
         )
-        Message.objects.get_or_create(conversation=conv1, sender_type=Message.SenderType.CUSTOMER, content="Hi, my bank statement shows I was deducted twice for Order #SE-84920! Please help immediately.")
-        Message.objects.get_or_create(conversation=conv1, sender_type=Message.SenderType.AI, content="I understand this is frustrating. I have flagged this as critical and escalated your case directly to our Billing Support team.")
 
-        # Ticket 1 (Critical, Assigned to Billing Support)
         t1, _ = Ticket.objects.get_or_create(
             workspace=workspace,
             ticket_number="TK-260101",
@@ -209,61 +302,18 @@ class Command(BaseCommand):
                 "assigned_agent": staff_users["agent.two@shopease.com"]
             }
         )
-        TicketComment.objects.get_or_create(
+        TicketAssignment.objects.get_or_create(
             ticket=t1,
-            author=staff_users["agent.two@shopease.com"],
-            defaults={"is_internal": True, "content": "Checking merchant portal with Stripe. One hold is pending void."}
-        )
-
-        # Conversation 2: Order Inquiry
-        conv2, _ = Conversation.objects.get_or_create(
-            workspace=workspace,
-            customer=c2,
-            defaults={
-                "channel": Conversation.Channel.BROWSER_VOICE,
-                "status": Conversation.Status.COMPLETED,
-                "intent": "Order Tracking & Delivery",
-                "sentiment": Conversation.Sentiment.POSITIVE,
-                "urgency": Conversation.Urgency.LOW,
-                "summary": "Customer checked shipping timelines for standard delivery. AI referenced 3-5 business days policy."
-            }
-        )
-        # Ticket 2 (Resolved)
-        t2, _ = Ticket.objects.get_or_create(
-            workspace=workspace,
-            ticket_number="TK-260102",
-            defaults={
-                "customer": c2,
-                "conversation": conv2,
-                "subject": "Delivery Timeline Inquiry",
-                "description": conv2.summary,
-                "category": "Order Tracking & Delivery",
-                "priority": Ticket.Priority.LOW,
-                "status": Ticket.Status.RESOLVED,
-                "assigned_team": order_team,
-                "assigned_agent": staff_users["agent.one@shopease.com"],
-                "resolved_at": timezone.now()
-            }
-        )
-
-        # Ticket 3: Open General Ticket
-        Ticket.objects.get_or_create(
-            workspace=workspace,
-            ticket_number="TK-260103",
-            defaults={
-                "customer": c3,
-                "subject": "Product Compatibility Question",
-                "description": "Visitor asked whether headphones support Bluetooth 5.3 multipoint audio.",
-                "category": "General Support",
-                "priority": Ticket.Priority.MEDIUM,
-                "status": Ticket.Status.OPEN,
-                "assigned_team": order_team,
-            }
+            assigned_by=owner,
+            defaults={"new_team": billing_team, "new_agent": staff_users["agent.two@shopease.com"], "reason": "Initial routing"}
         )
 
         self.stdout.write(self.style.SUCCESS("[+] Demo data seeded successfully!"))
-        self.stdout.write(f"    Company Portal   : /shopease/")
-        self.stdout.write(f"    Customer Widget  : /widget/{workspace.public_key}/demo/")
-        self.stdout.write(f"    Owner Login      : owner@shopease.com / ShopEase@123")
-        self.stdout.write(f"    Multi-Team Agent : agent.two@shopease.com / ShopEase@123 (In Order & Billing)")
-
+        self.stdout.write(f"    Public Landing    : /")
+        self.stdout.write(f"    Platform Admin    : /admin/ (admin@supporto.ai / Supporto@Admin123)")
+        self.stdout.write(f"    Platform Login    : /admin/login/")
+        self.stdout.write(f"    ShopEase Portal   : /shopease/")
+        self.stdout.write(f"    ShopEase Inbox    : /shopease/emails/")
+        self.stdout.write(f"    Pending Reviews   : /shopease/emails/review/")
+        self.stdout.write(f"    Weekly Insights   : /shopease/analytics/weekly/")
+        self.stdout.write(f"    Customer Widget   : /widget/{workspace.public_key}/demo/")

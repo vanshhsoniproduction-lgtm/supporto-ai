@@ -1,0 +1,100 @@
+{% extends "workspace/base_workspace.html" %}
+
+{% block workspace_title %}{{ workspace.name }} — Email & Gmail Integration{% endblock %}
+
+{% block workspace_content %}
+<div class="space-y-8 max-w-4xl">
+    <div>
+        <h1 class="text-2xl font-black text-charcoal-900">Email & Gmail Mailbox Integration</h1>
+        <p class="text-xs text-gray-500 mt-0.5">
+            Connect your official support mailbox (e.g. support@shopease.com) using explicit Google OAuth consent.
+        </p>
+    </div>
+
+    {% if messages %}
+    <div class="space-y-2">
+        {% for message in messages %}
+        <div class="p-3.5 rounded-xl text-xs font-semibold flex items-center gap-2 {% if message.tags == 'error' %}bg-rose-50 text-rose-700 border border-rose-200{% else %}bg-emerald-50 text-emerald-700 border border-emerald-200{% endif %}">
+            <span class="material-symbols-outlined text-base">info</span>
+            <span>{{ message }}</span>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Connect Box -->
+    <div class="bg-white p-6 sm:p-8 rounded-3xl border border-gray-200 shadow-sm space-y-6">
+        <div class="flex items-start justify-between gap-4">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
+                    <span class="material-symbols-outlined text-2xl">mail</span>
+                </div>
+                <div>
+                    <h3 class="font-bold text-base text-charcoal-900">Connect Google Workspace / Gmail Mailbox</h3>
+                    <p class="text-xs text-gray-500 mt-0.5">
+                        Reads incoming customer emails via official Gmail API with readonly scopes.
+                    </p>
+                </div>
+            </div>
+
+            {% if oauth_url %}
+            <a href="{{ oauth_url }}" class="px-5 py-2.5 rounded-xl text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 shadow-md transition flex items-center gap-2">
+                <span class="material-symbols-outlined text-base">add_link</span>
+                Connect Mailbox via Google
+            </a>
+            {% else %}
+            <span class="px-3.5 py-2 rounded-xl text-xs font-semibold text-gray-400 bg-gray-100 border border-gray-200">
+                Google OAuth Credentials Required
+            </span>
+            {% endif %}
+        </div>
+
+        <div class="p-4 rounded-2xl bg-gray-50 border border-gray-100 text-xs text-gray-600 space-y-2 leading-relaxed">
+            <p class="font-bold text-charcoal-900">Important Security Separation:</p>
+            <ul class="list-disc list-inside space-y-1 text-[11px] text-gray-500">
+                <li>Company staff login uses Google OpenID identity authentication.</li>
+                <li>Mailbox synchronization requires separate, dedicated Gmail mailbox authorization.</li>
+                <li>Tokens are stored securely using symmetric encryption. Refresh tokens are never logged or exposed to the frontend.</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Active Connected Mailboxes -->
+    <div class="bg-white p-6 sm:p-8 rounded-3xl border border-gray-200 shadow-sm space-y-4">
+        <h3 class="font-bold text-sm text-charcoal-900">Active Mailbox Connections</h3>
+        <div class="divide-y divide-gray-100">
+            {% for conn in connections %}
+            <div class="py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold">
+                        <span class="material-symbols-outlined text-xl">mark_email_read</span>
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-sm text-charcoal-900">{{ conn.email_address }}</h4>
+                        <p class="text-[11px] text-gray-400">
+                            Provider: {{ conn.provider }} • Last Sync: {{ conn.last_successful_sync_at|date:"M d, Y H:i"|default:"Never" }}
+                        </p>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-3">
+                    <span class="px-2.5 py-1 rounded-lg text-xs font-bold {% if conn.status == 'ACTIVE' %}bg-emerald-50 text-emerald-700 border border-emerald-200{% else %}bg-rose-50 text-rose-700 border border-rose-200{% endif %}">
+                        {{ conn.status }}
+                    </span>
+
+                    <form method="POST" action="{% url 'disconnect_mailbox' company_slug=workspace.slug connection_id=conn.id %}">
+                        {% csrf_token %}
+                        <button type="submit" onclick="return confirm('Disconnect mailbox {{ conn.email_address }}?');" class="px-3 py-1.5 rounded-xl text-xs font-bold text-rose-600 hover:bg-rose-50 border border-rose-200 transition">
+                            Disconnect
+                        </button>
+                    </form>
+                </div>
+            </div>
+            {% empty %}
+            <p class="text-xs text-gray-400 py-8 text-center">No mailbox connected yet for {{ workspace.name }}.</p>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+

@@ -1,0 +1,134 @@
+{% extends "platform_admin/base_admin.html" %}
+
+{% block admin_title %}{{ workspace.name }} — Company Management{% endblock %}
+
+{% block admin_content %}
+<div class="space-y-8">
+    <!-- Top Header -->
+    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div>
+            <div class="flex items-center gap-2 text-xs text-gray-500 mb-1">
+                <a href="{% url 'platform_admin_companies' %}" class="hover:text-brand-500 transition">Companies</a>
+                <span>&rsaquo;</span>
+                <span class="text-charcoal-900 font-bold">{{ workspace.name }}</span>
+            </div>
+            <h1 class="text-2xl font-black text-charcoal-900">{{ workspace.name }}</h1>
+            <p class="text-xs text-gray-500 mt-0.5">Slug: <span class="font-mono font-bold">/{{ workspace.slug }}/</span> • Status: <span class="font-bold text-emerald-600">{{ workspace.status }}</span></p>
+        </div>
+
+        <div class="flex items-center gap-2">
+            <a href="/{{ workspace.slug }}/" target="_blank" class="px-4 py-2 rounded-xl text-xs font-bold text-brand-600 bg-brand-50 border border-brand-200 hover:bg-brand-100 transition flex items-center gap-1.5">
+                <span class="material-symbols-outlined text-sm">storefront</span>
+                Visit Company Portal
+            </a>
+            <a href="{% url 'widget_demo' public_key=workspace.public_key %}" target="_blank" class="px-4 py-2 rounded-xl text-xs font-bold text-gray-700 bg-white border border-gray-200 hover:bg-gray-50 transition flex items-center gap-1.5">
+                <span class="material-symbols-outlined text-sm">smart_toy</span>
+                Widget Demo
+            </a>
+        </div>
+    </div>
+
+    <!-- Management Modules Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <!-- Authorized Emails Card -->
+        <a href="{% url 'platform_admin_authorized_emails' slug=workspace.slug %}" class="bg-white p-6 rounded-3xl border border-gray-200 hover:border-brand-500 shadow-sm hover:shadow-md transition group space-y-4">
+            <div class="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold group-hover:scale-105 transition">
+                <span class="material-symbols-outlined text-2xl">verified_user</span>
+            </div>
+            <div>
+                <h3 class="font-bold text-base text-charcoal-900 group-hover:text-brand-500 transition">Authorized Google Emails</h3>
+                <p class="text-xs text-gray-500 mt-1">Manage platform-approved Google email addresses permitted to sign in to this workspace.</p>
+            </div>
+            <div class="pt-2 flex items-center justify-between text-xs font-bold text-indigo-600">
+                <span>{{ authorized_emails.count }} Authorized Email(s)</span>
+                <span>Configure &rarr;</span>
+            </div>
+        </a>
+
+        <!-- Shared Knowledge Base Card -->
+        <a href="{% url 'platform_admin_company_knowledge' slug=workspace.slug %}" class="bg-white p-6 rounded-3xl border border-gray-200 hover:border-brand-500 shadow-sm hover:shadow-md transition group space-y-4">
+            <div class="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center font-bold group-hover:scale-105 transition">
+                <span class="material-symbols-outlined text-2xl">menu_book</span>
+            </div>
+            <div>
+                <h3 class="font-bold text-base text-charcoal-900 group-hover:text-brand-500 transition">Knowledge Base & RAG</h3>
+                <p class="text-xs text-gray-500 mt-1">Manage documents, company policies, and FAQs directly indexed into the local RAG engine.</p>
+            </div>
+            <div class="pt-2 flex items-center justify-between text-xs font-bold text-amber-600">
+                <span>{{ docs.count }} Document(s)</span>
+                <span>Manage KB &rarr;</span>
+            </div>
+        </a>
+
+        <!-- Mailbox Integration Card -->
+        <a href="{% url 'platform_admin_company_email_integration' slug=workspace.slug %}" class="bg-white p-6 rounded-3xl border border-gray-200 hover:border-brand-500 shadow-sm hover:shadow-md transition group space-y-4">
+            <div class="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold group-hover:scale-105 transition">
+                <span class="material-symbols-outlined text-2xl">mail</span>
+            </div>
+            <div>
+                <h3 class="font-bold text-base text-charcoal-900 group-hover:text-brand-500 transition">Email & Gmail Mailboxes</h3>
+                <p class="text-xs text-gray-500 mt-1">View connected Gmail mailboxes, sync timestamps, and connection status for this tenant.</p>
+            </div>
+            <div class="pt-2 flex items-center justify-between text-xs font-bold text-blue-600">
+                <span>{{ mailboxes.count }} Mailbox(es)</span>
+                <span>Inspect &rarr;</span>
+            </div>
+        </a>
+    </div>
+
+    <!-- Active Teams & Staff Details -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <!-- Teams -->
+        <div class="bg-white p-6 rounded-3xl border border-gray-200 shadow-sm space-y-4">
+            <div class="flex items-center justify-between pb-3 border-b border-gray-100">
+                <h3 class="font-bold text-sm text-charcoal-900">Configured Teams ({{ teams.count }})</h3>
+                <span class="text-[11px] text-gray-400">Order, Billing, etc.</span>
+            </div>
+            <div class="space-y-2">
+                {% for team in teams %}
+                <div class="p-3.5 rounded-2xl border border-gray-100 bg-gray-50/50 flex items-center justify-between">
+                    <div>
+                        <h4 class="font-bold text-xs text-charcoal-900">{{ team.name }}</h4>
+                        <p class="text-[11px] text-gray-500">{{ team.description|default:"No description" }}</p>
+                    </div>
+                    <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-white text-gray-600 border border-gray-200">
+                        {{ team.memberships.count }} Members
+                    </span>
+                </div>
+                {% empty %}
+                <p class="text-xs text-gray-400 py-4 text-center">No teams created yet.</p>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Staff Memberships -->
+        <div class="bg-white p-6 rounded-3xl border border-gray-200 shadow-sm space-y-4">
+            <div class="flex items-center justify-between pb-3 border-b border-gray-100">
+                <h3 class="font-bold text-sm text-charcoal-900">Active Staff Members ({{ memberships.count }})</h3>
+                <span class="text-[11px] text-gray-400">Registered Users</span>
+            </div>
+            <div class="space-y-2">
+                {% for m in memberships %}
+                <div class="p-3.5 rounded-2xl border border-gray-100 bg-gray-50/50 flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-full bg-brand-50 text-brand-500 flex items-center justify-center font-bold text-xs">
+                            {{ m.user.email|slice:":1"|upper }}
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-xs text-charcoal-900">{{ m.user.full_name }}</h4>
+                            <p class="text-[11px] text-gray-400">{{ m.user.email }}</p>
+                        </div>
+                    </div>
+                    <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-white border border-gray-200 text-charcoal-800">
+                        {{ m.role }}
+                    </span>
+                </div>
+                {% empty %}
+                <p class="text-xs text-gray-400 py-4 text-center">No staff memberships yet.</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

@@ -79,7 +79,6 @@ def my_tickets_view(request, company_slug):
 
 def team_queue_view(request, company_slug):
     workspace = request.workspace
-    # Find all teams current user is a member of
     user_team_ids = TeamMembership.objects.filter(
         team__workspace=workspace,
         user=request.user
@@ -121,7 +120,7 @@ def ticket_detail_view(request, company_slug, ticket_number):
                     is_internal=is_internal,
                     content=content
                 )
-                messages.success(request, "Note added to ticket." if is_internal else "Customer reply sent.")
+                messages.success(request, "Note added to ticket." if is_internal else "Customer reply recorded.")
                 return redirect("ticket_detail", company_slug=workspace.slug, ticket_number=ticket.ticket_number)
 
         elif action == "update_status":
@@ -143,6 +142,7 @@ def ticket_detail_view(request, company_slug, ticket_number):
     comments = ticket.comments.select_related("author").order_by("created_at")
     events = ticket.events.select_related("actor").order_by("-created_at")[:20]
     conversation_messages = ticket.conversation.messages.order_by("created_at") if ticket.conversation else []
+    inbound_emails = ticket.inbound_emails.all().order_by("-received_at")
 
     teams = Team.objects.filter(workspace=workspace, is_active=True)
     staff_members = workspace.memberships.filter(is_active=True).select_related("user")
@@ -153,8 +153,8 @@ def ticket_detail_view(request, company_slug, ticket_number):
         "comments": comments,
         "events": events,
         "conversation_messages": conversation_messages,
+        "inbound_emails": inbound_emails,
         "teams": teams,
         "staff_members": staff_members,
         "active_nav": "tickets"
     })
-

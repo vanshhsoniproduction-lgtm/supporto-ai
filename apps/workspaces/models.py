@@ -2,6 +2,7 @@ import uuid
 from django.conf import settings
 from django.db import models
 from django.utils.text import slugify
+from django.utils import timezone
 
 class Workspace(models.Model):
     class Status(models.TextChoices):
@@ -97,3 +98,80 @@ class WorkspaceSettings(models.Model):
 
     def __str__(self):
         return f"Settings for {self.workspace.name}"
+
+
+class WorkspaceAuthorizedEmail(models.Model):
+    class Status(models.TextChoices):
+        PENDING = "PENDING", "Pending"
+        AUTHORIZED = "AUTHORIZED", "Authorized"
+        REVOKED = "REVOKED", "Revoked"
+
+    workspace = models.ForeignKey(Workspace, on_delete=models.CASCADE, related_name="authorized_emails")
+    email = models.EmailField(max_length=255)
+    normalized_email = models.EmailField(max_length=255, db_index=True)
+    assigned_role = models.CharField(
+        max_length=20,
+        choices=WorkspaceMembership.Role.choices,
+        default=WorkspaceMembership.Role.AGENT
+    )
+    assigned_teams = models.ManyToManyField(
+        "teams.Team",
+        blank=True,
+        related_name="authorized_emails",
+        help_text="Optional teams to automatically assign when user registers"
+    )
+    status = models.CharField(
+        max_length=20,
+        choices=Status.choices,
+        default=Status.AUTHORIZED,
+        db_index=True
+    )
+    invited_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="authorized_email_invitations"
+    )
+    linked_user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="authorized_email_records"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    authorized_at = models.DateTimeField(null=True, blank=True)
+    revoked_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        unique_together = ("workspace", "normalized_email")
+        ordering = ["-created_at"]
+
+    def clean(self):
+        super().clean()
+        if self.email:
+            self.normalized_email = self.email.strip().lower()
+
+    def save(self, *args, **kwargs):
+        if self.email:
+            self.normalized_email = self.email.strip().lower()
+        if self.status == self.Status.AUTHORIZED and not self.authorized_at:
+            self.authorized_at = timezone.now()
+        elif self.status == self.Status.REVOKED and not self.revoked_at:
+            self.revoked_at = timezone.now()
+        super().save(*args, **kwargs)
+
+    def revoke(self):
+        self.status = self.Status.REVOKED
+        self.revoked_at = timezone.now()
+        self.save(update_fields=["status", "revoked_at"])
+
+    def authorize(self):
+        self.status = self.Status.AUTHORIZED
+        self.authorized_at = timezone.now()
+        self.revoked_at = None
+        self.save(update_fields=["status", "authorized_at", "revoked_at"])
+
+    def __str__(self):
+        return f"{self.normalized_email} -> {self.workspace.name} ({self.assigned_role} - {self.status})"

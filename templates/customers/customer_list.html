@@ -1,0 +1,92 @@
+{% extends "workspace/base_workspace.html" %}
+
+{% block workspace_title %}{{ workspace.name }} — Customer Management{% endblock %}
+
+{% block workspace_content %}
+<div class="space-y-6">
+    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div>
+            <h1 class="text-2xl font-black text-charcoal-900">Customers</h1>
+            <p class="text-xs text-gray-500 mt-0.5">Customer profiles resolved across incoming emails, web chats, and voice calls.</p>
+        </div>
+    </div>
+
+    <!-- Filter & Search Bar -->
+    <div class="bg-white p-4 rounded-2xl border border-gray-200 shadow-sm flex flex-col sm:flex-row gap-3 items-center justify-between">
+        <form method="GET" class="flex-1 flex gap-2 w-full">
+            <div class="relative flex-1">
+                <span class="material-symbols-outlined absolute left-3 top-2.5 text-gray-400 text-lg">search</span>
+                <input type="text" name="q" value="{{ query }}" placeholder="Search customer by name, email, phone, or company..." class="w-full pl-9 pr-4 py-2 rounded-xl border border-gray-200 text-xs outline-none focus:ring-2 focus:ring-brand-500">
+            </div>
+            <select name="source" class="px-3 py-2 rounded-xl border border-gray-200 text-xs bg-white focus:ring-2 focus:ring-brand-500 outline-none font-semibold">
+                <option value="">All Sources</option>
+                <option value="EMAIL" {% if source_filter == 'EMAIL' %}selected{% endif %}>Email</option>
+                <option value="WIDGET" {% if source_filter == 'WIDGET' %}selected{% endif %}>Chat Widget</option>
+                <option value="VOICE" {% if source_filter == 'VOICE' %}selected{% endif %}>Voice Call</option>
+            </select>
+            <button type="submit" class="px-4 py-2 rounded-xl text-xs font-bold text-white bg-brand-500 hover:bg-brand-600 transition">
+                Search
+            </button>
+        </form>
+    </div>
+
+    <!-- Customers Table -->
+    <div class="bg-white rounded-3xl border border-gray-200 shadow-sm overflow-hidden">
+        <table class="w-full text-left text-xs">
+            <thead>
+                <tr class="border-b border-gray-100 bg-gray-50/50 text-[10px] text-gray-400 uppercase tracking-wider font-bold">
+                    <th class="py-3 px-6">Customer</th>
+                    <th class="py-3 px-4">Contact</th>
+                    <th class="py-3 px-4">Source</th>
+                    <th class="py-3 px-4">Tickets</th>
+                    <th class="py-3 px-4">Last Active</th>
+                    <th class="py-3 px-6 text-right">Action</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-50">
+                {% for customer in customers %}
+                <tr class="hover:bg-gray-50/50 transition">
+                    <td class="py-4 px-6">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-full bg-brand-50 text-brand-500 flex items-center justify-center font-bold text-xs">
+                                {{ customer.display_name|slice:":1"|upper }}
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-sm text-charcoal-900">{{ customer.display_name }}</h4>
+                                <span class="text-[10px] text-gray-400">{{ customer.company|default:"Consumer" }}</span>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="py-4 px-4 font-mono text-[11px] text-gray-600">
+                        {{ customer.email|default:"No email" }}
+                    </td>
+                    <td class="py-4 px-4">
+                        <span class="px-2 py-0.5 rounded text-[10px] font-bold {% if customer.source == 'EMAIL' %}bg-blue-50 text-blue-700{% elif customer.source == 'VOICE' %}bg-purple-50 text-purple-700{% else %}bg-emerald-50 text-emerald-700{% endif %}">
+                            {{ customer.get_source_display }}
+                        </span>
+                    </td>
+                    <td class="py-4 px-4 text-xs font-semibold text-charcoal-800">
+                        {{ customer.tickets.count }} ticket(s)
+                    </td>
+                    <td class="py-4 px-4 text-[11px] text-gray-400">
+                        {{ customer.last_seen|date:"M d, Y" }}
+                    </td>
+                    <td class="py-4 px-6 text-right">
+                        <a href="{% url 'customer_detail' company_slug=workspace.slug customer_id=customer.id %}" class="px-3 py-1.5 rounded-xl text-xs font-bold text-brand-600 hover:bg-brand-50 border border-brand-200 transition inline-block">
+                            View 360 &rarr;
+                        </a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="py-12 text-center text-gray-400 text-xs">
+                        No customers found matching your criteria.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
