@@ -185,4 +185,39 @@ class LLMService:
             "is_escalated": is_escalated
         }
 
+    @classmethod
+    def summarize_conversation(cls, messages: list[dict]) -> str:
+        """Generates a concise 1-2 sentence executive summary of a customer conversation."""
+        if not messages:
+            return "No messages exchanged in this session."
+        
+        customer_msgs = [m["content"] for m in messages if m.get("sender_type") in ("CUSTOMER", "customer")]
+        if not customer_msgs:
+            customer_msgs = [m.get("content", "") for m in messages]
+        
+        last_inquiry = customer_msgs[-1] if customer_msgs else "General support inquiry"
+        first_inquiry = customer_msgs[0] if customer_msgs else last_inquiry
+        
+        if len(customer_msgs) == 1:
+            return f"Customer initiated contact regarding: {first_inquiry[:140]}."
+        return f"Customer inquired about '{first_inquiry[:80]}'. Final follow-up: '{last_inquiry[:80]}'."
+
+    @classmethod
+    def recommend_team_routing(cls, workspace, text: str):
+        """Recommends the best team based on text/intent keywords."""
+        t_lower = (text or "").lower()
+        if any(w in t_lower for w in ["bill", "charge", "refund", "deduct", "invoice", "payment", "card", "price"]):
+            team = Team.objects.filter(workspace=workspace, slug__in=["billing-support", "billing"]).first()
+            if team:
+                return team
+        if any(w in t_lower for w in ["order", "ship", "deliver", "track", "package", "return", "defect", "exchange"]):
+            team = Team.objects.filter(workspace=workspace, slug__in=["order-support", "orders", "shipping"]).first()
+            if team:
+                return team
+        if any(w in t_lower for w in ["tech", "bug", "error", "broken", "login", "password", "crash", "api"]):
+            team = Team.objects.filter(workspace=workspace, slug__in=["tech-support", "engineering", "technical"]).first()
+            if team:
+                return team
+        return Team.objects.filter(workspace=workspace, is_active=True).first()
+
 llm_service = LLMService()

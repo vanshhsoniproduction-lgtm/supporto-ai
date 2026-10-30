@@ -18,9 +18,37 @@ class ToolRegistry:
     """
 
     @staticmethod
-    def lookup_order(workspace_id: int, order_number: str) -> dict:
+    def lookup_order(workspace_id: int, order_number: str, customer_email: str = None) -> dict:
         """Looks up real-time e-commerce order details, shipping carrier, and return eligibility."""
         order_num = order_number.strip().upper()
+
+        # Dynamic External Store Integration (Shopify, Custom SaaS, WooCommerce)
+        try:
+            from apps.workspaces.models import WorkspaceSettings
+            settings_obj = WorkspaceSettings.objects.filter(workspace_id=workspace_id).first()
+            if settings_obj and settings_obj.orders_api_webhook_url:
+                import urllib.request
+                import urllib.parse
+                import json
+                params = {"order_id": order_num}
+                if customer_email:
+                    params["email"] = customer_email
+                query_str = urllib.parse.urlencode(params)
+                sep = "&" if "?" in settings_obj.orders_api_webhook_url else "?"
+                target_url = f"{settings_obj.orders_api_webhook_url}{sep}{query_str}"
+
+                headers = {"User-Agent": "SupportoAI-ToolRunner/1.0"}
+                if settings_obj.orders_api_secret_key:
+                    headers["Authorization"] = f"Bearer {settings_obj.orders_api_secret_key}"
+
+                req = urllib.request.Request(target_url, headers=headers)
+                with urllib.request.urlopen(req, timeout=3.0) as resp:
+                    if resp.status == 200:
+                        payload = json.loads(resp.read().decode("utf-8"))
+                        if "order" in payload:
+                            return {"success": True, "order": payload["order"], "source": "external_store_api"}
+        except Exception as e:
+            logger.warning(f"External store webhook call failed for workspace {workspace_id}: {e}. Falling back to internal catalog.")
         # Pre-configured catalog for ShopEase demo
         orders_db = {
             "SE-84920": {

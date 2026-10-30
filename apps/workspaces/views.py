@@ -110,6 +110,9 @@ def workspace_settings_view(request, company_slug):
         settings_obj.sla_urgent_minutes = int(request.POST.get("sla_urgent_minutes", 30))
         settings_obj.sla_standard_hours = int(request.POST.get("sla_standard_hours", 24))
         settings_obj.ticket_auto_assignment = bool(request.POST.get("ticket_auto_assignment"))
+        settings_obj.orders_api_webhook_url = request.POST.get("orders_api_webhook_url", "").strip()
+        settings_obj.orders_api_secret_key = request.POST.get("orders_api_secret_key", "").strip()
+        settings_obj.customer_verification_secret = request.POST.get("customer_verification_secret", "").strip()
         settings_obj.save()
 
         # If support_email is provided, ensure it is automatically authorized as OWNER

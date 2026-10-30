@@ -93,6 +93,20 @@ class WorkspaceSettings(models.Model):
         default="Hello! How can we help you today?",
         help_text="Default greeting shown in the customer chat widget"
     )
+    orders_api_webhook_url = models.URLField(
+        blank=True,
+        help_text="Outbound endpoint on client store to query dynamic orders via tool calling"
+    )
+    orders_api_secret_key = models.CharField(
+        max_length=255,
+        blank=True,
+        help_text="Bearer token to authenticate outbound requests to client store API"
+    )
+    customer_verification_secret = models.CharField(
+        max_length=255,
+        blank=True,
+        help_text="Shared secret key to verify logged-in customer identity"
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
