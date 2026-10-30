@@ -35,6 +35,15 @@ def ai_settings_view(request, company_slug):
 def company_ai_health_view(request, company_slug):
     """Company-level AI diagnostics and runtime health status."""
     workspace = request.workspace
+
+    if request.method == "POST" or request.GET.get("warmup") == "1":
+        # Preload models into memory
+        model_manager.get_llm()
+        model_manager.get_stt()
+        model_manager.get_tts()
+        messages.success(request, "AI models loaded into memory.")
+        return redirect("company_ai_health", company_slug=workspace.slug)
+
     health = model_manager.get_health_status()
 
     return render(request, "ai_engine/health.html", {
