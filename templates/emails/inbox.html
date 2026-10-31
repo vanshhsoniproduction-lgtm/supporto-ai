@@ -4,24 +4,31 @@
 
 {% block workspace_content %}
 <div class="space-y-6">
-    <!-- Top Bar: Title & Sync Now -->
-    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+    <!-- Top Bar: Header & Actions -->
+    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-2">
         <div>
-            <h1 class="text-2xl font-black text-charcoal-900">Company Email Inbox</h1>
-            <p class="text-xs text-gray-500 mt-0.5">Incoming customer emails triaged and analyzed by Supporto AI.</p>
+            <h1 class="text-2xl font-black text-charcoal-900">Support Email Inbox</h1>
+            <p class="text-xs text-gray-500 mt-0.5">Automated inbound triage, urgency classification, and AI-grounded draft replies.</p>
         </div>
 
-        <div class="flex items-center gap-3">
+        <div class="flex items-center gap-2.5">
+            {% for mb in connections %}
+            <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-white border border-gray-200 text-charcoal-800 shadow-2xs">
+                <span class="w-2 h-2 rounded-full {% if mb.status == 'ACTIVE' %}bg-emerald-500 animate-pulse{% else %}bg-rose-500{% endif %}"></span>
+                <span class="font-mono text-[11px]">{{ mb.email_address }}</span>
+            </span>
+            {% endfor %}
+
             <form method="POST" action="{% url 'email_sync_now' company_slug=workspace.slug %}">
                 {% csrf_token %}
-                <button type="submit" class="px-4 py-2 rounded-xl text-xs font-bold text-white bg-brand-500 hover:bg-brand-600 shadow-md transition flex items-center gap-2">
+                <button type="submit" class="px-4 py-2 rounded-xl text-xs font-bold text-white bg-brand-500 hover:bg-brand-600 shadow-sm transition flex items-center gap-1.5">
                     <span class="material-symbols-outlined text-sm">sync</span>
-                    Sync Now
+                    Sync Mailbox
                 </button>
             </form>
             <a href="{% url 'gmail_connect' company_slug=workspace.slug %}" class="px-3.5 py-2 rounded-xl text-xs font-bold text-gray-700 bg-white border border-gray-200 hover:bg-gray-50 transition flex items-center gap-1.5">
                 <span class="material-symbols-outlined text-sm">settings</span>
-                Integration Settings
+                Settings
             </a>
         </div>
     </div>
@@ -37,180 +44,149 @@
     </div>
     {% endif %}
 
-    <!-- 3-Panel Email Layout -->
+    <!-- Filter Pills Bar (Spacious Horizontal Tabs) -->
+    <div class="flex items-center gap-2 overflow-x-auto pb-1 text-xs">
+        <a href="{% url 'email_inbox' company_slug=workspace.slug %}?filter=all"
+           class="px-4 py-2 rounded-xl font-bold transition flex items-center gap-2 shrink-0 {% if filter_status == 'all' %}bg-charcoal-900 text-white shadow-sm{% else %}bg-white text-gray-600 hover:bg-gray-100 border border-gray-200{% endif %}">
+            <span class="material-symbols-outlined text-sm">inbox</span>
+            All Emails
+            <span class="px-1.5 py-0.2 rounded-full text-[10px] {% if filter_status == 'all' %}bg-white/20 text-white{% else %}bg-gray-100 text-gray-600{% endif %}">{{ counts.all }}</span>
+        </a>
+
+        <a href="{% url 'email_inbox' company_slug=workspace.slug %}?filter=pending_review"
+           class="px-4 py-2 rounded-xl font-bold transition flex items-center gap-2 shrink-0 {% if filter_status == 'pending_review' %}bg-amber-600 text-white shadow-sm{% else %}bg-white text-amber-800 hover:bg-amber-50 border border-amber-200{% endif %}">
+            <span class="material-symbols-outlined text-sm">rate_review</span>
+            Pending Review
+            <span class="px-1.5 py-0.2 rounded-full text-[10px] {% if filter_status == 'pending_review' %}bg-white/20 text-white{% else %}bg-amber-100 text-amber-900{% endif %}">{{ counts.pending_review }}</span>
+        </a>
+
+        <a href="{% url 'email_inbox' company_slug=workspace.slug %}?filter=ticket_approved"
+           class="px-4 py-2 rounded-xl font-bold transition flex items-center gap-2 shrink-0 {% if filter_status == 'ticket_approved' %}bg-emerald-600 text-white shadow-sm{% else %}bg-white text-emerald-800 hover:bg-emerald-50 border border-emerald-200{% endif %}">
+            <span class="material-symbols-outlined text-sm">check_circle</span>
+            Ticket Approved
+            <span class="px-1.5 py-0.2 rounded-full text-[10px] {% if filter_status == 'ticket_approved' %}bg-white/20 text-white{% else %}bg-emerald-100 text-emerald-900{% endif %}">{{ counts.ticket_approved }}</span>
+        </a>
+
+        <a href="{% url 'email_inbox' company_slug=workspace.slug %}?filter=no_ticket"
+           class="px-4 py-2 rounded-xl font-bold transition flex items-center gap-2 shrink-0 {% if filter_status == 'no_ticket' %}bg-gray-700 text-white shadow-sm{% else %}bg-white text-gray-600 hover:bg-gray-100 border border-gray-200{% endif %}">
+            <span class="material-symbols-outlined text-sm">done_all</span>
+            No Ticket Required
+            <span class="px-1.5 py-0.2 rounded-full text-[10px] {% if filter_status == 'no_ticket' %}bg-white/20 text-white{% else %}bg-gray-100 text-gray-600{% endif %}">{{ counts.no_ticket }}</span>
+        </a>
+
+        <a href="{% url 'email_inbox' company_slug=workspace.slug %}?filter=rejected"
+           class="px-4 py-2 rounded-xl font-bold transition flex items-center gap-2 shrink-0 {% if filter_status == 'rejected' %}bg-rose-600 text-white shadow-sm{% else %}bg-white text-rose-700 hover:bg-rose-50 border border-rose-200{% endif %}">
+            <span class="material-symbols-outlined text-sm">cancel</span>
+            Rejected
+            <span class="px-1.5 py-0.2 rounded-full text-[10px] {% if filter_status == 'rejected' %}bg-white/20 text-white{% else %}bg-rose-100 text-rose-800{% endif %}">{{ counts.rejected }}</span>
+        </a>
+    </div>
+
+    <!-- 2-Panel Spacious Layout (List: 5 cols, Detail: 7 cols) -->
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        <!-- Left Panel: Mail Folders & Filters (col-span-3) -->
-        <div class="lg:col-span-3 bg-white p-5 rounded-3xl border border-gray-200 shadow-sm space-y-5">
-            <div class="flex items-center justify-between pb-3 border-b border-gray-100">
-                <h3 class="font-bold text-xs uppercase tracking-wider text-gray-400">Folders & Filters</h3>
-                <span class="text-xs font-bold px-2 py-0.5 rounded bg-gray-100 text-charcoal-800">{{ counts.all }}</span>
-            </div>
-
-            <nav class="space-y-1 text-xs">
-                <a href="{% url 'email_inbox' company_slug=workspace.slug %}?filter=all" class="flex items-center justify-between px-3 py-2 rounded-xl transition {% if filter_status == 'all' %}bg-brand-50 text-brand-600 font-bold{% else %}text-gray-600 hover:bg-gray-50{% endif %}">
-                    <span class="flex items-center gap-2">
-                        <span class="material-symbols-outlined text-base">inbox</span>
-                        All Emails
-                    </span>
-                    <span class="text-[11px] font-semibold text-gray-400">{{ counts.all }}</span>
-                </a>
-
-                <a href="{% url 'email_inbox' company_slug=workspace.slug %}?filter=pending_review" class="flex items-center justify-between px-3 py-2 rounded-xl transition {% if filter_status == 'pending_review' %}bg-amber-50 text-amber-700 font-bold{% else %}text-gray-600 hover:bg-gray-50{% endif %}">
-                    <span class="flex items-center gap-2">
-                        <span class="material-symbols-outlined text-base text-amber-600">rate_review</span>
-                        Pending Review
-                    </span>
-                    <span class="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-800">{{ counts.pending_review }}</span>
-                </a>
-
-                <a href="{% url 'email_inbox' company_slug=workspace.slug %}?filter=ticket_approved" class="flex items-center justify-between px-3 py-2 rounded-xl transition {% if filter_status == 'ticket_approved' %}bg-emerald-50 text-emerald-700 font-bold{% else %}text-gray-600 hover:bg-gray-50{% endif %}">
-                    <span class="flex items-center gap-2">
-                        <span class="material-symbols-outlined text-base text-emerald-600">check_circle</span>
-                        Ticket Approved
-                    </span>
-                    <span class="text-[11px] font-semibold text-gray-400">{{ counts.ticket_approved }}</span>
-                </a>
-
-                <a href="{% url 'email_inbox' company_slug=workspace.slug %}?filter=no_ticket" class="flex items-center justify-between px-3 py-2 rounded-xl transition {% if filter_status == 'no_ticket' %}bg-gray-100 text-charcoal-900 font-bold{% else %}text-gray-600 hover:bg-gray-50{% endif %}">
-                    <span class="flex items-center gap-2">
-                        <span class="material-symbols-outlined text-base">done_all</span>
-                        No Ticket Required
-                    </span>
-                    <span class="text-[11px] font-semibold text-gray-400">{{ counts.no_ticket }}</span>
-                </a>
-
-                <a href="{% url 'email_inbox' company_slug=workspace.slug %}?filter=rejected" class="flex items-center justify-between px-3 py-2 rounded-xl transition {% if filter_status == 'rejected' %}bg-rose-50 text-rose-700 font-bold{% else %}text-gray-600 hover:bg-gray-50{% endif %}">
-                    <span class="flex items-center gap-2">
-                        <span class="material-symbols-outlined text-base text-rose-600">cancel</span>
-                        Rejected
-                    </span>
-                    <span class="text-[11px] font-semibold text-gray-400">{{ counts.rejected }}</span>
-                </a>
-            </nav>
-
-            <!-- Connected Mailboxes Status -->
-            <div class="pt-4 border-t border-gray-100 space-y-2">
-                <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Connected Mailbox</span>
-                {% for mb in connections %}
-                <div class="p-2.5 rounded-xl border border-gray-100 bg-gray-50/50 text-[11px]">
-                    <div class="flex items-center gap-1.5 font-bold text-charcoal-900 truncate">
-                        <span class="w-2 h-2 rounded-full {% if mb.status == 'ACTIVE' %}bg-emerald-500{% else %}bg-rose-500{% endif %}"></span>
-                        <span class="truncate">{{ mb.email_address }}</span>
-                    </div>
-                    <p class="text-[10px] text-gray-400 mt-0.5">Last Sync: {{ mb.last_successful_sync_at|date:"M d, H:i"|default:"Pending" }}</p>
-                </div>
-                {% empty %}
-                <div class="p-2.5 rounded-xl border border-dashed border-gray-200 text-center text-[11px] text-gray-400">
-                    No mailbox connected.<br>
-                    <a href="{% url 'gmail_connect' company_slug=workspace.slug %}" class="text-brand-500 font-bold hover:underline">Connect Gmail</a>
-                </div>
-                {% endfor %}
-            </div>
-        </div>
-
-        <!-- Center Panel: Email List (col-span-4) -->
-        <div class="lg:col-span-4 bg-white p-5 rounded-3xl border border-gray-200 shadow-sm space-y-4">
+        <!-- Left Column: Email List (col-span-5) -->
+        <div class="lg:col-span-5 bg-white p-5 rounded-3xl border border-gray-200 shadow-sm space-y-4">
             <!-- Search bar -->
             <form method="GET" action="{% url 'email_inbox' company_slug=workspace.slug %}">
                 <input type="hidden" name="filter" value="{{ filter_status }}">
                 <div class="relative">
                     <span class="material-symbols-outlined absolute left-3 top-2.5 text-gray-400 text-lg">search</span>
-                    <input type="text" name="q" value="{{ search_query }}" placeholder="Search emails..." class="w-full pl-9 pr-4 py-2 rounded-xl border border-gray-200 text-xs outline-none focus:ring-2 focus:ring-brand-500">
+                    <input type="text" name="q" value="{{ search_query }}" placeholder="Search by sender, subject, keywords..." class="w-full pl-9 pr-4 py-2 rounded-xl border border-gray-200 text-xs outline-none focus:ring-2 focus:ring-brand-500 bg-gray-50/50">
                 </div>
             </form>
 
             <!-- Email Items -->
-            <div class="divide-y divide-gray-100 max-h-[680px] overflow-y-auto">
+            <div class="divide-y divide-gray-100 max-h-[720px] overflow-y-auto pr-1">
                 {% for email in emails %}
-                <a href="{% url 'email_inbox' company_slug=workspace.slug %}?filter={{ filter_status }}&q={{ search_query }}&selected={{ email.id }}" class="block p-3.5 rounded-2xl transition {% if selected_email.id == email.id %}bg-brand-50/60 border border-brand-200{% else %}hover:bg-gray-50 border border-transparent{% endif %}">
+                <a href="{% url 'email_inbox' company_slug=workspace.slug %}?filter={{ filter_status }}&q={{ search_query }}&selected={{ email.id }}" class="block p-4 rounded-2xl transition {% if selected_email.id == email.id %}bg-brand-50/70 border border-brand-200 shadow-2xs{% else %}hover:bg-gray-50 border border-transparent{% endif %}">
                     <div class="flex items-center justify-between text-[11px] mb-1">
-                        <span class="font-bold text-charcoal-900 truncate max-w-[160px]">{{ email.sender_name|default:email.sender_email }}</span>
-                        <span class="text-gray-400 shrink-0 text-[10px]">{{ email.received_at|date:"M d, H:i" }}</span>
+                        <span class="font-bold text-charcoal-900 truncate max-w-[200px]">{{ email.sender_name|default:email.sender_email }}</span>
+                        <span class="text-gray-400 shrink-0 text-[10px] font-mono">{{ email.received_at|date:"M d, H:i" }}</span>
                     </div>
                     <h4 class="font-bold text-xs text-charcoal-800 line-clamp-1 mb-1">{{ email.subject }}</h4>
                     <p class="text-[11px] text-gray-500 line-clamp-2 leading-relaxed">{{ email.normalized_text_body }}</p>
 
                     <!-- Status Badges -->
-                    <div class="flex items-center gap-1.5 mt-2 flex-wrap">
+                    <div class="flex items-center gap-1.5 mt-2.5 flex-wrap">
                         {% if email.proposal %}
                         <span class="px-2 py-0.5 rounded text-[9px] font-bold {% if email.proposal.ai_urgency == 'CRITICAL' %}bg-red-100 text-red-700 animate-pulse{% elif email.proposal.ai_urgency == 'HIGH' %}bg-amber-100 text-amber-700{% else %}bg-blue-50 text-blue-700{% endif %}">
                             {{ email.proposal.ai_urgency }}
                         </span>
                         <span class="px-2 py-0.5 rounded text-[9px] font-bold bg-gray-100 text-gray-600">
-                            {{ email.proposal.ai_intent|slice:":15" }}
+                            {{ email.proposal.ai_intent|slice:":18" }}
                         </span>
                         {% endif %}
-                        <span class="text-[9px] font-bold px-1.5 py-0.5 rounded {% if email.processing_status == 'TICKET_APPROVED' %}bg-emerald-50 text-emerald-700{% elif email.processing_status == 'TICKET_PROPOSED' %}bg-amber-50 text-amber-700{% else %}bg-gray-100 text-gray-500{% endif %}">
+                        <span class="text-[9px] font-bold px-2 py-0.5 rounded {% if email.processing_status == 'TICKET_APPROVED' %}bg-emerald-50 text-emerald-700{% elif email.processing_status == 'TICKET_PROPOSED' %}bg-amber-50 text-amber-700{% else %}bg-gray-100 text-gray-500{% endif %}">
                             {{ email.get_processing_status_display }}
                         </span>
                     </div>
                 </a>
                 {% empty %}
-                <div class="text-center py-12 text-gray-400 text-xs">
-                    <span class="material-symbols-outlined text-3xl mb-1 text-gray-300">mail</span>
-                    <p>No emails found matching your filter.</p>
+                <div class="text-center py-16 text-gray-400 text-xs space-y-1">
+                    <span class="material-symbols-outlined text-4xl text-gray-300">mail</span>
+                    <p class="font-medium">No emails found matching this filter.</p>
                 </div>
                 {% endfor %}
             </div>
         </div>
 
-        <!-- Right Panel: Email Detail & AI Triage (col-span-5) -->
-        <div class="lg:col-span-5 bg-white p-6 rounded-3xl border border-gray-200 shadow-sm space-y-6">
+        <!-- Right Column: Email Detail & AI Triage (col-span-7) -->
+        <div class="lg:col-span-7 bg-white p-6 sm:p-7 rounded-3xl border border-gray-200 shadow-sm space-y-6">
             {% if selected_email %}
             <!-- Email Header -->
             <div class="pb-4 border-b border-gray-100 space-y-2">
-                <div class="flex items-start justify-between gap-2">
+                <div class="flex items-start justify-between gap-4">
                     <div>
-                        <h2 class="text-base font-black text-charcoal-900 leading-snug">{{ selected_email.subject }}</h2>
+                        <h2 class="text-lg font-black text-charcoal-900 leading-snug">{{ selected_email.subject }}</h2>
                         <p class="text-xs text-gray-500 mt-1">
-                            From: <span class="font-bold text-charcoal-900">{{ selected_email.sender_name }}</span> &lt;{{ selected_email.sender_email }}&gt;
+                            From: <strong class="text-charcoal-900">{{ selected_email.sender_name }}</strong> &lt;{{ selected_email.sender_email }}&gt;
                         </p>
                     </div>
-                    <span class="text-[11px] text-gray-400 font-mono shrink-0">{{ selected_email.received_at|date:"M d, Y H:i" }}</span>
+                    <span class="text-xs text-gray-400 font-mono shrink-0 bg-gray-50 px-2.5 py-1 rounded-lg border border-gray-100">{{ selected_email.received_at|date:"M d, Y H:i" }}</span>
                 </div>
             </div>
 
             <!-- AI Triage Analysis Card -->
             {% if selected_email.proposal %}
-            <div class="p-4 rounded-2xl bg-[#F8FAFC] border border-slate-200 space-y-3">
+            <div class="p-5 rounded-2xl bg-[#F8FAFC] border border-slate-200 space-y-4">
                 <div class="flex items-center justify-between">
-                    <span class="text-[11px] font-bold uppercase tracking-wider text-indigo-600 flex items-center gap-1">
-                        <span class="material-symbols-outlined text-sm">psychology</span>
-                        Supporto AI Triage Analysis
+                    <span class="text-xs font-bold uppercase tracking-wider text-indigo-600 flex items-center gap-1.5">
+                        <span class="material-symbols-outlined text-base">psychology</span>
+                        Supporto AI Triage Evaluation
                     </span>
-                    <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-indigo-50 text-indigo-700">
-                        {{ selected_email.proposal.ai_confidence|floatformat:2 }} Confidence
+                    <span class="text-[10px] font-bold px-2.5 py-1 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-100">
+                        {{ selected_email.proposal.ai_confidence|floatformat:2 }} Confidence Score
                     </span>
                 </div>
 
-                <!-- Metrics grid -->
-                <div class="grid grid-cols-3 gap-2 text-center text-xs">
-                    <div class="p-2 rounded-xl bg-white border border-slate-100">
-                        <span class="text-[10px] text-gray-400 block">Intent</span>
-                        <span class="font-bold text-charcoal-900">{{ selected_email.proposal.ai_intent }}</span>
+                <!-- Metrics Grid -->
+                <div class="grid grid-cols-3 gap-3 text-center text-xs">
+                    <div class="p-3 rounded-xl bg-white border border-slate-100 shadow-2xs">
+                        <span class="text-[10px] text-gray-400 uppercase font-bold block mb-0.5">Intent</span>
+                        <span class="font-black text-charcoal-900">{{ selected_email.proposal.ai_intent }}</span>
                     </div>
-                    <div class="p-2 rounded-xl bg-white border border-slate-100">
-                        <span class="text-[10px] text-gray-400 block">Urgency</span>
-                        <span class="font-bold {% if selected_email.proposal.ai_urgency == 'CRITICAL' %}text-rose-600 font-black{% elif selected_email.proposal.ai_urgency == 'HIGH' %}text-amber-600{% else %}text-emerald-600{% endif %}">
+                    <div class="p-3 rounded-xl bg-white border border-slate-100 shadow-2xs">
+                        <span class="text-[10px] text-gray-400 uppercase font-bold block mb-0.5">Urgency</span>
+                        <span class="font-black {% if selected_email.proposal.ai_urgency == 'CRITICAL' %}text-rose-600{% elif selected_email.proposal.ai_urgency == 'HIGH' %}text-amber-600{% else %}text-emerald-600{% endif %}">
                             {{ selected_email.proposal.ai_urgency }}
                         </span>
                     </div>
-                    <div class="p-2 rounded-xl bg-white border border-slate-100">
-                        <span class="text-[10px] text-gray-400 block">Sentiment</span>
-                        <span class="font-bold text-charcoal-900">{{ selected_email.proposal.ai_sentiment }}</span>
+                    <div class="p-3 rounded-xl bg-white border border-slate-100 shadow-2xs">
+                        <span class="text-[10px] text-gray-400 uppercase font-bold block mb-0.5">Sentiment</span>
+                        <span class="font-black text-charcoal-900">{{ selected_email.proposal.ai_sentiment }}</span>
                     </div>
                 </div>
 
-                <p class="text-xs text-slate-700 bg-white p-3 rounded-xl border border-slate-100 leading-relaxed">
-                    <strong class="text-slate-900">Summary:</strong> {{ selected_email.proposal.ai_summary }}
-                </p>
+                <div class="text-xs text-slate-700 bg-white p-3.5 rounded-xl border border-slate-100 leading-relaxed">
+                    <strong class="text-slate-900">AI Summary:</strong> {{ selected_email.proposal.ai_summary }}
+                </div>
 
                 <!-- Grounded KB sources -->
                 {% if selected_email.proposal.kb_sources_used %}
-                <div class="text-[11px] text-gray-500 flex items-center gap-1.5 flex-wrap">
-                    <span class="font-bold text-charcoal-800">Grounded in KB:</span>
+                <div class="text-[11px] text-gray-500 flex items-center gap-1.5 flex-wrap pt-1">
+                    <span class="font-bold text-charcoal-800">Knowledge Base Grounding:</span>
                     {% for src in selected_email.proposal.kb_sources_used %}
-                    <span class="px-2 py-0.5 rounded bg-white text-indigo-700 border border-indigo-100 text-[10px] font-semibold">{{ src }}</span>
+                    <span class="px-2.5 py-0.5 rounded bg-white text-indigo-700 border border-indigo-100 text-[10px] font-semibold">{{ src }}</span>
                     {% endfor %}
                 </div>
                 {% endif %}
@@ -219,8 +195,8 @@
 
             <!-- Original Message Body -->
             <div class="space-y-2">
-                <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider">Original Email Message</h3>
-                <div class="p-4 rounded-2xl bg-gray-50 border border-gray-100 text-xs text-charcoal-800 whitespace-pre-wrap font-sans leading-relaxed max-h-56 overflow-y-auto">
+                <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider">Customer Message</h3>
+                <div class="p-4 rounded-2xl bg-gray-50 border border-gray-100 text-xs text-charcoal-800 whitespace-pre-wrap font-sans leading-relaxed max-h-60 overflow-y-auto">
                     {{ selected_email.normalized_text_body }}
                 </div>
             </div>
@@ -229,13 +205,13 @@
             {% if selected_email.proposal and selected_email.proposal.ai_suggested_reply %}
             <div class="space-y-2">
                 <div class="flex items-center justify-between">
-                    <h3 class="text-xs font-bold text-indigo-600 uppercase tracking-wider flex items-center gap-1">
+                    <h3 class="text-xs font-bold text-indigo-600 uppercase tracking-wider flex items-center gap-1.5">
                         <span class="material-symbols-outlined text-sm">edit_note</span>
-                        Suggested AI Reply (Draft Only)
+                        AI-Drafted Response (Human-in-the-Loop)
                     </h3>
-                    <span class="text-[10px] text-gray-400">Not automatically sent</span>
+                    <span class="text-[10px] text-gray-400">Review &amp; approve before sending</span>
                 </div>
-                <div class="p-4 rounded-2xl bg-indigo-50/40 border border-indigo-100 text-xs text-charcoal-800 whitespace-pre-wrap leading-relaxed max-h-48 overflow-y-auto">
+                <div class="p-4 rounded-2xl bg-indigo-50/40 border border-indigo-100 text-xs text-charcoal-800 whitespace-pre-wrap leading-relaxed max-h-52 overflow-y-auto">
                     {{ selected_email.proposal.edited_suggested_reply|default:selected_email.proposal.ai_suggested_reply }}
                 </div>
             </div>
@@ -244,23 +220,23 @@
             <!-- Action Area / Human Review Bridge -->
             <div class="pt-4 border-t border-gray-100">
                 {% if selected_email.linked_ticket %}
-                <div class="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-center justify-between">
+                <div class="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-center justify-between">
                     <div>
-                        <span class="text-[10px] font-bold uppercase tracking-wider text-emerald-700 block">Ticket Created</span>
-                        <h4 class="font-black text-sm text-emerald-950">#{{ selected_email.linked_ticket.ticket_number }}</h4>
+                        <span class="text-[10px] font-bold uppercase tracking-wider text-emerald-700 block">Support Ticket Active</span>
+                        <h4 class="font-black text-base text-emerald-950">#{{ selected_email.linked_ticket.ticket_number }}</h4>
                     </div>
-                    <a href="{% url 'ticket_detail' company_slug=workspace.slug ticket_number=selected_email.linked_ticket.ticket_number %}" class="px-3.5 py-1.5 rounded-xl text-xs font-bold text-emerald-800 bg-white hover:bg-emerald-100 border border-emerald-300 transition">
-                        View Ticket &rarr;
+                    <a href="{% url 'ticket_detail' company_slug=workspace.slug ticket_number=selected_email.linked_ticket.ticket_number %}" class="px-4 py-2 rounded-xl text-xs font-bold text-emerald-800 bg-white hover:bg-emerald-100 border border-emerald-300 transition shadow-2xs">
+                        Open Ticket &rarr;
                     </a>
                 </div>
                 {% elif selected_email.proposal and selected_email.proposal.approval_status == 'PENDING_REVIEW' %}
                 <div class="p-4 rounded-2xl bg-amber-50 border border-amber-200 space-y-3">
                     <div class="flex items-center justify-between">
-                        <span class="text-xs font-bold text-amber-900">Pending Human Review & Approval</span>
-                        <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-200 text-amber-900">Mandatory Team Selection</span>
+                        <span class="text-xs font-bold text-amber-900">Pending Review in Triage Queue</span>
+                        <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-200 text-amber-900">Requires Staff Approval</span>
                     </div>
                     <a href="{% url 'email_review_queue' company_slug=workspace.slug %}" class="w-full py-2.5 px-4 rounded-xl text-xs font-bold text-white bg-amber-600 hover:bg-amber-700 shadow-sm transition flex items-center justify-center gap-2">
-                        Open in Human Review Queue
+                        Open Review Queue
                         <span class="material-symbols-outlined text-sm">arrow_forward</span>
                     </a>
                 </div>
@@ -268,13 +244,13 @@
             </div>
 
             {% else %}
-            <div class="text-center py-24 text-gray-400 space-y-2">
-                <span class="material-symbols-outlined text-4xl text-gray-300">mail</span>
-                <p class="text-sm font-semibold">Select an email from the list to view its AI analysis and suggested draft reply.</p>
+            <div class="text-center py-28 text-gray-400 space-y-2">
+                <span class="material-symbols-outlined text-5xl text-gray-300">drafts</span>
+                <p class="text-sm font-semibold text-charcoal-700">Select an email to view full details</p>
+                <p class="text-xs text-gray-400 max-w-sm mx-auto">Click on any email in the list to inspect its intent classification, urgency, sentiment score, and AI-suggested draft reply.</p>
             </div>
             {% endif %}
         </div>
     </div>
 </div>
 {% endblock %}
-

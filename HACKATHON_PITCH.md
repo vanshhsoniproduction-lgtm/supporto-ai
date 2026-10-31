@@ -91,3 +91,4 @@
 
 ### Q4: "How does the bonus twist (Weekly Insights) work?"
 > *"Our analytics engine continuously monitors conversations, email triage outcomes, and ticket resolutions over a rolling 7-day window. It aggregates recurring complaint categories, computes SLA compliance rates, and tracks sentiment shifts from ANGRY to POSITIVE. Workspace managers can review this on their dashboard or export a formal CSV report with a single click."*
+

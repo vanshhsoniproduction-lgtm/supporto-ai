@@ -92,6 +92,103 @@
         </div>
     </form>
 
+    <!-- Configured Webhooks (Multi-Webhook Endpoints) Card -->
+    <div class="bg-white p-6 sm:p-8 rounded-2xl border border-gray-200 shadow-sm space-y-6">
+        <div>
+            <div class="flex items-center gap-2">
+                <span class="material-symbols-outlined text-brand-500">webhook</span>
+                <h4 class="text-base font-bold text-charcoal-900">Connected Store & Carrier Webhooks</h4>
+            </div>
+            <p class="text-xs text-gray-500 mt-1">
+                Configure multiple live endpoints (e.g. Orders API, ExpressBeas/Courier AWB Tracking, Inventory, Customer Verification) that Supporto AI queries in real-time.
+            </p>
+        </div>
+
+        <!-- Add Webhook Form -->
+        <form method="POST" action="{% url 'workspace_settings' company_slug=workspace.slug %}" class="grid grid-cols-1 sm:grid-cols-12 gap-3 p-4 bg-gray-50 rounded-xl border border-gray-200 items-end">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="add_webhook">
+            <div class="sm:col-span-3">
+                <label class="block text-[10px] font-bold uppercase text-gray-500 mb-1">Webhook Name</label>
+                <input type="text" name="name" required placeholder="e.g. ExpressBeas AWB Tracking" class="w-full px-3 py-2 border rounded-lg text-xs outline-none focus:ring-2 focus:ring-brand-500 bg-white">
+            </div>
+            <div class="sm:col-span-3">
+                <label class="block text-[10px] font-bold uppercase text-gray-500 mb-1">Webhook Type</label>
+                <select name="webhook_type" class="w-full px-3 py-2 border rounded-lg text-xs outline-none focus:ring-2 focus:ring-brand-500 bg-white font-semibold">
+                    <option value="ORDERS">Orders & Purchases</option>
+                    <option value="TRACKING" selected>AWB & Courier Tracking</option>
+                    <option value="CUSTOMERS">Customer Profile</option>
+                    <option value="INVENTORY">Inventory & Stock</option>
+                    <option value="CUSTOM">Custom Endpoint</option>
+                </select>
+            </div>
+            <div class="sm:col-span-4">
+                <label class="block text-[10px] font-bold uppercase text-gray-500 mb-1">Endpoint URL</label>
+                <input type="url" name="url" required placeholder="https://api.expressbeas.in/track" class="w-full px-3 py-2 border rounded-lg text-xs outline-none focus:ring-2 focus:ring-brand-500 bg-white">
+            </div>
+            <div class="sm:col-span-2">
+                <button type="submit" class="w-full px-4 py-2 bg-brand-500 hover:bg-brand-600 text-white font-bold text-xs rounded-lg shadow-sm transition flex items-center justify-center gap-1">
+                    <span class="material-symbols-outlined text-sm">add_link</span>
+                    Add Webhook
+                </button>
+            </div>
+        </form>
+
+        <!-- Webhooks Table -->
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+                <thead>
+                    <tr class="border-b border-gray-100 text-[10px] text-gray-400 uppercase tracking-wider font-bold">
+                        <th class="pb-3">Endpoint Name</th>
+                        <th class="pb-3">Type</th>
+                        <th class="pb-3">URL</th>
+                        <th class="pb-3">Status</th>
+                        <th class="pb-3 text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-50">
+                    {% for wh in webhooks %}
+                    <tr>
+                        <td class="py-3 font-semibold text-charcoal-900 flex items-center gap-2">
+                            <span class="material-symbols-outlined text-sm text-brand-500">api</span>
+                            {{ wh.name }}
+                        </td>
+                        <td class="py-3">
+                            <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-purple-50 text-purple-700 border border-purple-200">
+                                {{ wh.get_webhook_type_display }}
+                            </span>
+                        </td>
+                        <td class="py-3 font-mono text-[11px] text-gray-600 truncate max-w-xs">
+                            {{ wh.url }}
+                        </td>
+                        <td class="py-3">
+                            <span class="px-2 py-0.5 rounded text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200">
+                                ACTIVE
+                            </span>
+                        </td>
+                        <td class="py-3 text-right">
+                            <form method="POST" action="{% url 'workspace_settings' company_slug=workspace.slug %}" onsubmit="return confirm('Remove this webhook endpoint?');" class="inline">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="delete_webhook">
+                                <input type="hidden" name="webhook_id" value="{{ wh.id }}">
+                                <button type="submit" class="text-rose-600 hover:text-rose-800 font-bold text-xs hover:underline">
+                                    Delete
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="py-4 text-center text-gray-400 text-xs">
+                            No secondary webhooks configured yet. Primary store webhook in General Settings above is active.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
     <!-- Authorized Google Login Accounts Card -->
     <div class="bg-white p-6 sm:p-8 rounded-2xl border border-gray-200 shadow-sm space-y-6">
         <div>

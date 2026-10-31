@@ -396,6 +396,10 @@ def google_callback_view(request):
                 login(request, existing_user, backend="django.contrib.auth.backends.ModelBackend")
                 if auth_records.count() == 1:
                     return redirect(f"/{auth_records.first().workspace.slug}/")
+                # Multiple workspaces: prefer OWNER role, then redirect to select page
+                owner_record = auth_records.filter(assigned_role=WorkspaceMembership.Role.OWNER).first()
+                if owner_record:
+                    return redirect(f"/{owner_record.workspace.slug}/")
                 return redirect("select_workspace")
 
             messages.error(request, f"Google account {normalized_email} has not been authorized for any Supporto AI workspace.")

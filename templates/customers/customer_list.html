@@ -13,10 +13,10 @@
 
     <!-- Filter & Search Bar -->
     <div class="bg-white p-4 rounded-2xl border border-gray-200 shadow-sm flex flex-col sm:flex-row gap-3 items-center justify-between">
-        <form method="GET" class="flex-1 flex gap-2 w-full">
-            <div class="relative flex-1">
+        <form method="GET" class="flex-1 flex flex-wrap gap-2 w-full">
+            <div class="relative flex-1 min-w-[200px]">
                 <span class="material-symbols-outlined absolute left-3 top-2.5 text-gray-400 text-lg">search</span>
-                <input type="text" name="q" value="{{ query }}" placeholder="Search customer by name, email, phone, or company..." class="w-full pl-9 pr-4 py-2 rounded-xl border border-gray-200 text-xs outline-none focus:ring-2 focus:ring-brand-500">
+                <input type="text" name="q" value="{{ query }}" placeholder="Search customer by name, email, phone..." class="w-full pl-9 pr-4 py-2 rounded-xl border border-gray-200 text-xs outline-none focus:ring-2 focus:ring-brand-500">
             </div>
             <select name="source" class="px-3 py-2 rounded-xl border border-gray-200 text-xs bg-white focus:ring-2 focus:ring-brand-500 outline-none font-semibold">
                 <option value="">All Sources</option>
@@ -24,6 +24,7 @@
                 <option value="WIDGET" {% if source_filter == 'WIDGET' %}selected{% endif %}>Chat Widget</option>
                 <option value="VOICE" {% if source_filter == 'VOICE' %}selected{% endif %}>Voice Call</option>
             </select>
+            <input type="text" name="company" value="{{ company_filter }}" placeholder="Filter by Client/Org..." class="px-3 py-2 rounded-xl border border-gray-200 text-xs bg-white focus:ring-2 focus:ring-brand-500 outline-none w-44">
             <button type="submit" class="px-4 py-2 rounded-xl text-xs font-bold text-white bg-brand-500 hover:bg-brand-600 transition">
                 Search
             </button>
@@ -89,4 +90,3 @@
     </div>
 </div>
 {% endblock %}
-

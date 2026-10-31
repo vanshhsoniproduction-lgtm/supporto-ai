@@ -29,11 +29,6 @@
                 <span class="material-symbols-outlined text-base">call</span>
                 Voice Call AI
             </button>
-
-            <!-- End Chat / Ticket Button -->
-            <button id="endChatBtn" onclick="completeConversation()" title="End conversation and save support ticket" class="px-3 py-1.5 bg-charcoal-800 hover:bg-charcoal-700 text-gray-300 hover:text-white text-xs font-semibold rounded-xl transition border border-charcoal-700">
-                End Chat
-            </button>
         </div>
     </header>
 
@@ -48,20 +43,20 @@
             <div class="max-w-[85%] rounded-2xl rounded-tl-none bg-white p-4 shadow-sm border border-gray-100 text-charcoal-900 leading-relaxed space-y-2">
                 <p>
                     {% if customer_name %}
-                    Welcome {{ customer_name }}! How can our AI assistant help you with your order, returns, shipping, or billing today?
+                    Welcome {{ customer_name }}! How can our AI assistant help you today?
                     {% else %}
-                    {{ settings.welcome_message|default:"Welcome to ShopEase Support! How can our AI assistant help you with your order, returns, or billing today?" }}
+                    {{ settings.welcome_message|default:"Welcome! How can our AI assistant help you today?" }}
                     {% endif %}
                 </p>
                 <div class="flex flex-wrap gap-2 pt-1 text-[11px]">
-                    <button onclick="quickAsk('Where is my order SE-84920?')" class="px-2.5 py-1 bg-gray-50 hover:bg-gray-100 rounded-lg border border-gray-200 text-gray-700 transition">
-                        📦 Track Order SE-84920
+                    <button onclick="quickAsk('I need help with my order')" class="px-2.5 py-1 bg-gray-50 hover:bg-gray-100 rounded-lg border border-gray-200 text-gray-700 transition">
+                        📦 Order Help
                     </button>
                     <button onclick="quickAsk('What is your return and refund policy?')" class="px-2.5 py-1 bg-gray-50 hover:bg-gray-100 rounded-lg border border-gray-200 text-gray-700 transition">
                         🔄 Return Policy
                     </button>
-                    <button onclick="quickAsk('My card was charged twice')" class="px-2.5 py-1 bg-gray-50 hover:bg-gray-100 rounded-lg border border-gray-200 text-gray-700 transition">
-                        💳 Billing Inquiry
+                    <button onclick="quickAsk('I have a billing question')" class="px-2.5 py-1 bg-gray-50 hover:bg-gray-100 rounded-lg border border-gray-200 text-gray-700 transition">
+                        💳 Billing
                     </button>
                 </div>
             </div>
@@ -78,36 +73,42 @@
     </div>
 
     <!-- Ticket Banner (Hidden until created) -->
-    <div id="ticketBanner" class="hidden px-4 py-2.5 bg-emerald-50 border-t border-emerald-200 flex items-center justify-between text-xs text-emerald-800">
+    <div id="ticketBanner" class="hidden px-4 py-3 bg-emerald-50 border-t border-emerald-200 flex items-center justify-between text-xs text-emerald-800">
         <span class="font-bold flex items-center gap-1.5">
             <span class="material-symbols-outlined text-sm">check_circle</span>
-            Ticket Created: <span id="ticketNumberDisplay" class="font-mono"></span>
+            Ticket Created: <span id="ticketNumberDisplay" class="font-mono ml-1"></span>
         </span>
-        <span class="text-[11px] text-emerald-600">Routed to Staff Queue</span>
+        <span class="text-[11px] text-emerald-600">Team notified &bull; Reply within SLA</span>
     </div>
 
     <!-- Input Box & Controls -->
-    <div class="p-4 bg-white border-t border-gray-200 flex-shrink-0 space-y-2">
+    <div class="p-4 bg-white border-t border-gray-200 flex-shrink-0 space-y-3">
         <form id="chatForm" onsubmit="sendChatMessage(event)" class="flex items-center gap-2">
-            <input type="text" id="chatInput" placeholder="Type your message or ask about your order..." autocomplete="off" class="flex-1 px-4 py-3 text-xs sm:text-sm border border-gray-200 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none">
+            <input type="text" id="chatInput" placeholder="Type your message..." autocomplete="off" class="flex-1 px-4 py-3 text-xs sm:text-sm border border-gray-200 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none">
             <button type="submit" id="sendBtn" class="bg-brand-500 hover:bg-brand-600 text-white p-3 rounded-xl transition flex items-center justify-center shadow-md">
                 <span class="material-symbols-outlined text-base">send</span>
             </button>
         </form>
 
-        <div class="flex items-center justify-between pt-1">
-            <button type="button" id="voiceBtn" onclick="toggleVoiceRecording()" class="flex items-center gap-1.5 text-xs font-semibold text-charcoal-800 hover:text-brand-500 bg-gray-50 hover:bg-gray-100 px-3 py-1.5 rounded-lg border border-gray-200 transition">
-                <span id="voiceIcon" class="material-symbols-outlined text-sm text-brand-500">mic</span>
-                <span id="voiceLabel">Push-to-Talk</span>
+        <!-- Action Buttons Row -->
+        <div class="flex items-center gap-2">
+            <button type="button" id="submitTicketBtn" onclick="submitAndRaiseTicket()"
+                class="flex-1 flex items-center justify-center gap-1.5 text-xs font-bold text-white bg-brand-500 hover:bg-brand-600 px-3 py-2.5 rounded-xl transition shadow-sm">
+                <span class="material-symbols-outlined text-sm">confirmation_number</span>
+                Submit &amp; Raise Ticket
             </button>
-            <span id="voiceStatus" class="text-[11px] text-gray-400">Push-to-talk ready</span>
+            <button type="button" id="endConvoBtn" onclick="endConversationOnly()"
+                class="flex items-center justify-center gap-1.5 text-xs font-semibold text-gray-600 hover:text-charcoal-900 bg-gray-50 hover:bg-gray-100 px-3 py-2.5 rounded-xl border border-gray-200 transition">
+                <span class="material-symbols-outlined text-sm">close</span>
+                End
+            </button>
         </div>
     </div>
 
     <!-- ========================================================================= -->
     <!-- MOBILE PHONE CALL SCREEN OVERLAY (Live Voice Call Interface)             -->
     <!-- ========================================================================= -->
-    <div id="phoneCallModal" class="hidden fixed inset-0 z-50 bg-charcoal-950 flex flex-col justify-between p-6 sm:p-10 text-white animate-fade-in">
+    <div id="phoneCallModal" class="hidden fixed inset-0 z-50 bg-charcoal-950 flex flex-col justify-between p-6 sm:p-10 text-white">
         <!-- Call Header -->
         <div class="flex items-center justify-between text-xs text-gray-400">
             <div class="flex items-center gap-2">
@@ -120,7 +121,7 @@
         <!-- Assistant Profile & Calling Visualizer -->
         <div class="flex flex-col items-center justify-center space-y-6 my-auto">
             <div class="relative">
-                <div id="callPulseRing" class="absolute -inset-4 rounded-full bg-emerald-500/20 animate-pulse"></div>
+                <div class="absolute -inset-4 rounded-full bg-emerald-500/20 animate-pulse"></div>
                 <div class="w-28 h-28 rounded-full bg-gradient-to-tr from-brand-500 to-indigo-600 p-1 flex items-center justify-center shadow-2xl relative z-10">
                     <div class="w-full h-full rounded-full bg-charcoal-900 flex items-center justify-center text-brand-400">
                         <span class="material-symbols-outlined text-5xl">support_agent</span>
@@ -130,11 +131,11 @@
 
             <div class="text-center space-y-1">
                 <h2 class="text-xl sm:text-2xl font-black text-white">{{ workspace.name }} AI Voice Agent</h2>
-                <p id="callStatusText" class="text-xs text-emerald-400 font-semibold">Call Connected • Listening</p>
+                <p id="callStatusText" class="text-xs text-emerald-400 font-semibold">Call Connected &bull; Tap Speak</p>
             </div>
 
             <!-- Animated Sound Wave Visualizer -->
-            <div id="soundWave" class="flex items-center gap-1.5 h-10">
+            <div class="flex items-center gap-1.5 h-10">
                 <span class="w-1.5 bg-emerald-400 rounded-full h-4 animate-bounce"></span>
                 <span class="w-1.5 bg-emerald-400 rounded-full h-8 animate-bounce delay-100"></span>
                 <span class="w-1.5 bg-emerald-400 rounded-full h-6 animate-bounce delay-200"></span>
@@ -145,7 +146,7 @@
             <!-- Live Speech Bubble -->
             <div class="max-w-md w-full bg-charcoal-900/90 p-4 rounded-2xl border border-charcoal-800 text-center min-h-[75px] flex items-center justify-center shadow-inner">
                 <p id="callTranscriptLive" class="text-xs text-gray-300 italic leading-relaxed">
-                    "Hello! I am your AI assistant. Tap 'Speak' and ask me anything about your order or returns."
+                    "Hello! I am your AI assistant. Tap 'Speak' and ask me anything."
                 </p>
             </div>
         </div>
@@ -176,6 +177,7 @@
     let isRecording = false;
     let recognition = null;
     let liveBrowserTranscript = "";
+    let conversationEnded = false;
 
     // Live Call Timer & State
     let callTimerInterval = null;
@@ -202,6 +204,7 @@
                 }
             }
         };
+        recognition.onerror = () => {};
     }
 
     function quickAsk(text) {
@@ -210,17 +213,16 @@
         sendChatMessage();
     }
 
-    // Send text message
+    // ─── Send text message ────────────────────────────────────────────────────
     async function sendChatMessage(e) {
         if (e) e.preventDefault();
+        if (conversationEnded) return;
         const input = document.getElementById("chatInput");
         const text = input.value.trim();
         if (!text) return;
 
         input.value = "";
         appendMessage("CUSTOMER", text);
-
-        // Show typing indicator
         const typingId = appendTypingIndicator();
 
         try {
@@ -253,99 +255,84 @@
         }
     }
 
-    // Push to talk in main chat
-    async function toggleVoiceRecording() {
-        if (!isRecording) {
-            startRecording();
-        } else {
-            stopRecording();
+    // ─── Submit & Raise Ticket ────────────────────────────────────────────────
+    async function submitAndRaiseTicket() {
+        if (conversationEnded) {
+            alert("This conversation has already been submitted.");
+            return;
         }
-    }
-
-    async function startRecording() {
-        try {
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            mediaRecorder = new MediaRecorder(stream);
-            audioChunks = [];
-
-            mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
-            mediaRecorder.onstop = uploadVoiceAudio;
-
-            mediaRecorder.start();
-            isRecording = true;
-            liveBrowserTranscript = "";
-            if (recognition) {
-                try { recognition.start(); } catch(e) {}
-            }
-            document.getElementById("voiceLabel").textContent = "Stop & Send Audio";
-            document.getElementById("voiceIcon").classList.add("text-red-500", "animate-pulse");
-            document.getElementById("voiceStatus").textContent = "Listening... Speak now";
-        } catch (err) {
-            alert("Microphone access denied or unavailable: " + err.message);
-        }
-    }
-
-    function stopRecording() {
-        if (mediaRecorder && isRecording) {
-            mediaRecorder.stop();
-            isRecording = false;
-            if (recognition) {
-                try { recognition.stop(); } catch(e) {}
-            }
-            document.getElementById("voiceLabel").textContent = "Push-to-Talk";
-            document.getElementById("voiceIcon").classList.remove("text-red-500", "animate-pulse");
-            document.getElementById("voiceStatus").textContent = "Processing speech...";
-        }
-    }
-
-    async function uploadVoiceAudio() {
-        const audioBlob = new Blob(audioChunks, { type: "audio/webm" });
-        const formData = new FormData();
-        formData.append("audio", audioBlob, "voice_recording.webm");
-        formData.append("session_token", sessionToken);
-        if (liveBrowserTranscript) {
-            formData.append("browser_transcript", liveBrowserTranscript);
+        if (!sessionToken) {
+            alert("Please send at least one message before submitting a ticket.");
+            return;
         }
 
-        const typingId = appendTypingIndicator();
+        const btn = document.getElementById("submitTicketBtn");
+        btn.disabled = true;
+        btn.innerHTML = `<span class="material-symbols-outlined text-sm">hourglass_empty</span> Submitting...`;
 
         try {
-            const resp = await fetch(`/widget/${publicKey}/voice/`, {
+            const resp = await fetch(`/widget/${publicKey}/complete/`, {
                 method: "POST",
-                body: formData
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ session_token: sessionToken })
             });
             const data = await resp.json();
-            removeTypingIndicator(typingId);
-            document.getElementById("voiceStatus").textContent = "Push-to-talk ready";
 
-            if (data.session_token) {
-                sessionToken = data.session_token;
-                localStorage.setItem(`supporto_session_${publicKey}`, sessionToken);
+            conversationEnded = true;
+            if (data.ticket_number) {
+                showTicketBanner(data.ticket_number);
+                appendMessage("AI", `✅ Ticket #${data.ticket_number} raised! Our support team will get back to you within the SLA window. You may close this window.`);
+            } else {
+                appendMessage("AI", data.message || "Your conversation has been submitted to our support team!");
             }
-
-            if (data.transcription) {
-                appendMessage("CUSTOMER", data.transcription);
-            }
-            if (data.ai_message) {
-                appendMessage("AI", data.ai_message);
-            }
-            playVoiceResponse(data.audio_url, data.ai_message);
+            disableInput(true);
         } catch (err) {
-            removeTypingIndicator(typingId);
-            document.getElementById("voiceStatus").textContent = "Voice error";
-            appendMessage("AI", "Voice processing failed. Please try again.");
+            appendMessage("AI", "Could not submit ticket. Please try again.");
+            btn.disabled = false;
+            btn.innerHTML = `<span class="material-symbols-outlined text-sm">confirmation_number</span> Submit & Raise Ticket`;
         }
     }
 
-    // =========================================================================
-    // MOBILE VOICE CALL SCREEN LOGIC
-    // =========================================================================
+    async function endConversationOnly() {
+        if (conversationEnded) return;
+        conversationEnded = true;
+        appendMessage("AI", "Thank you for chatting with us! Your conversation has ended. Refresh the page to start a new session.");
+        disableInput(false);
+        if (sessionToken) {
+            try {
+                await fetch(`/widget/${publicKey}/complete/`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ session_token: sessionToken })
+                });
+            } catch (e) {}
+        }
+    }
+
+    function disableInput(ticketSubmitted) {
+        const input = document.getElementById("chatInput");
+        const sendBtn = document.getElementById("sendBtn");
+        const submitBtn = document.getElementById("submitTicketBtn");
+        const endBtn = document.getElementById("endConvoBtn");
+        if (input) { input.disabled = true; input.placeholder = "Conversation ended."; }
+        if (sendBtn) sendBtn.disabled = true;
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = ticketSubmitted
+                ? `<span class="material-symbols-outlined text-sm">check_circle</span> Ticket Submitted`
+                : `<span class="material-symbols-outlined text-sm">check_circle</span> Conversation Ended`;
+        }
+        if (endBtn) endBtn.disabled = true;
+        localStorage.removeItem(`supporto_session_${publicKey}`);
+    }
+
+    // ─── Voice Call ───────────────────────────────────────────────────────────
     function startVoiceCall() {
         isCallActive = true;
         callSeconds = 0;
         document.getElementById("phoneCallModal").classList.remove("hidden");
         document.getElementById("callTimer").textContent = "00:00";
-        document.getElementById("callStatusText").textContent = "Call Connected • Tap Speak";
+        document.getElementById("callStatusText").textContent = "Call Connected \u2022 Tap Speak";
 
         callTimerInterval = setInterval(() => {
             callSeconds++;
@@ -354,19 +341,16 @@
             document.getElementById("callTimer").textContent = `${mins}:${secs}`;
         }, 1000);
 
-        // Greet customer
-        const welcomeSpeech = "Hello! I am your AI support specialist. Tap the Speak button to ask anything about your orders or returns.";
+        const welcomeSpeech = "Hello! I am your AI support specialist. Tap the Speak button to ask anything.";
         document.getElementById("callTranscriptLive").textContent = `AI: "${welcomeSpeech}"`;
         playVoiceResponse("", welcomeSpeech);
     }
 
     async function toggleCallSpeaking() {
         const btn = document.getElementById("callMicBtn");
-        const icon = document.getElementById("callMicIcon");
         const text = document.getElementById("callMicText");
 
         if (!isRecording) {
-            // Start speaking
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
                 mediaRecorder = new MediaRecorder(stream);
@@ -376,9 +360,7 @@
                 mediaRecorder.start();
                 isRecording = true;
                 liveBrowserTranscript = "";
-                if (recognition) {
-                    try { recognition.start(); } catch(e) {}
-                }
+                if (recognition) { try { recognition.start(); } catch(e) {} }
 
                 btn.classList.remove("bg-emerald-500", "hover:bg-emerald-400");
                 btn.classList.add("bg-rose-500", "animate-pulse");
@@ -388,13 +370,13 @@
                 alert("Microphone permission required: " + err.message);
             }
         } else {
-            // Done speaking
             if (mediaRecorder && isRecording) {
                 mediaRecorder.stop();
-                isRecording = false;
-                if (recognition) {
-                    try { recognition.stop(); } catch(e) {}
+                if (mediaRecorder.stream) {
+                    mediaRecorder.stream.getTracks().forEach(t => t.stop());
                 }
+                isRecording = false;
+                if (recognition) { try { recognition.stop(); } catch(e) {} }
                 btn.classList.remove("bg-rose-500", "animate-pulse");
                 btn.classList.add("bg-emerald-500", "hover:bg-emerald-400");
                 text.textContent = "Speak";
@@ -423,16 +405,12 @@
                 sessionToken = data.session_token;
                 localStorage.setItem(`supporto_session_${publicKey}`, sessionToken);
             }
-
-            if (data.transcription) {
-                appendMessage("CUSTOMER", data.transcription);
-            }
+            if (data.transcription) appendMessage("CUSTOMER", data.transcription);
             if (data.ai_message) {
                 appendMessage("AI", data.ai_message);
                 document.getElementById("callTranscriptLive").textContent = `AI: "${data.ai_message}"`;
             }
-
-            document.getElementById("callStatusText").textContent = "Call Connected • Tap Speak";
+            document.getElementById("callStatusText").textContent = "Call Connected \u2022 Tap Speak";
             playVoiceResponse(data.audio_url, data.ai_message);
 
             if (data.is_escalated && data.escalation_ticket) {
@@ -446,18 +424,35 @@
     function endVoiceCall() {
         isCallActive = false;
         clearInterval(callTimerInterval);
+        callTimerInterval = null;
+
         if (mediaRecorder && isRecording) {
-            mediaRecorder.stop();
+            try {
+                mediaRecorder.stop();
+                if (mediaRecorder.stream) {
+                    mediaRecorder.stream.getTracks().forEach(t => t.stop());
+                }
+            } catch(e) {}
             isRecording = false;
         }
-        if (recognition) {
-            try { recognition.stop(); } catch(e) {}
+        if (recognition) { try { recognition.stop(); } catch(e) {} }
+        if ("speechSynthesis" in window) { window.speechSynthesis.cancel(); }
+
+        const player = document.getElementById("audioPlayer");
+        if (player) { player.pause(); player.src = ""; }
+        document.getElementById("audioPlayerContainer").classList.add("hidden");
+
+        const btn = document.getElementById("callMicBtn");
+        if (btn) {
+            btn.classList.remove("bg-rose-500", "animate-pulse");
+            btn.classList.add("bg-emerald-500", "hover:bg-emerald-400");
         }
-        if ("speechSynthesis" in window) {
-            window.speechSynthesis.cancel();
-        }
+        const micText = document.getElementById("callMicText");
+        if (micText) micText.textContent = "Speak";
+
+        const duration = document.getElementById("callTimer").textContent;
         document.getElementById("phoneCallModal").classList.add("hidden");
-        appendMessage("AI", `[Voice Call Ended — Call duration: ${document.getElementById("callTimer").textContent}]`);
+        appendMessage("AI", `[Voice Call Ended \u2014 Duration: ${duration}]`);
     }
 
     function playVoiceResponse(audioUrl, fallbackText) {
@@ -467,6 +462,7 @@
             player.src = audioUrl;
             container.classList.remove("hidden");
             player.play().catch(e => console.log("Audio autoplay prevented", e));
+            player.onended = () => container.classList.add("hidden");
         } else if (fallbackText && "speechSynthesis" in window) {
             window.speechSynthesis.cancel();
             const clean = fallbackText.replace(/<[^>]+>/g, '').replace(/\*+/g, '');
@@ -474,29 +470,6 @@
             utterance.rate = 1.05;
             utterance.pitch = 1.0;
             window.speechSynthesis.speak(utterance);
-        }
-    }
-
-    async function completeConversation() {
-        if (!sessionToken) {
-            alert("No active session to submit.");
-            return;
-        }
-        try {
-            const resp = await fetch(`/widget/${publicKey}/complete/`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ session_token: sessionToken })
-            });
-            const data = await resp.json();
-            if (data.ticket_number) {
-                showTicketBanner(data.ticket_number);
-                appendMessage("AI", `Support conversation ended. Ticket #${data.ticket_number} created and assigned to team.`);
-            } else {
-                appendMessage("AI", data.message || "Conversation ended.");
-            }
-        } catch (err) {
-            console.error("Error finalizing:", err);
         }
     }
 

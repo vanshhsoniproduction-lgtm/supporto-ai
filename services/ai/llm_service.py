@@ -26,12 +26,20 @@ class LLMService:
         system_prompt = config.system_prompt
         msg_lower = customer_message.lower()
 
-        # 1. Tool Calling: Check if customer asks about an order (e.g., SE-84920 or "my order")
-        order_match = re.search(r'\b(se-?\d{4,6})\b', msg_lower)
+        # 1. Tool Calling: Check if customer asks about an order or shipment AWB
+        awb_match = re.search(r'\b(eb\d{6,12})\b', msg_lower)
+        order_match = re.search(r'\b(se-?\d{4,6}|fm-?\d{4,6}|tn-?\d{4,6}|ord-?\d{4,6})\b', msg_lower)
+        tracking_keywords = any(k in msg_lower for k in ["my order", "track order", "awb", "consignment", "tracking", "where is my package", "where is my parcel", "shipment status"])
+
         order_data = None
-        if order_match or "my order" in msg_lower or "track order" in msg_lower:
-            order_code = order_match.group(1).upper() if order_match else "SE-84920"
-            tool_res = tool_registry.lookup_order(workspace.id, order_code)
+        if awb_match or order_match or tracking_keywords:
+            if awb_match:
+                code = awb_match.group(1).upper()
+            elif order_match:
+                code = order_match.group(1).upper()
+            else:
+                code = "EB987654321" if workspace.slug == "expressbeas" else "SE-84920"
+            tool_res = tool_registry.lookup_order(workspace.id, code)
             if tool_res.get("success"):
                 order_data = tool_res["order"]
 
@@ -97,19 +105,32 @@ class LLMService:
     def _generate_grounded_fallback(workspace, message: str, retrieved_docs: list[dict], order_data: dict = None) -> str:
         msg_lower = message.lower()
 
-        # Order lookup response
+        # Order or Shipment lookup response
         if order_data:
             num = order_data["order_number"]
             item = order_data["item"]
             status = order_data["status"]
             carrier = order_data["carrier"]
             delivery = order_data["estimated_delivery"]
+            last_scan = order_data.get("last_scan")
+            origin = order_data.get("origin")
+            dest = order_data.get("destination")
 
             if "cancel" in msg_lower:
-                if order_data["can_cancel"]:
-                    return f"Your order {num} ({item}) is currently in processing and can be cancelled. I will notify our Order Support team to cancel it."
+                if order_data.get("can_cancel"):
+                    return f"Your order {num} ({item}) is currently in processing and can be cancelled. I will notify our Support team to cancel it."
                 else:
-                    return f"Order {num} ({item}) is already {status.lower()} with {carrier} and cannot be cancelled mid-shipment. Once it arrives, you can return it within 30 days under our return policy."
+                    return f"Shipment {num} ({item}) is already {status.lower()} with {carrier} and cannot be cancelled mid-transit. Once it arrives, you can process a return or claim."
+
+            if last_scan or origin:
+                return (
+                    f"📦 **Tracking Status for {num}**\n\n"
+                    f"• **Status**: {status}\n"
+                    f"• **Carrier**: {carrier}\n"
+                    f"• **Route**: {origin or 'Origin'} ➔ {dest or 'Destination'}\n"
+                    f"• **Latest Scan**: {last_scan or 'Scanned in transit'}\n"
+                    f"• **ETA**: {delivery}"
+                )
 
             return f"Your order {num} ({item}) is currently **{status}** via {carrier}. Estimated delivery: **{delivery}**."
 

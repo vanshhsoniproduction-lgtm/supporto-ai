@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}ShopEase Store - Demo with Supporto AI{% endblock %}
+{% block title %}{{ workspace.name }} Store - Live Demo with Supporto AI{% endblock %}
 
 {% block content %}
 <div class="min-h-full bg-gray-50 flex flex-col justify-between relative">
@@ -33,7 +33,7 @@
                 <h2 class="text-3xl sm:text-4xl font-extrabold tracking-tight">Experience Instant Customer Support</h2>
                 <p class="text-sm text-gray-300 leading-relaxed">
                     Test the embedded Supporto AI widget using the button below or the floating bubble.
-                    Ask about shipping, live order status (e.g. <code>#SE-84920</code>), return policies, or test live voice calling!
+                    Ask about {% if workspace.slug == 'expressbeas' %}AWB tracking (e.g. <code>EB987654321</code>), courier pickup, or delayed parcels{% else %}shipping, live order status, return policies{% endif %}, or test live voice calling!
                 </p>
                 <div class="pt-2">
                     <button onclick="openCustomerModal()" class="px-5 py-3 bg-brand-500 hover:bg-brand-600 text-white font-bold text-xs rounded-xl shadow-lg transition flex items-center gap-2">
@@ -44,13 +44,114 @@
             </div>
         </div>
 
-        <!-- Sample Products with Order Tracking IDs -->
+        <!-- Sample Products / Shipments with Tracking IDs -->
         <div class="space-y-4">
             <div class="flex items-center justify-between">
-                <h3 class="text-lg font-bold text-charcoal-900">Your Recent Orders (Try asking the AI about these!)</h3>
-                <span class="text-xs text-gray-500 font-semibold">Test tool-calling by typing or speaking order IDs</span>
+                <h3 class="text-lg font-bold text-charcoal-900">
+                    {% if workspace.slug == 'expressbeas' %}
+                    Your Active Shipments &amp; Consignments (Ask the AI with AWB numbers!)
+                    {% elif workspace.slug == 'technova' %}
+                    Your SaaS Subscriptions &amp; API Workspaces
+                    {% elif workspace.slug == 'freshmart' %}
+                    Your Recent Grocery Deliveries
+                    {% else %}
+                    Your Recent Orders (Try asking the AI about these!)
+                    {% endif %}
+                </h3>
+                <span class="text-xs text-gray-500 font-semibold">Test tool-calling by typing or speaking tracking IDs</span>
             </div>
+
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                {% if workspace.slug == 'expressbeas' %}
+                <!-- ExpressBeas Shipment 1 -->
+                <div class="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm space-y-3">
+                    <div class="h-40 bg-gray-100 rounded-xl flex items-center justify-center text-gray-400">
+                        <span class="material-symbols-outlined text-5xl text-blue-600">local_shipping</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <h4 class="font-bold text-sm text-charcoal-900">Commercial Consignment (5.2 kg)</h4>
+                        <span class="text-sm font-extrabold text-brand-500">₹450</span>
+                    </div>
+                    <div class="p-2.5 rounded-xl bg-blue-50 border border-blue-100 text-[11px] text-blue-900 space-y-0.5">
+                        <div class="font-mono font-bold">AWB: EB987654321</div>
+                        <div class="text-[10px] text-blue-700">Mumbai Hub &rarr; Delhi Central (In Transit)</div>
+                    </div>
+                </div>
+
+                <!-- ExpressBeas Shipment 2 -->
+                <div class="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm space-y-3">
+                    <div class="h-40 bg-gray-100 rounded-xl flex items-center justify-center text-gray-400">
+                        <span class="material-symbols-outlined text-5xl text-emerald-600">airplanemode_active</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <h4 class="font-bold text-sm text-charcoal-900">Air Express Package (0.8 kg)</h4>
+                        <span class="text-sm font-extrabold text-brand-500">₹280</span>
+                    </div>
+                    <div class="p-2.5 rounded-xl bg-emerald-50 border border-emerald-100 text-[11px] text-emerald-900 space-y-0.5">
+                        <div class="font-mono font-bold">AWB: EB123456789</div>
+                        <div class="text-[10px] text-emerald-700">Bangalore &rarr; Pune (Out for Delivery)</div>
+                    </div>
+                </div>
+
+                <!-- ExpressBeas Shipment 3 -->
+                <div class="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm space-y-3">
+                    <div class="h-40 bg-gray-100 rounded-xl flex items-center justify-center text-gray-400">
+                        <span class="material-symbols-outlined text-5xl text-amber-600">inventory_2</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <h4 class="font-bold text-sm text-charcoal-900">Electronics Freight Parcel</h4>
+                        <span class="text-sm font-extrabold text-brand-500">₹320</span>
+                    </div>
+                    <div class="p-2.5 rounded-xl bg-amber-50 border border-amber-100 text-[11px] text-amber-900 space-y-0.5">
+                        <div class="font-mono font-bold">AWB: EB112233445</div>
+                        <div class="text-[10px] text-amber-700">Delivered &bull; Damage Claim Open</div>
+                    </div>
+                </div>
+
+                {% elif workspace.slug == 'technova' %}
+                <!-- TechNova Subscription Cards -->
+                <div class="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm space-y-3">
+                    <div class="h-40 bg-gray-100 rounded-xl flex items-center justify-center text-gray-400">
+                        <span class="material-symbols-outlined text-5xl text-purple-600">api</span>
+                    </div>
+                    <h4 class="font-bold text-sm text-charcoal-900">Pro Developer API Plan</h4>
+                    <div class="p-2 rounded-lg bg-purple-50 text-[11px] text-purple-900 font-mono">
+                        Sub ID: TN-88234 &bull; 10,000 req/min
+                    </div>
+                </div>
+                <div class="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm space-y-3">
+                    <div class="h-40 bg-gray-100 rounded-xl flex items-center justify-center text-gray-400">
+                        <span class="material-symbols-outlined text-5xl text-indigo-600">groups</span>
+                    </div>
+                    <h4 class="font-bold text-sm text-charcoal-900">Enterprise Team Workspace</h4>
+                    <div class="p-2 rounded-lg bg-indigo-50 text-[11px] text-indigo-900 font-mono">
+                        Sub ID: TN-12088 &bull; 50 Seats Active
+                    </div>
+                </div>
+
+                {% elif workspace.slug == 'freshmart' %}
+                <!-- FreshMart Grocery Cards -->
+                <div class="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm space-y-3">
+                    <div class="h-40 bg-gray-100 rounded-xl flex items-center justify-center text-gray-400">
+                        <span class="material-symbols-outlined text-5xl text-emerald-600">nutrition</span>
+                    </div>
+                    <h4 class="font-bold text-sm text-charcoal-900">Organic Mangoes &amp; Fruits Box</h4>
+                    <div class="p-2 rounded-lg bg-emerald-50 text-[11px] text-emerald-900 font-mono">
+                        Order #FM-44512 &bull; 15-min Express Slot
+                    </div>
+                </div>
+                <div class="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm space-y-3">
+                    <div class="h-40 bg-gray-100 rounded-xl flex items-center justify-center text-gray-400">
+                        <span class="material-symbols-outlined text-5xl text-emerald-600">local_dining</span>
+                    </div>
+                    <h4 class="font-bold text-sm text-charcoal-900">Farm Dairy &amp; Artisan Breads</h4>
+                    <div class="p-2 rounded-lg bg-emerald-50 text-[11px] text-emerald-900 font-mono">
+                        Order #FM-55123 &bull; Morning Delivery
+                    </div>
+                </div>
+
+                {% else %}
+                <!-- ShopEase Products -->
                 <!-- Product 1 -->
                 <div class="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm space-y-3">
                     <div class="h-40 bg-gray-100 rounded-xl flex items-center justify-center text-gray-400">
@@ -61,7 +162,7 @@
                         <span class="text-sm font-extrabold text-brand-500">$199</span>
                     </div>
                     <div class="p-2 rounded-lg bg-blue-50 border border-blue-100 text-[11px] text-blue-900">
-                        <strong>Order #SE-84920</strong> • In Transit (FedEx)
+                        <strong>Order #SE-84920</strong> &bull; In Transit (FedEx)
                     </div>
                 </div>
 
@@ -75,7 +176,7 @@
                         <span class="text-sm font-extrabold text-brand-500">$1,199</span>
                     </div>
                     <div class="p-2 rounded-lg bg-amber-50 border border-amber-100 text-[11px] text-amber-900">
-                        <strong>Order #SE-84921</strong> • Processing in Warehouse
+                        <strong>Order #SE-84921</strong> &bull; Processing in Warehouse
                     </div>
                 </div>
 
@@ -89,9 +190,10 @@
                         <span class="text-sm font-extrabold text-brand-500">$149</span>
                     </div>
                     <div class="p-2 rounded-lg bg-emerald-50 border border-emerald-100 text-[11px] text-emerald-900">
-                        <strong>Order #SE-84922</strong> • Delivered 2 days ago
+                        <strong>Order #SE-84922</strong> &bull; Delivered
                     </div>
                 </div>
+                {% endif %}
             </div>
         </div>
     </main>

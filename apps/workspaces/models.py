@@ -189,3 +189,28 @@ class WorkspaceAuthorizedEmail(models.Model):
 
     def __str__(self):
         return f"{self.normalized_email} -> {self.workspace.name} ({self.assigned_role} - {self.status})"
+
+
+class WorkspaceWebhook(models.Model):
+    class WebhookType(models.TextChoices):
+        ORDERS = "ORDERS", "Orders & Purchases API"
+        TRACKING = "TRACKING", "AWB & Shipment Tracking API"
+        CUSTOMERS = "CUSTOMERS", "Customer Profile API"
+        INVENTORY = "INVENTORY", "Product & Inventory API"
+        CUSTOM = "CUSTOM", "Custom Webhook Endpoint"
+
+    workspace = models.ForeignKey(Workspace, on_delete=models.CASCADE, related_name="webhooks")
+    name = models.CharField(max_length=100, default="Primary Endpoint")
+    webhook_type = models.CharField(max_length=20, choices=WebhookType.choices, default=WebhookType.ORDERS)
+    url = models.URLField(help_text="Outbound endpoint to query")
+    secret_key = models.CharField(max_length=255, blank=True, help_text="Bearer token or API secret key")
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.workspace.slug} - {self.name} ({self.get_webhook_type_display()})"
+

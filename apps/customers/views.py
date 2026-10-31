@@ -9,10 +9,11 @@ from services.workspaces.access_control import require_workspace_roles
 
 @require_workspace_roles("OWNER", "ADMIN", "MANAGER", "AGENT")
 def customer_list_view(request, company_slug):
-    """Lists customers strictly scoped to the active workspace with search and filters."""
+    """Lists customers strictly scoped to the active workspace with search and company filters."""
     workspace = request.workspace
     query = request.GET.get("q", "").strip()
     source_filter = request.GET.get("source", "").strip().upper()
+    company_filter = request.GET.get("company", "").strip()
 
     customers_qs = Customer.objects.filter(workspace=workspace)
 
@@ -30,6 +31,9 @@ def customer_list_view(request, company_slug):
     if source_filter and source_filter in Customer.Source.values:
         customers_qs = customers_qs.filter(source=source_filter)
 
+    if company_filter:
+        customers_qs = customers_qs.filter(company__icontains=company_filter)
+
     customers_qs = customers_qs.order_by("-last_seen")
     paginator = Paginator(customers_qs, 20)
     page_obj = paginator.get_page(request.GET.get("page", 1))
@@ -39,6 +43,7 @@ def customer_list_view(request, company_slug):
         "customers": page_obj,
         "query": query,
         "source_filter": source_filter,
+        "company_filter": company_filter,
         "active_nav": "customers"
     })
 
@@ -96,4 +101,3 @@ def customer_detail_view(request, company_slug, customer_id):
         "sentiment_history": sentiment_history,
         "active_nav": "customers"
     })
-

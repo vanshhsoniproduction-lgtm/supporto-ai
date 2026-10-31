@@ -2,7 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.conf import settings
 from django.http import HttpResponseForbidden
-from apps.workspaces.models import Workspace, WorkspaceSettings, WorkspaceMembership, WorkspaceAuthorizedEmail
+from apps.workspaces.models import Workspace, WorkspaceSettings, WorkspaceMembership, WorkspaceAuthorizedEmail, WorkspaceWebhook
 from apps.tickets.models import Ticket
 from apps.conversations.models import Conversation
 from apps.teams.models import Team
@@ -98,6 +98,29 @@ def workspace_settings_view(request, company_slug):
             messages.info(request, "Authorized email removed.")
             return redirect("workspace_settings", company_slug=workspace.slug)
 
+        elif action == "add_webhook":
+            wh_name = request.POST.get("name", "Webhook Endpoint").strip()
+            wh_url = request.POST.get("url", "").strip()
+            wh_type = request.POST.get("webhook_type", WorkspaceWebhook.WebhookType.ORDERS)
+            wh_secret = request.POST.get("secret_key", "").strip()
+            if wh_url:
+                WorkspaceWebhook.objects.create(
+                    workspace=workspace,
+                    name=wh_name,
+                    webhook_type=wh_type,
+                    url=wh_url,
+                    secret_key=wh_secret,
+                    is_active=True
+                )
+                messages.success(request, f"Webhook endpoint '{wh_name}' added successfully!")
+            return redirect("workspace_settings", company_slug=workspace.slug)
+
+        elif action == "delete_webhook":
+            wh_id = request.POST.get("webhook_id")
+            WorkspaceWebhook.objects.filter(workspace=workspace, id=wh_id).delete()
+            messages.info(request, "Webhook endpoint removed.")
+            return redirect("workspace_settings", company_slug=workspace.slug)
+
         # Default: Save general settings
         workspace.name = request.POST.get("name", workspace.name).strip()
         workspace.description = request.POST.get("description", workspace.description).strip()
@@ -132,10 +155,12 @@ def workspace_settings_view(request, company_slug):
         return redirect("workspace_settings", company_slug=workspace.slug)
 
     authorized_emails = WorkspaceAuthorizedEmail.objects.filter(workspace=workspace).order_by("-created_at")
+    webhooks = WorkspaceWebhook.objects.filter(workspace=workspace).order_by("-created_at")
 
     return render(request, "workspace/settings.html", {
         "workspace": workspace,
         "settings": settings_obj,
         "authorized_emails": authorized_emails,
+        "webhooks": webhooks,
         "active_nav": "company_settings"
     })

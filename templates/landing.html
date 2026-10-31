@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Supporto AI - Intelligent Support. Faster Resolutions.{% endblock %}
+{% block title %}Supporto AI - Intelligent Customer Support Platform{% endblock %}
 
 {% block content %}
 <div class="min-h-full flex flex-col bg-[#F7F8FA]">
@@ -13,26 +13,19 @@
                 </div>
                 <div>
                     <span class="font-extrabold text-lg text-charcoal-900 tracking-tight">Supporto AI</span>
-                    <span class="hidden sm:inline-block text-[10px] uppercase font-bold text-brand-500 tracking-wider ml-1.5 px-2 py-0.5 rounded-full bg-brand-50">Enterprise</span>
+                    <span class="hidden sm:inline-block text-[10px] uppercase font-bold text-brand-500 tracking-wider ml-1.5 px-2 py-0.5 rounded-full bg-brand-50">Platform</span>
                 </div>
             </div>
 
             <nav class="hidden md:flex items-center gap-6 text-xs font-semibold text-gray-600">
-                <a href="#features" class="hover:text-brand-500 transition">Platform Features</a>
-                <a href="#portals" class="hover:text-brand-500 transition">Company Portals</a>
-                {% if demo_widget_url %}
-                <a href="{{ demo_widget_url }}" target="_blank" class="hover:text-brand-500 transition">Widget Demo</a>
-                {% endif %}
+                <a href="#features" class="hover:text-brand-500 transition">Features</a>
+                <a href="#clients" class="hover:text-brand-500 transition">Our Clients</a>
             </nav>
 
             <div class="flex items-center gap-3">
-                <a href="{% url 'platform_admin_overview' %}" class="hidden sm:inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold text-gray-700 hover:text-brand-500 hover:bg-gray-100 transition">
-                    <span class="material-symbols-outlined text-base">admin_panel_settings</span>
-                    Platform Admin
-                </a>
-                <a href="{% url 'login' %}" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold text-white bg-brand-500 hover:bg-brand-600 transition shadow-sm">
-                    Sign In
-                    <span class="material-symbols-outlined text-sm">arrow_forward</span>
+                <a href="{% url 'google_login' %}" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold text-white bg-brand-500 hover:bg-brand-600 transition shadow-sm">
+                    <svg class="w-4 h-4" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 12.955 4 4 12.955 4 24s8.955 20 20 20 20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z"/><path fill="#FF3D00" d="M6.306 14.691l6.571 4.819C14.655 15.108 18.961 12 24 12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 16.318 4 9.656 8.337 6.306 14.691z"/><path fill="#4CAF50" d="M24 44c5.166 0 9.86-1.977 13.409-5.192l-6.19-5.238A11.91 11.91 0 0 1 24 36c-5.202 0-9.619-3.317-11.283-7.946l-6.522 5.025C9.505 39.556 16.227 44 24 44z"/><path fill="#1976D2" d="M43.611 20.083H42V20H24v8h11.303a12.04 12.04 0 0 1-4.087 5.571l.003-.002 6.19 5.238C36.971 39.205 44 34 44 24c0-1.341-.138-2.65-.389-3.917z"/></svg>
+                    Sign in with Google
                 </a>
             </div>
         </div>
@@ -42,82 +35,76 @@
     <section class="py-16 sm:py-24 px-6 max-w-7xl mx-auto w-full text-center space-y-6">
         <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold bg-brand-50 text-brand-600 border border-brand-100 shadow-xs">
             <span class="w-2 h-2 rounded-full bg-brand-500 animate-pulse"></span>
-            Multi-Tenant Customer Support & Ticket Management
+            AI Customer Support &amp; Ticket Triage Platform
         </div>
 
         <h1 class="text-4xl sm:text-6xl font-extrabold text-charcoal-900 tracking-tight max-w-4xl mx-auto leading-tight">
-            Intelligent Support. <br/>
-            <span class="text-brand-500">Faster Resolutions.</span>
+            Stop Drowning in<br/>
+            <span class="text-brand-500">Support Queries.</span>
         </h1>
 
         <p class="text-base sm:text-lg text-gray-600 max-w-2xl mx-auto leading-relaxed">
-            Supporto AI combines local LLMs, Speech-to-Text transcription, and instant voice synthesis with high-performance multi-tenant support queues and RAG grounding.
+            Supporto AI automatically classifies, triages, and resolves your customer queries — escalating only what truly needs a human. One platform, every business.
         </p>
 
-        <!-- CTA Buttons -->
+        <!-- Single CTA -->
         <div class="pt-4 flex flex-wrap items-center justify-center gap-4">
-            <a href="{% url 'login' %}" class="px-6 py-3.5 rounded-xl text-sm font-bold text-white bg-brand-500 hover:bg-brand-600 shadow-md transition flex items-center gap-2">
-                <span class="material-symbols-outlined text-base">login</span>
-                Sign In to Portal
+            <a href="{% url 'google_login' %}" class="px-8 py-4 rounded-xl text-sm font-bold text-white bg-brand-500 hover:bg-brand-600 shadow-md transition flex items-center gap-3">
+                <svg class="w-5 h-5" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 12.955 4 4 12.955 4 24s8.955 20 20 20 20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z"/><path fill="#FF3D00" d="M6.306 14.691l6.571 4.819C14.655 15.108 18.961 12 24 12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 16.318 4 9.656 8.337 6.306 14.691z"/><path fill="#4CAF50" d="M24 44c5.166 0 9.86-1.977 13.409-5.192l-6.19-5.238A11.91 11.91 0 0 1 24 36c-5.202 0-9.619-3.317-11.283-7.946l-6.522 5.025C9.505 39.556 16.227 44 24 44z"/><path fill="#1976D2" d="M43.611 20.083H42V20H24v8h11.303a12.04 12.04 0 0 1-4.087 5.571l.003-.002 6.19 5.238C36.971 39.205 44 34 44 24c0-1.341-.138-2.65-.389-3.917z"/></svg>
+                Sign in with Google
+                <span class="material-symbols-outlined text-base">arrow_forward</span>
             </a>
-            <a href="{% url 'platform_admin_overview' %}" class="px-6 py-3.5 rounded-xl text-sm font-bold text-charcoal-900 bg-white hover:bg-gray-50 border border-gray-200 shadow-sm transition flex items-center gap-2">
-                <span class="material-symbols-outlined text-base">security</span>
-                Platform Admin (/admin/)
-            </a>
-            {% if demo_widget_url %}
-            <a href="{{ demo_widget_url }}" target="_blank" class="px-6 py-3.5 rounded-xl text-sm font-bold text-brand-600 bg-brand-50 hover:bg-brand-100 border border-brand-200 shadow-sm transition flex items-center gap-2">
-                <span class="material-symbols-outlined text-base">smart_toy</span>
-                Test AI Support Widget
-            </a>
-            {% endif %}
         </div>
+        <p class="text-xs text-gray-400">Sign in with your company Google account — we'll take you right to your dashboard.</p>
     </section>
 
-    <!-- Company Portals Section -->
-    <section id="portals" class="py-12 px-6 max-w-7xl mx-auto w-full">
-        <div class="bg-white p-8 sm:p-10 rounded-3xl border border-gray-200 shadow-sm space-y-6">
-            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-gray-100 pb-4">
-                <div>
-                    <h3 class="text-2xl font-bold text-charcoal-900">Active Company Portals</h3>
-                    <p class="text-xs text-gray-500">Each organization gets its own dedicated, isolated URL portal at <span class="font-mono text-brand-500">/[company_slug]/</span></p>
-                </div>
-            </div>
+    <!-- Clients Section -->
+    <section id="clients" class="py-12 px-6 max-w-7xl mx-auto w-full">
+        <div class="text-center space-y-2 mb-8">
+            <h3 class="text-2xl font-extrabold text-charcoal-900">Trusted by Leading Businesses</h3>
+            <p class="text-sm text-gray-500">Click any client below to test their live AI customer helpdesk &amp; order tracking</p>
+        </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {% for w in workspaces %}
-                <div class="p-6 rounded-2xl border border-gray-200 bg-gray-50/50 hover:bg-white hover:border-brand-500 hover:shadow-md transition group flex flex-col justify-between">
-                    <div>
-                        <div class="flex items-center justify-between mb-3">
-                            <span class="w-10 h-10 rounded-xl bg-brand-50 text-brand-500 font-bold flex items-center justify-center text-sm shadow-xs">
-                                {{ w.name|slice:":1"|upper }}
-                            </span>
-                            <span class="font-mono text-xs text-brand-500 font-bold">/{{ w.slug }}/</span>
-                        </div>
-                        <h4 class="text-lg font-bold text-charcoal-900 group-hover:text-brand-500 transition">{{ w.name }}</h4>
-                        <p class="text-xs text-gray-500 mt-1 line-clamp-2">{{ w.description|default:"Enterprise support workspace." }}</p>
-                    </div>
-
-                    <div class="mt-6 pt-4 border-t border-gray-200/60 flex items-center justify-between">
-                        <a href="{% url 'workspace_dashboard' company_slug=w.slug %}" class="text-xs font-bold text-charcoal-900 group-hover:text-brand-500 flex items-center gap-1">
-                            Access Portal &rarr;
-                        </a>
-                        <a href="{% url 'widget_demo' public_key=w.public_key %}" target="_blank" class="text-xs font-semibold text-gray-500 hover:text-brand-500">
-                            Widget
-                        </a>
-                    </div>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+            {% for w in workspaces %}
+            <a href="/widget/{{ w.public_key }}/demo/" target="_blank"
+               class="group p-6 bg-white rounded-2xl border border-gray-200 hover:border-charcoal-800 hover:shadow-xl transition-all duration-200 flex flex-col items-center gap-3 cursor-pointer">
+                <!-- Grayscale Monochromatic Client Logo -->
+                <div class="w-16 h-16 rounded-2xl bg-gray-50 group-hover:bg-charcoal-900 flex items-center justify-center transition-colors duration-200 border border-gray-100">
+                    {% if w.slug == 'expressbeas' %}
+                    <span class="material-symbols-outlined text-3xl text-gray-700 group-hover:text-white transition-colors">local_shipping</span>
+                    {% elif w.slug == 'shopease' %}
+                    <span class="material-symbols-outlined text-3xl text-gray-700 group-hover:text-white transition-colors">shopping_bag</span>
+                    {% elif w.slug == 'technova' %}
+                    <span class="material-symbols-outlined text-3xl text-gray-700 group-hover:text-white transition-colors">cloud_sync</span>
+                    {% elif w.slug == 'freshmart' %}
+                    <span class="material-symbols-outlined text-3xl text-gray-700 group-hover:text-white transition-colors">storefront</span>
+                    {% else %}
+                    <span class="text-xl font-black text-gray-600 group-hover:text-white transition-colors">{{ w.name|slice:":2"|upper }}</span>
+                    {% endif %}
                 </div>
-                {% empty %}
-                <p class="text-sm text-gray-400 py-6 text-center col-span-full">No active workspaces configured.</p>
-                {% endfor %}
-            </div>
+
+                <div class="text-center space-y-0.5">
+                    <p class="text-sm font-black text-charcoal-900 group-hover:text-brand-500 transition tracking-tight uppercase">{{ w.name }}</p>
+                    <p class="text-[11px] text-gray-400 line-clamp-2 leading-relaxed">{{ w.description|truncatechars:48 }}</p>
+                </div>
+
+                <span class="mt-1 text-[10px] font-bold text-gray-600 group-hover:text-white group-hover:bg-charcoal-900 bg-gray-100 px-3 py-1 rounded-full flex items-center gap-1.5 transition">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                    Open Demo Site &rarr;
+                </span>
+            </a>
+            {% empty %}
+            <div class="col-span-4 text-center py-8 text-gray-400 text-sm">No workspaces configured yet.</div>
+            {% endfor %}
         </div>
     </section>
 
     <!-- Key Features Grid -->
     <section id="features" class="py-12 px-6 max-w-7xl mx-auto w-full space-y-6">
         <div class="text-center space-y-2">
-            <h3 class="text-3xl font-extrabold text-charcoal-900">Engineered for High-Performance Support</h3>
-            <p class="text-sm text-gray-500">Autonomous customer resolution coupled with human escalation control</p>
+            <h3 class="text-3xl font-extrabold text-charcoal-900">Everything Your Support Team Needs</h3>
+            <p class="text-sm text-gray-500">Built for startups, e-commerce stores, and SaaS teams that move fast</p>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 pt-6">
@@ -125,9 +112,9 @@
                 <div class="w-10 h-10 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center">
                     <span class="material-symbols-outlined">psychology</span>
                 </div>
-                <h4 class="font-bold text-base text-charcoal-900">Local AI Model Pipeline</h4>
+                <h4 class="font-bold text-base text-charcoal-900">AI-Powered Auto-Triage</h4>
                 <p class="text-xs text-gray-600 leading-relaxed">
-                    Powered by Qwen 8B LLM, Whisper Small STT, and Kokoro TTS running locally with zero latency or external API subscriptions.
+                    Every incoming message is instantly classified by intent and urgency. Urgent issues get escalated before a human even sees the queue.
                 </p>
             </div>
 
@@ -135,9 +122,9 @@
                 <div class="w-10 h-10 rounded-xl bg-brand-50 text-brand-500 flex items-center justify-center">
                     <span class="material-symbols-outlined">bolt</span>
                 </div>
-                <h4 class="font-bold text-base text-charcoal-900">Instant Urgent Escalation</h4>
+                <h4 class="font-bold text-base text-charcoal-900">Live Order &amp; Shipment Lookup</h4>
                 <p class="text-xs text-gray-600 leading-relaxed">
-                    Customer issues mentioning double-charges or account fraud immediately trigger critical escalation and route to Billing Support.
+                    Customers ask "Where is my order?" and the AI fetches live data from your store or courier system in real-time via tool calling.
                 </p>
             </div>
 
@@ -145,9 +132,39 @@
                 <div class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
                     <span class="material-symbols-outlined">shield</span>
                 </div>
-                <h4 class="font-bold text-base text-charcoal-900">Strict Tenant Isolation</h4>
+                <h4 class="font-bold text-base text-charcoal-900">Multi-Tenant Isolation</h4>
                 <p class="text-xs text-gray-600 leading-relaxed">
-                    Every ticket, message, knowledge document, and audit log is isolated by workspace to eliminate cross-tenant data leakage.
+                    Each company's tickets, knowledge base, and customer data is completely isolated. One platform, infinite businesses — zero data leakage.
+                </p>
+            </div>
+
+            <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm space-y-3">
+                <div class="w-10 h-10 rounded-xl bg-orange-50 text-orange-500 flex items-center justify-center">
+                    <span class="material-symbols-outlined">mail</span>
+                </div>
+                <h4 class="font-bold text-base text-charcoal-900">Email Inbox with AI Drafts</h4>
+                <p class="text-xs text-gray-600 leading-relaxed">
+                    Inbound support emails are read, classified, and replied to with AI-drafted responses — reviewed and sent by your team with one click.
+                </p>
+            </div>
+
+            <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm space-y-3">
+                <div class="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-500 flex items-center justify-center">
+                    <span class="material-symbols-outlined">record_voice_over</span>
+                </div>
+                <h4 class="font-bold text-base text-charcoal-900">Voice AI Support</h4>
+                <p class="text-xs text-gray-600 leading-relaxed">
+                    Customers switch to a live voice call with the AI agent. Full speech-to-text and voice responses — no hold music, no waiting.
+                </p>
+            </div>
+
+            <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm space-y-3">
+                <div class="w-10 h-10 rounded-xl bg-rose-50 text-rose-500 flex items-center justify-center">
+                    <span class="material-symbols-outlined">insights</span>
+                </div>
+                <h4 class="font-bold text-base text-charcoal-900">Weekly Insights Reports</h4>
+                <p class="text-xs text-gray-600 leading-relaxed">
+                    Automatic weekly summaries of top complaints, resolution rates, sentiment trends, and team performance — so you never miss a pattern.
                 </p>
             </div>
         </div>
@@ -155,8 +172,7 @@
 
     <!-- Footer -->
     <footer class="mt-auto border-t border-gray-200 bg-white py-8 px-6 text-center text-xs text-gray-400">
-        <p>&copy; 2026 Supporto AI Platform. Intelligent Support. Faster Resolutions.</p>
+        <p>&copy; 2026 Supporto AI Platform &mdash; Automated Support, Faster Resolutions.</p>
     </footer>
 </div>
 {% endblock %}
-
