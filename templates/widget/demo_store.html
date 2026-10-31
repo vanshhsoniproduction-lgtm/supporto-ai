@@ -2,114 +2,139 @@
 
 {% block title %}
 {% if workspace.slug == 'expressbeas' %}
-ExpressBeas — Consignment Tracking
+ExpressBeas — Consignment Tracking & Logistics
 {% else %}
-ShopEase — Customer Orders
+ShopEase — Customer Storefront & Orders
 {% endif %}
 {% endblock %}
 
 {% block content %}
-<div class="min-h-screen bg-white flex flex-col justify-between text-[#212121]">
+<div class="min-h-screen bg-[#FAFAFA] flex flex-col justify-between text-[#212121]">
 
-    <!-- 1. Minimal Header -->
-    <header class="border-b border-[#E0E0E0] bg-white sticky top-0 z-30">
+    <!-- 1. Brand Store Header -->
+    <header class="border-b border-[#E0E0E0] bg-white sticky top-0 z-30 shadow-sm">
         <div class="max-w-[1100px] mx-auto px-6 h-16 flex items-center justify-between">
-            <div class="flex items-center gap-3">
-                <a href="/" class="text-xs font-medium text-[#616161] hover:text-[#212121] flex items-center gap-1" style="text-decoration: none;">
+            <div class="flex items-center gap-4">
+                <a href="/" class="text-xs font-semibold text-[#616161] hover:text-[#F97316] flex items-center gap-1 transition-colors" style="text-decoration: none;">
                     &larr; Supporto AI
                 </a>
                 <span class="text-[#E0E0E0]">|</span>
-                <span class="font-bold text-base text-[#212121] tracking-tight">
+                <div class="flex items-center gap-2">
                     {% if workspace.slug == 'expressbeas' %}
-                    ExpressBeas Logistics
+                    <div class="w-8 h-8 rounded bg-[#212121] text-[#F97316] flex items-center justify-center font-bold">
+                        <span class="material-symbols-outlined text-lg">local_shipping</span>
+                    </div>
+                    <span class="font-bold text-base text-[#212121] tracking-tight">ExpressBeas Logistics</span>
                     {% else %}
-                    ShopEase Storefront
+                    <div class="w-8 h-8 rounded bg-[#F97316] text-white flex items-center justify-center font-bold">
+                        <span class="material-symbols-outlined text-lg">shopping_bag</span>
+                    </div>
+                    <span class="font-bold text-base text-[#212121] tracking-tight">ShopEase Store</span>
                     {% endif %}
-                </span>
+                </div>
             </div>
 
             <nav class="flex items-center gap-4 text-xs font-medium">
-                <a href="{% url 'workspace_dashboard' company_slug=workspace.slug %}" class="text-[#616161] hover:text-[#212121]" style="text-decoration: none;">
+                <a href="{% url 'workspace_dashboard' company_slug=workspace.slug %}" class="text-[#616161] hover:text-[#212121] transition-colors" style="text-decoration: none;">
                     Staff portal
                 </a>
-                <button type="button" onclick="openCustomerModal()" class="btn-primary py-2 px-3.5 text-xs" style="text-decoration: none;">
-                    Chat with support
+                <button type="button" onclick="openCustomerModal()" class="btn-primary py-2 px-3.5 text-xs font-semibold shadow-sm" style="text-decoration: none;">
+                    <span class="material-symbols-outlined text-base">support_agent</span>
+                    <span>Chat with support</span>
                 </button>
             </nav>
         </div>
     </header>
 
-    <!-- 2. Single Main Content Block (No filler) -->
+    <!-- 2. Main Storefront / Logistics Body -->
     <main class="max-w-[1100px] mx-auto px-6 py-10 flex-1 w-full space-y-8">
 
         {% if workspace.slug == 'expressbeas' %}
-        <!-- EXPRESSBEAS COURIER PORTAL -->
-        <div class="space-y-6">
-            <div class="space-y-1">
-                <h1 class="text-2xl font-bold text-[#212121] tracking-tight">Consignment Tracking</h1>
-                <p class="text-sm text-[#616161]">
-                    Track Air Waybill (AWB) consignments and dispatch event logs.
-                </p>
+        <!-- ================= EXPRESSBEAS COURIER PORTAL ================= -->
+        <div class="space-y-8">
+            <!-- Tracking Hero Search -->
+            <div class="bg-white border border-[#E0E0E0] rounded-xl p-8 space-y-6 shadow-sm">
+                <div class="space-y-2">
+                    <span class="text-xs font-bold uppercase tracking-wider text-[#F97316]">Express Consignment Tracking</span>
+                    <h1 class="text-2xl sm:text-3xl font-extrabold text-[#212121] tracking-tight">Track Your Shipment</h1>
+                    <p class="text-sm text-[#616161]">
+                        Enter your 15-digit Air Waybill (AWB) number to view live dispatch milestones and hub scan events.
+                    </p>
+                </div>
+
+                <!-- Search Input Bar -->
+                <div class="flex flex-col sm:flex-row items-center gap-3 max-w-2xl">
+                    <div class="relative w-full">
+                        <span class="absolute left-3.5 top-1/2 -translate-y-1/2 material-symbols-outlined text-[#757575] text-lg">search</span>
+                        <input type="text" id="awbSearchInput" placeholder="Enter 15-digit AWB (e.g. 152785863851740)" class="input-text pl-10 text-xs font-mono font-medium">
+                    </div>
+                    <button type="button" onclick="trackFromInput()" class="btn-primary w-full sm:w-auto px-6 py-2.5 text-xs font-semibold whitespace-nowrap">
+                        Track Shipment
+                    </button>
+                </div>
+
+                <!-- Test Sample AWBs -->
+                <div class="pt-2 border-t border-[#EEEEEE] flex flex-wrap items-center gap-2 text-xs">
+                    <span class="text-[#616161] font-medium">Sample AWBs for testing:</span>
+                    <button type="button" onclick="openCustomerModal('Where is my consignment 152785863851740?')" class="chip text-xs font-mono">
+                        152785863851740 (Delivered)
+                    </button>
+                    <button type="button" onclick="openCustomerModal('Where is my shipment 152785863851741?')" class="chip text-xs font-mono">
+                        152785863851741 (Delayed Hub)
+                    </button>
+                    <button type="button" onclick="openCustomerModal('Where is parcel 152785863851742?')" class="chip text-xs font-mono">
+                        152785863851742 (Out for Delivery)
+                    </button>
+                </div>
             </div>
 
-            <!-- Demo Persona Bar -->
-            <div class="p-4 bg-[#F5F7FA] rounded-lg border border-[#E0E0E0] flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-xs text-[#616161]">
-                <div class="space-y-1">
-                    <p class="font-semibold text-[#212121]">Verified Demo Customer Accounts:</p>
-                    <p>Customer A: <strong>Vansh Soni</strong> (<span class="font-mono text-[#212121]">6367743066</span>) &bull; Customer B: <strong>Riya Sharma</strong> (<span class="font-mono text-[#212121]">9571538144</span>)</p>
-                </div>
-                <div class="flex items-center gap-2">
-                    <button type="button" onclick="setDemoPersona('Vansh Soni', '6367743066', 'vansh.soni@example.com')" class="chip text-xs">
-                        Select Vansh Soni
-                    </button>
-                    <button type="button" onclick="setDemoPersona('Riya Sharma', '9571538144', 'riya.sharma@example.com')" class="chip text-xs">
-                        Select Riya Sharma
-                    </button>
-                </div>
-            </div>
-
-            <!-- Active Consignments Table -->
-            <div class="border border-[#E0E0E0] rounded-lg overflow-hidden">
-                <div class="bg-[#F5F7FA] px-4 py-3 border-b border-[#E0E0E0] flex items-center justify-between">
-                    <h2 class="text-sm font-semibold text-[#212121]">Active Consignments for Vansh Soni (6367743066)</h2>
-                    <span class="text-xs text-[#616161]">SQL Records</span>
+            <!-- Recent Consignments Overview Table -->
+            <div class="border border-[#E0E0E0] rounded-xl overflow-hidden bg-white shadow-sm">
+                <div class="bg-[#F8FAFC] px-5 py-3.5 border-b border-[#E0E0E0] flex items-center justify-between">
+                    <div>
+                        <h2 class="text-sm font-bold text-[#212121]">Active Network Consignments</h2>
+                        <p class="text-[11px] text-[#616161]">Real-time SQL tracking records managed by ExpressBeas fleet</p>
+                    </div>
+                    <span class="text-xs bg-[#FFF7ED] text-[#C2410C] border border-[#FFEDD5] px-2.5 py-0.5 rounded font-medium">
+                        Live Database
+                    </span>
                 </div>
                 <div class="divide-y divide-[#E0E0E0] text-xs">
-                    <div class="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-[#FAFAFA]">
+                    <div class="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-[#FAFAFA] transition-colors">
                         <div class="space-y-1">
                             <div class="flex items-center gap-2">
                                 <span class="font-mono font-bold text-[#212121]">AWB 152785863851740</span>
                                 <span class="badge badge-success">Delivered</span>
                             </div>
-                            <p class="text-[#616161]">Route: Ghaziabad &rarr; Jaipur (1.2 kg Surface) &bull; Sender: Cloudtail India</p>
+                            <p class="text-[#616161]">Route: Ghaziabad &rarr; Jaipur (1.2 kg Surface) &bull; Origin: Cloudtail Logistics Hub</p>
                         </div>
-                        <button type="button" onclick="openCustomerModal('Where is my consignment 152785863851740?')" class="btn-secondary py-1.5 px-3 text-xs self-start sm:self-center">
+                        <button type="button" onclick="openCustomerModal('Where is my consignment 152785863851740?')" class="btn-secondary py-1.5 px-3 text-xs self-start sm:self-center font-medium">
                             Track AWB
                         </button>
                     </div>
 
-                    <div class="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-[#FAFAFA]">
+                    <div class="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-[#FAFAFA] transition-colors">
                         <div class="space-y-1">
                             <div class="flex items-center gap-2">
                                 <span class="font-mono font-bold text-[#212121]">AWB 152785863851741</span>
                                 <span class="badge badge-warning">Delayed at Delhi Hub</span>
                             </div>
-                            <p class="text-[#616161]">Route: Delhi &rarr; Mumbai (18.5 kg Surface) &bull; Sender: Tech Distributors</p>
+                            <p class="text-[#616161]">Route: Delhi &rarr; Mumbai (18.5 kg Surface) &bull; Origin: Tech Warehouses Ltd</p>
                         </div>
-                        <button type="button" onclick="openCustomerModal('Where is my shipment 152785863851741?')" class="btn-secondary py-1.5 px-3 text-xs self-start sm:self-center">
+                        <button type="button" onclick="openCustomerModal('Where is my shipment 152785863851741?')" class="btn-secondary py-1.5 px-3 text-xs self-start sm:self-center font-medium">
                             Track AWB
                         </button>
                     </div>
 
-                    <div class="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-[#FAFAFA]">
+                    <div class="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-[#FAFAFA] transition-colors">
                         <div class="space-y-1">
                             <div class="flex items-center gap-2">
                                 <span class="font-mono font-bold text-[#212121]">AWB 152785863851742</span>
                                 <span class="badge badge-info">Out for Delivery</span>
                             </div>
-                            <p class="text-[#616161]">Route: Bangalore &rarr; Jaipur (0.3 kg Air Express) &bull; Sender: HDFC Bank Cards</p>
+                            <p class="text-[#616161]">Route: Bangalore &rarr; Jaipur (0.3 kg Air Express) &bull; Origin: National Fulfillment Center</p>
                         </div>
-                        <button type="button" onclick="openCustomerModal('Where is parcel 152785863851742?')" class="btn-secondary py-1.5 px-3 text-xs self-start sm:self-center">
+                        <button type="button" onclick="openCustomerModal('Where is parcel 152785863851742?')" class="btn-secondary py-1.5 px-3 text-xs self-start sm:self-center font-medium">
                             Track AWB
                         </button>
                     </div>
@@ -118,7 +143,7 @@ ShopEase — Customer Orders
 
             <!-- Quick Inquiry Chips -->
             <div class="space-y-2">
-                <p class="text-xs font-semibold text-[#616161] uppercase tracking-wider">Sample Inquiries:</p>
+                <p class="text-xs font-semibold text-[#616161] uppercase tracking-wider">Common Inquiries (click to test in widget):</p>
                 <div class="flex flex-wrap gap-2">
                     <button type="button" onclick="openCustomerModal('What are my consignments?')" class="chip text-xs">
                         What are my consignments?
@@ -126,71 +151,92 @@ ShopEase — Customer Orders
                     <button type="button" onclick="openCustomerModal('Where is my consignment 152785863851740?')" class="chip text-xs">
                         Where is my consignment 152785863851740?
                     </button>
-                    <button type="button" onclick="openCustomerModal('Where is my shipment 152785863851741?')" class="chip text-xs">
-                        Where is my shipment 152785863851741?
+                    <button type="button" onclick="openCustomerModal('Why is shipment 152785863851741 delayed?')" class="chip text-xs">
+                        Why is shipment 152785863851741 delayed?
                     </button>
-                    <button type="button" onclick="openCustomerModal('Report damaged package')" class="chip text-xs">
-                        Report damaged package
+                    <button type="button" onclick="openCustomerModal('I want to speak with a human support agent.')" class="chip text-xs">
+                        Talk to a human agent
                     </button>
                 </div>
             </div>
         </div>
 
         {% else %}
-        <!-- SHOPEASE E-COMMERCE STOREFRONT -->
-        <div class="space-y-6">
-            <div class="space-y-1">
-                <h1 class="text-2xl font-bold text-[#212121] tracking-tight">Customer Orders</h1>
-                <p class="text-sm text-[#616161]">
-                    Manage orders, delivery status, and returns for your ShopEase account.
-                </p>
+        <!-- ================= SHOPEASE E-COMMERCE STORE ================= -->
+        <div class="space-y-8">
+            <!-- Storefront Banner -->
+            <div class="bg-white border border-[#E0E0E0] rounded-xl p-8 space-y-4 shadow-sm">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div class="space-y-2">
+                        <span class="text-xs font-bold uppercase tracking-wider text-[#F97316]">Consumer Electronics Store</span>
+                        <h1 class="text-2xl sm:text-3xl font-extrabold text-[#212121] tracking-tight">Welcome to ShopEase</h1>
+                        <p class="text-sm text-[#616161] max-w-xl">
+                            Browse high-performance audio, charging essentials, and smart workspace accessories with 7-day hassle-free returns.
+                        </p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button type="button" onclick="openCustomerModal('What are my orders?')" class="btn-primary py-2.5 px-4 text-xs font-semibold">
+                            View My Orders
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Test Sample Orders -->
+                <div class="pt-3 border-t border-[#EEEEEE] flex flex-wrap items-center gap-2 text-xs">
+                    <span class="text-[#616161] font-medium">Sample Orders for testing:</span>
+                    <button type="button" onclick="openCustomerModal('Where is order SE-84920?')" class="chip text-xs font-mono">
+                        SE-84920 (Delivered &bull; Return Eligible)
+                    </button>
+                    <button type="button" onclick="openCustomerModal('Cancel order SE-84922')" class="chip text-xs font-mono">
+                        SE-84922 (Placed &bull; Cancellable)
+                    </button>
+                    <button type="button" onclick="openCustomerModal('What is the status of my return and refund?')" class="chip text-xs">
+                        Check Return &amp; Refund Status
+                    </button>
+                </div>
             </div>
 
-            <!-- Demo Persona Bar -->
-            <div class="p-4 bg-[#F5F7FA] rounded-lg border border-[#E0E0E0] flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-xs text-[#616161]">
-                <div class="space-y-1">
-                    <p class="font-semibold text-[#212121]">Verified Demo Customer Accounts:</p>
-                    <p>Customer A: <strong>Vansh Soni</strong> (<span class="font-mono text-[#212121]">6367743066</span>) &bull; Customer B: <strong>Riya Sharma</strong> (<span class="font-mono text-[#212121]">9571538144</span>)</p>
-                </div>
-                <div class="flex items-center gap-2">
-                    <button type="button" onclick="setDemoPersona('Vansh Soni', '6367743066', 'vansh.soni@example.com')" class="chip text-xs">
-                        Select Vansh Soni
-                    </button>
-                    <button type="button" onclick="setDemoPersona('Riya Sharma', '9571538144', 'riya.sharma@example.com')" class="chip text-xs">
-                        Select Riya Sharma
-                    </button>
-                </div>
-            </div>
-
-            <!-- Orders Table -->
-            <div class="border border-[#E0E0E0] rounded-lg overflow-hidden">
-                <div class="bg-[#F5F7FA] px-4 py-3 border-b border-[#E0E0E0] flex items-center justify-between">
-                    <h2 class="text-sm font-semibold text-[#212121]">Orders on File for Vansh Soni (6367743066)</h2>
-                    <span class="text-xs text-[#616161]">SQL Records</span>
+            <!-- Recent Orders Self-Service Card -->
+            <div class="border border-[#E0E0E0] rounded-xl overflow-hidden bg-white shadow-sm">
+                <div class="bg-[#F8FAFC] px-5 py-3.5 border-b border-[#E0E0E0] flex items-center justify-between">
+                    <div>
+                        <h2 class="text-sm font-bold text-[#212121]">Order History &amp; Returns</h2>
+                        <p class="text-[11px] text-[#616161]">Verify orders, initiate returns, or cancel pending shipments</p>
+                    </div>
+                    <span class="text-xs bg-[#FFF7ED] text-[#C2410C] border border-[#FFEDD5] px-2.5 py-0.5 rounded font-medium">
+                        Live Database
+                    </span>
                 </div>
                 <div class="divide-y divide-[#E0E0E0] text-xs">
-                    <div class="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-[#FAFAFA]">
+                    <!-- Order 1 -->
+                    <div class="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-[#FAFAFA] transition-colors">
                         <div class="space-y-1">
                             <div class="flex items-center gap-2">
                                 <span class="font-mono font-bold text-[#212121]">Order #SE-84920</span>
                                 <span class="badge badge-success">Delivered (Return Scheduled)</span>
                             </div>
-                            <p class="text-[#616161]">Wireless Noise-Canceling Headphones &bull; ₹4,999.00 (Card ending 4242) &bull; FedEx Express</p>
+                            <p class="text-[#616161]">Wireless Noise-Canceling Headphones &bull; &#8377;4,999.00 (Card ending 4242) &bull; FedEx Express</p>
                         </div>
-                        <button type="button" onclick="openCustomerModal('Where is order SE-84920?')" class="btn-secondary py-1.5 px-3 text-xs self-start sm:self-center">
-                            Track order
-                        </button>
+                        <div class="flex items-center gap-2">
+                            <button type="button" onclick="openCustomerModal('Where is order SE-84920?')" class="btn-secondary py-1.5 px-3 text-xs font-medium">
+                                Track Order
+                            </button>
+                            <button type="button" onclick="openCustomerModal('What is the status of my return for order SE-84920?')" class="btn-secondary py-1.5 px-3 text-xs font-medium">
+                                Return Status
+                            </button>
+                        </div>
                     </div>
 
-                    <div class="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-[#FAFAFA]">
+                    <!-- Order 2 -->
+                    <div class="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-[#FAFAFA] transition-colors">
                         <div class="space-y-1">
                             <div class="flex items-center gap-2">
                                 <span class="font-mono font-bold text-[#212121]">Order #SE-84922</span>
-                                <span class="badge badge-info">Placed (Cancellable)</span>
+                                <span class="badge badge-warning">Placed (Cancellable)</span>
                             </div>
-                            <p class="text-[#616161]">Magnetic Wireless Charging Pad 15W &bull; ₹1,499.00 (UPI) &bull; Bluedart Surface</p>
+                            <p class="text-[#616161]">Magnetic Wireless Charging Pad 15W &bull; &#8377;1,499.00 (UPI) &bull; Bluedart Surface</p>
                         </div>
-                        <button type="button" onclick="openCustomerModal('Cancel order SE-84922')" class="btn-secondary py-1.5 px-3 text-xs self-start sm:self-center">
+                        <button type="button" onclick="openCustomerModal('Cancel order SE-84922')" class="btn-secondary py-1.5 px-3 text-xs font-medium text-[#C2410C]">
                             Cancel via AI
                         </button>
                     </div>
@@ -199,7 +245,7 @@ ShopEase — Customer Orders
 
             <!-- Quick Inquiry Chips -->
             <div class="space-y-2">
-                <p class="text-xs font-semibold text-[#616161] uppercase tracking-wider">Sample Inquiries:</p>
+                <p class="text-xs font-semibold text-[#616161] uppercase tracking-wider">Sample Inquiries (click to test in widget):</p>
                 <div class="flex flex-wrap gap-2">
                     <button type="button" onclick="openCustomerModal('What are my orders?')" class="chip text-xs">
                         What are my orders?
@@ -220,12 +266,17 @@ ShopEase — Customer Orders
 
     </main>
 
-    <!-- 3. Pre-Chat Verification Modal -->
-    <div id="customerModal" class="hidden fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
-        <div class="bg-white rounded-lg max-w-sm w-full p-6 shadow-[0_4px_12px_rgba(0,0,0,0.08)] border border-[#E0E0E0] space-y-4">
+    <!-- 3. Pre-Chat Identity Modal (NOT PRE-FILLED, REAL SAAS CLEAN STYLE) -->
+    <div id="customerModal" class="hidden fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl max-w-sm w-full p-6 shadow-[0_12px_40px_rgba(0,0,0,0.12)] border border-[#E0E0E0] space-y-4">
             <div class="flex items-center justify-between pb-2 border-b border-[#E0E0E0]">
-                <h3 class="font-semibold text-base text-[#212121]">Start Support Session</h3>
-                <button type="button" onclick="closeCustomerModal()" class="text-[#757575] hover:text-[#212121]">
+                <div class="flex items-center gap-2">
+                    <div class="w-6 h-6 rounded bg-[#FFF7ED] text-[#EA580C] flex items-center justify-center font-bold">
+                        <span class="material-symbols-outlined text-sm">support_agent</span>
+                    </div>
+                    <h3 class="font-bold text-sm text-[#212121]">Start Support Session</h3>
+                </div>
+                <button type="button" onclick="closeCustomerModal()" class="text-[#757575] hover:text-[#212121] transition-colors">
                     <span class="material-symbols-outlined text-lg">close</span>
                 </button>
             </div>
@@ -237,35 +288,33 @@ ShopEase — Customer Orders
             <form onsubmit="launchFullScreenChat(event)" class="space-y-3">
                 <div>
                     <label for="custNameInput" class="block text-xs font-semibold text-[#212121] mb-1">Full Name *</label>
-                    <input type="text" id="custNameInput" required value="Vansh Soni" class="input-text">
+                    <input type="text" id="custNameInput" required placeholder="e.g. Rahul Sharma" class="input-text">
                 </div>
 
                 <div>
                     <label for="custPhoneInput" class="block text-xs font-semibold text-[#212121] mb-1">Mobile Phone Number *</label>
-                    <div class="flex items-center gap-1.5 border border-[#E0E0E0] rounded px-3 py-2 bg-white focus-within:border-[#1976D2] focus-within:ring-1 focus-within:ring-[#1976D2]">
+                    <div class="flex items-center gap-1.5 border border-[#E0E0E0] rounded-lg px-3 py-2 bg-white focus-within:border-[#F97316] focus-within:ring-1 focus-within:ring-[#F97316]">
                         <span class="text-xs font-medium text-[#757575]">+91</span>
-                        <input type="tel" id="custPhoneInput" required maxlength="10" value="6367743066" class="w-full text-xs font-mono font-medium outline-none bg-transparent text-[#212121]">
+                        <input type="tel" id="custPhoneInput" required maxlength="10" placeholder="10-digit mobile number" class="w-full text-xs font-mono font-medium outline-none bg-transparent text-[#212121]">
                     </div>
                     <div id="custPhoneError" class="input-error-msg hidden">Please enter a valid 10-digit Indian mobile number (starts with 6, 7, 8, or 9).</div>
                 </div>
 
                 <div>
                     <label for="custEmailInput" class="block text-xs font-semibold text-[#212121] mb-1">Email (Optional)</label>
-                    <input type="email" id="custEmailInput" value="vansh.soni@example.com" class="input-text">
+                    <input type="email" id="custEmailInput" placeholder="name@example.com" class="input-text">
                 </div>
 
                 <div>
                     <label for="custInitialQueryInput" class="block text-xs font-semibold text-[#212121] mb-1">Inquiry</label>
-                    <input type="text" id="custInitialQueryInput" placeholder="e.g. What are my orders?" class="input-text">
+                    <input type="text" id="custInitialQueryInput" placeholder="e.g. What are my orders? / Track my parcel" class="input-text">
                 </div>
 
-                <!-- // TODO: Implement SMS OTP verification for production identity -->
-
                 <div class="pt-2 space-y-2">
-                    <button type="submit" class="btn-primary w-full text-xs">
+                    <button type="submit" class="btn-primary w-full text-xs font-semibold py-2.5 shadow-sm">
                         Start support session
                     </button>
-                    <button type="button" onclick="openEmbeddedDrawer()" class="btn-secondary w-full text-xs">
+                    <button type="button" onclick="openEmbeddedDrawer()" class="btn-secondary w-full text-xs font-medium py-2">
                         Open embedded drawer
                     </button>
                 </div>
@@ -274,9 +323,12 @@ ShopEase — Customer Orders
     </div>
 
     <!-- 4. Floating Widget Drawer -->
-    <div id="widgetDrawer" class="hidden fixed bottom-6 right-6 z-50 w-full max-w-sm sm:max-w-md h-[560px] bg-white rounded-lg shadow-[0_4px_12px_rgba(0,0,0,0.08)] border border-[#E0E0E0] overflow-hidden flex flex-col">
-        <div class="h-10 bg-[#F5F7FA] px-4 flex items-center justify-between text-xs text-[#212121] border-b border-[#E0E0E0]">
-            <span class="font-semibold">{{ workspace.name }} Helpdesk</span>
+    <div id="widgetDrawer" class="hidden fixed bottom-6 right-6 z-50 w-full max-w-sm sm:max-w-md h-[580px] bg-white rounded-xl shadow-[0_12px_40px_rgba(0,0,0,0.15)] border border-[#E0E0E0] overflow-hidden flex flex-col">
+        <div class="h-11 bg-[#F8FAFC] px-4 flex items-center justify-between text-xs text-[#212121] border-b border-[#E0E0E0]">
+            <div class="flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-[#F97316]"></span>
+                <span class="font-bold">{{ workspace.name }} Helpdesk</span>
+            </div>
             <div class="flex items-center gap-2">
                 <a id="drawerPopoutLink" href="{% url 'widget_embed' public_key=public_key %}" target="_blank" title="Open full page" class="text-[#616161] hover:text-[#212121]">
                     <span class="material-symbols-outlined text-base">open_in_new</span>
@@ -290,17 +342,18 @@ ShopEase — Customer Orders
     </div>
 
     <!-- Floating Chat Button (bottom right) -->
-    <button type="button" onclick="openCustomerModal()" title="Open Chat" class="fixed bottom-6 right-6 z-40 w-12 h-12 rounded-full bg-[#1976D2] hover:bg-[#1565C0] text-white shadow-[0_4px_12px_rgba(0,0,0,0.08)] flex items-center justify-center transition-colors">
+    <button type="button" onclick="openCustomerModal()" title="Open Chat" class="fixed bottom-6 right-6 z-40 w-13 h-13 rounded-full bg-[#F97316] hover:bg-[#EA580C] text-white shadow-[0_6px_20px_rgba(249,115,22,0.35)] flex items-center justify-center transition-all duration-200 hover:scale-105">
         <span class="material-symbols-outlined text-2xl">chat</span>
     </button>
 
     <!-- 5. Minimal Footer -->
-    <footer class="border-t border-[#E0E0E0] bg-[#F5F7FA] py-6 px-6 text-xs text-[#616161] mt-12">
+    <footer class="border-t border-[#E0E0E0] bg-white py-6 px-6 text-xs text-[#616161] mt-12">
         <div class="max-w-[1100px] mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
             <p>&copy; 2026 {{ workspace.name }} &bull; Customer Helpdesk powered by Supporto AI.</p>
             <div class="flex items-center gap-4">
-                <a href="{% url 'workspace_dashboard' company_slug=workspace.slug %}" class="hover:text-[#212121]" style="text-decoration: none;">Staff portal</a>
-                <a href="/" class="hover:text-[#212121]" style="text-decoration: none;">Platform home</a>
+                <a href="{% url 'workspace_dashboard' company_slug=workspace.slug %}" class="hover:text-[#F97316]">Staff portal</a>
+                <span>&bull;</span>
+                <a href="/" class="hover:text-[#F97316]">Platform home</a>
             </div>
         </div>
     </footer>
@@ -309,91 +362,117 @@ ShopEase — Customer Orders
 
 <script>
     const publicKey = "{{ public_key }}";
-    let pendingInitialQuery = "";
 
-    function setDemoPersona(name, phone, email) {
-        document.getElementById("custNameInput").value = name;
-        document.getElementById("custPhoneInput").value = phone;
-        document.getElementById("custEmailInput").value = email;
-        localStorage.setItem(`supporto_name_${publicKey}`, name);
-        localStorage.setItem(`supporto_phone_${publicKey}`, phone);
-        if (email) localStorage.setItem(`supporto_email_${publicKey}`, email);
+    function validatePhone(phone) {
+        const cleaned = (phone || "").replace(/\D/g, "");
+        if (cleaned.length === 10 && /^[6-9]/.test(cleaned)) {
+            return cleaned;
+        }
+        return null;
     }
 
-    function openCustomerModal(prefilledQuery) {
-        if (prefilledQuery) {
-            document.getElementById("custInitialQueryInput").value = prefilledQuery;
-            pendingInitialQuery = prefilledQuery;
+    function openCustomerModal(prefillQuery) {
+        const modal = document.getElementById("customerModal");
+        if (prefillQuery) {
+            document.getElementById("custInitialQueryInput").value = prefillQuery;
         }
+        // Load any previously saved session identity from localStorage
+        const savedName = localStorage.getItem(`supporto_name_${publicKey}`) || "";
+        const savedPhone = localStorage.getItem(`supporto_phone_${publicKey}`) || "";
+        const savedEmail = localStorage.getItem(`supporto_email_${publicKey}`) || "";
+        
+        if (savedName) document.getElementById("custNameInput").value = savedName;
+        if (savedPhone) document.getElementById("custPhoneInput").value = savedPhone;
+        if (savedEmail) document.getElementById("custEmailInput").value = savedEmail;
+
         document.getElementById("custPhoneError").classList.add("hidden");
-        document.getElementById("customerModal").classList.remove("hidden");
+        modal.classList.remove("hidden");
     }
 
     function closeCustomerModal() {
         document.getElementById("customerModal").classList.add("hidden");
     }
 
-    function validatePhoneInput(phone) {
-        const clean = phone.replace(/\D/g, '');
-        return clean.length === 10 && ['6','7','8','9'].includes(clean[0]);
+    function trackFromInput() {
+        const input = document.getElementById("awbSearchInput");
+        const awb = (input ? input.value : "").trim();
+        if (awb) {
+            openCustomerModal("Where is my consignment " + awb + "?");
+        } else {
+            openCustomerModal("What are my consignments?");
+        }
     }
 
     function launchFullScreenChat(e) {
-        if (e) e.preventDefault();
+        e.preventDefault();
         const name = document.getElementById("custNameInput").value.trim();
-        const phone = document.getElementById("custPhoneInput").value.trim().replace(/\D/g, '');
+        const rawPhone = document.getElementById("custPhoneInput").value.trim();
         const email = document.getElementById("custEmailInput").value.trim();
         const query = document.getElementById("custInitialQueryInput").value.trim();
-        const errEl = document.getElementById("custPhoneError");
 
-        if (!validatePhoneInput(phone)) {
-            errEl.classList.remove("hidden");
+        const validPhone = validatePhone(rawPhone);
+        if (!validPhone) {
+            document.getElementById("custPhoneError").classList.remove("hidden");
+            document.getElementById("custPhoneInput").focus();
             return;
         }
-        errEl.classList.add("hidden");
+        document.getElementById("custPhoneError").classList.add("hidden");
 
         localStorage.setItem(`supporto_name_${publicKey}`, name);
-        localStorage.setItem(`supporto_phone_${publicKey}`, phone);
+        localStorage.setItem(`supporto_phone_${publicKey}`, validPhone);
         if (email) localStorage.setItem(`supporto_email_${publicKey}`, email);
 
-        let url = `/widget/${publicKey}/?name=${encodeURIComponent(name)}&phone=${encodeURIComponent(phone)}`;
-        if (email) url += `&email=${encodeURIComponent(email)}`;
-        if (query) url += `&query=${encodeURIComponent(query)}`;
+        const params = new URLSearchParams({
+            name: name,
+            phone: validPhone,
+            email: email,
+            q: query
+        });
 
-        window.open(url, "_blank");
-        closeCustomerModal();
+        window.location.href = `/widget/${publicKey}/?` + params.toString();
     }
 
     function openEmbeddedDrawer() {
         const name = document.getElementById("custNameInput").value.trim();
-        const phone = document.getElementById("custPhoneInput").value.trim().replace(/\D/g, '');
+        const rawPhone = document.getElementById("custPhoneInput").value.trim();
         const email = document.getElementById("custEmailInput").value.trim();
         const query = document.getElementById("custInitialQueryInput").value.trim();
-        const errEl = document.getElementById("custPhoneError");
 
-        if (!validatePhoneInput(phone)) {
-            errEl.classList.remove("hidden");
+        const validPhone = validatePhone(rawPhone);
+        if (!validPhone) {
+            document.getElementById("custPhoneError").classList.remove("hidden");
+            document.getElementById("custPhoneInput").focus();
             return;
         }
-        errEl.classList.add("hidden");
+        document.getElementById("custPhoneError").classList.add("hidden");
 
         localStorage.setItem(`supporto_name_${publicKey}`, name);
-        localStorage.setItem(`supporto_phone_${publicKey}`, phone);
+        localStorage.setItem(`supporto_phone_${publicKey}`, validPhone);
         if (email) localStorage.setItem(`supporto_email_${publicKey}`, email);
 
         closeCustomerModal();
 
-        let iframeUrl = `/widget/${publicKey}/?name=${encodeURIComponent(name)}&phone=${encodeURIComponent(phone)}`;
-        if (email) iframeUrl += `&email=${encodeURIComponent(email)}`;
-        if (query) iframeUrl += `&query=${encodeURIComponent(query)}`;
+        const params = new URLSearchParams({
+            embedded: "true",
+            name: name,
+            phone: validPhone,
+            email: email,
+            q: query
+        });
 
-        document.getElementById("widgetIframe").src = iframeUrl;
-        document.getElementById("drawerPopoutLink").href = iframeUrl;
-        document.getElementById("widgetDrawer").classList.remove("hidden");
+        const drawer = document.getElementById("widgetDrawer");
+        const iframe = document.getElementById("widgetIframe");
+        const popout = document.getElementById("drawerPopoutLink");
+
+        const targetUrl = `/widget/${publicKey}/?` + params.toString();
+        iframe.src = targetUrl;
+        popout.href = targetUrl;
+        drawer.classList.remove("hidden");
     }
 
     function toggleDrawer() {
-        document.getElementById("widgetDrawer").classList.toggle("hidden");
+        const drawer = document.getElementById("widgetDrawer");
+        drawer.classList.toggle("hidden");
     }
 </script>
 {% endblock %}

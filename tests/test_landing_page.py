@@ -45,7 +45,7 @@ class LandingPageTests(TestCase):
         self.assertIn("Reads chats, calls and emails; answers from your FAQs and order data; hands risky cases to a human", content)
         # Check required sections
         self.assertIn("How it works", content)
-        self.assertIn("Try it", content)
+        self.assertIn("Our Customers", content)
         # Check footer
         self.assertIn("Supporto AI", content)
         self.assertIn("Hackathon 2.5", content)
@@ -105,17 +105,22 @@ class LandingPageTests(TestCase):
                     f"Link '{href}' failed to resolve! Status code: {target_resp.status_code}"
                 )
 
-    def test_embedded_chat_widget_iframe_resolves(self):
-        """The hero must embed the real working chat widget iframe pointing to ShopEase."""
+    def test_customer_storefront_links_resolve(self):
+        """The landing page features ExpressBeas and ShopEase customer cards linking to their live storefront demos."""
         resp = self.client.get("/")
         content = resp.content.decode("utf-8")
 
-        # Find iframe src
-        iframe_match = re.search(r'<iframe[^>]+src="([^"]+)"', content)
-        self.assertIsNotNone(iframe_match, "Hero must contain an embedded iframe.")
-        src = iframe_match.group(1)
-        self.assertIn(str(self.shopease.public_key), src)
+        self.assertIn("ExpressBeas", content)
+        self.assertIn("ShopEase", content)
+        self.assertIn(f"/widget/{self.shopease.public_key}/demo/", content)
+        self.assertIn(f"/widget/{self.expressbeas.public_key}/demo/", content)
 
-        # Test iframe source route resolves
-        iframe_resp = self.client.get(src)
-        self.assertEqual(iframe_resp.status_code, 200)
+        # Test storefront routes resolve 200 and contain the support widget
+        se_resp = self.client.get(f"/widget/{self.shopease.public_key}/demo/")
+        self.assertEqual(se_resp.status_code, 200)
+        self.assertIn(f"/widget/{self.shopease.public_key}/", se_resp.content.decode("utf-8"))
+
+        eb_resp = self.client.get(f"/widget/{self.expressbeas.public_key}/demo/")
+        self.assertEqual(eb_resp.status_code, 200)
+        self.assertIn(f"/widget/{self.expressbeas.public_key}/", eb_resp.content.decode("utf-8"))
+

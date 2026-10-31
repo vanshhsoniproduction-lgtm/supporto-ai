@@ -14,11 +14,11 @@
   --color-border: #E0E0E0;
   --color-border-subtle: #EEEEEE;
 
-  /* Single Accent Color */
-  --color-primary: #1976D2;
-  --color-primary-hover: #1565C0;
-  --color-primary-light: #E3F2FD;
-  --color-primary-text: #0D47A1;
+  /* Single Accent Color - Modern High-End SaaS Orange */
+  --color-primary: #F97316;
+  --color-primary-hover: #EA580C;
+  --color-primary-light: #FFF7ED;
+  --color-primary-text: #C2410C;
 
   /* State Colors (Restrained) */
   --color-success-bg: #E8F5E9;
@@ -242,7 +242,7 @@ select:focus-visible {
 .chip-active {
   background-color: var(--color-primary-light);
   color: var(--color-primary-text);
-  border-color: #90CAF9;
+  border-color: #FDBA74;
 }
 
 /* Status Badges */
@@ -334,3 +334,4 @@ select:focus-visible {
     padding-right: var(--space-2);
   }
 }
+

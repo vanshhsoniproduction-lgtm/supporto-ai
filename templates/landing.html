@@ -5,60 +5,243 @@
 {% block content %}
 <div class="min-h-screen flex flex-col bg-white text-[#212121]">
 
-    <!-- 1. Top Bar -->
+    <!-- 1. SaaS Top Bar -->
     <header class="border-b border-[#E0E0E0] bg-white sticky top-0 z-30">
         <div class="max-w-[1100px] mx-auto px-6 h-16 flex items-center justify-between">
-            <a href="/" class="text-lg font-bold text-[#212121] tracking-tight hover:text-[#1976D2] transition-colors" style="text-decoration: none;">
-                Supporto AI
+            <a href="/" class="flex items-center gap-2 text-lg font-bold text-[#212121] tracking-tight hover:text-[#F97316] transition-colors" style="text-decoration: none;">
+                <span class="w-2.5 h-2.5 rounded-full bg-[#F97316]"></span>
+                <span>Supporto<span class="text-[#F97316]">.ai</span></span>
             </a>
-            <nav class="flex items-center gap-6 text-sm font-medium">
-                <a href="#try-it" class="text-[#616161] hover:text-[#1976D2] transition-colors" style="text-decoration: none;">Live demo</a>
-                <a href="{% url 'login' %}" class="text-[#1976D2] hover:underline" style="text-decoration: none;">Staff login</a>
+            <nav class="hidden md:flex items-center gap-8 text-sm font-medium text-[#616161]">
+                <a href="#customers" class="hover:text-[#F97316] transition-colors" style="text-decoration: none;">Our Customers</a>
+                <a href="#features" class="hover:text-[#F97316] transition-colors" style="text-decoration: none;">Features</a>
+                <a href="#how-it-works" class="hover:text-[#F97316] transition-colors" style="text-decoration: none;">How it works</a>
             </nav>
+            <div class="flex items-center gap-4 text-sm font-medium">
+                <a href="{% url 'login' %}" class="text-[#616161] hover:text-[#212121] transition-colors" style="text-decoration: none;">Staff login</a>
+                <a href="#customers" class="btn-primary py-2 px-4 text-xs font-semibold" style="text-decoration: none;">
+                    Explore Demos
+                </a>
+            </div>
         </div>
     </header>
 
     <main class="flex-1 flex flex-col">
 
-        <!-- 2. Hero Section (Headline, Supporting Line, CTAs, Embedded Live Chat) -->
-        <section class="border-b border-[#E0E0E0] py-12 md:py-16">
-            <div class="max-w-[1100px] mx-auto px-6">
-                <div class="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
-                    <!-- Left: Copy & Actions -->
-                    <div class="lg:col-span-6 space-y-6">
-                        <h1 class="text-3xl sm:text-4xl lg:text-[40px] font-bold text-[#212121] leading-[1.2] tracking-tight">
-                            Reads chats, calls and emails; answers from your FAQs and order data; hands risky cases to a human.
-                        </h1>
+        <!-- 2. Bold SaaS Hero Section -->
+        <section class="border-b border-[#E0E0E0] py-16 md:py-24 bg-gradient-to-b from-[#FFFDFB] to-white">
+            <div class="max-w-[1100px] mx-auto px-6 text-center space-y-8">
+                <!-- Eyebrow Pill -->
+                <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold bg-[#FFF7ED] text-[#EA580C] border border-[#FFEDD5]">
+                    <span class="w-2 h-2 rounded-full bg-[#F97316] animate-pulse"></span>
+                    <span>AI-Powered Omnichannel Customer Support</span>
+                </div>
 
-                        <p class="text-base sm:text-lg text-[#616161] leading-relaxed">
-                            A support assistant for small online stores and couriers, backed by real order data and human-in-the-loop escalation.
-                        </p>
+                <!-- Bold Headline -->
+                <h1 class="text-3xl sm:text-5xl lg:text-[52px] font-extrabold text-[#212121] leading-[1.15] tracking-tight max-w-4xl mx-auto">
+                    Reads chats, calls and emails; answers from your FAQs and order data; hands risky cases to a human.
+                </h1>
 
-                        <div class="flex flex-wrap items-center gap-4 pt-2">
-                            <a href="#try-it" class="btn-primary" style="text-decoration: none;">
-                                Try the live demo
+                <!-- Supporting Line -->
+                <p class="text-base sm:text-xl text-[#616161] max-w-2xl mx-auto leading-relaxed">
+                    Supporto AI resolves routine customer issues directly from your live SQL order and shipment databases, with automated SLA tracking and supervised human escalation.
+                </p>
+
+                <!-- Action Buttons -->
+                <div class="flex flex-wrap items-center justify-center gap-4 pt-2">
+                    <a href="#customers" class="btn-primary text-sm py-3 px-6 shadow-sm" style="text-decoration: none;">
+                        Explore Live Customer Demos &darr;
+                    </a>
+                    <a href="{% url 'login' %}" class="btn-secondary text-sm py-3 px-6" style="text-decoration: none;">
+                        Staff Portal &rarr;
+                    </a>
+                </div>
+
+                <!-- Sleek Product UI Mockup (Replaces awkward iframe preview) -->
+                <div class="pt-8 max-w-3xl mx-auto">
+                    <div class="bg-white border border-[#E0E0E0] rounded-xl shadow-[0_8px_30px_rgba(0,0,0,0.06)] overflow-hidden text-left">
+                        <!-- Top Mockup Window Bar -->
+                        <div class="bg-[#F8FAFC] px-4 py-3 border-b border-[#E0E0E0] flex items-center justify-between text-xs text-[#616161]">
+                            <div class="flex items-center gap-2">
+                                <span class="w-3 h-3 rounded-full bg-[#E0E0E0]"></span>
+                                <span class="w-3 h-3 rounded-full bg-[#E0E0E0]"></span>
+                                <span class="w-3 h-3 rounded-full bg-[#E0E0E0]"></span>
+                                <span class="ml-2 font-mono text-[11px] text-[#212121]">Supporto AI &bull; Agent Core v2.5</span>
+                            </div>
+                            <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] font-semibold bg-[#E8F5E9] text-[#2E7D32]">
+                                <span class="w-1.5 h-1.5 rounded-full bg-[#2E7D32]"></span>
+                                Real-Time Engine Active
+                            </span>
+                        </div>
+
+                        <!-- Mockup Interior Content -->
+                        <div class="p-6 grid grid-cols-1 md:grid-cols-3 gap-4 bg-[#FAFAFA] text-xs">
+                            <!-- Column 1: Omnichannel Inbound -->
+                            <div class="bg-white p-4 rounded-lg border border-[#E0E0E0] space-y-2.5">
+                                <span class="font-semibold text-[#212121] flex items-center gap-1.5">
+                                    <span class="material-symbols-outlined text-sm text-[#F97316]">mark_chat_unread</span>
+                                    Inbound Streams
+                                </span>
+                                <div class="space-y-1.5 text-[11px]">
+                                    <div class="p-2 bg-[#F5F7FA] rounded border border-[#EEEEEE] flex items-center justify-between">
+                                        <span>Web Widget Chat</span>
+                                        <span class="text-[#2E7D32] font-medium">Online</span>
+                                    </div>
+                                    <div class="p-2 bg-[#F5F7FA] rounded border border-[#EEEEEE] flex items-center justify-between">
+                                        <span>Browser Voice Call</span>
+                                        <span class="text-[#2E7D32] font-medium">Ready</span>
+                                    </div>
+                                    <div class="p-2 bg-[#F5F7FA] rounded border border-[#EEEEEE] flex items-center justify-between">
+                                        <span>Inbound Email Triage</span>
+                                        <span class="text-[#2E7D32] font-medium">Polled</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Column 2: Tool Execution -->
+                            <div class="bg-white p-4 rounded-lg border border-[#E0E0E0] space-y-2.5">
+                                <span class="font-semibold text-[#212121] flex items-center gap-1.5">
+                                    <span class="material-symbols-outlined text-sm text-[#F97316]">data_object</span>
+                                    SQL Tool Calling
+                                </span>
+                                <div class="bg-[#212121] text-[#E0E0E0] p-2.5 rounded font-mono text-[10px] space-y-1 leading-snug">
+                                    <p class="text-[#A7F3D0]">&gt; lookup_order(id="SE-84920")</p>
+                                    <p class="text-[#9CA3AF]">&gt; status: Delivered</p>
+                                    <p class="text-[#FDBA74]">&gt; return_eligible: True</p>
+                                </div>
+                                <span class="text-[10px] text-[#616161] block">Direct database lookup with verified customer phone match.</span>
+                            </div>
+
+                            <!-- Column 3: SLA & Human Escalation -->
+                            <div class="bg-white p-4 rounded-lg border border-[#E0E0E0] space-y-2.5">
+                                <span class="font-semibold text-[#212121] flex items-center gap-1.5">
+                                    <span class="material-symbols-outlined text-sm text-[#F97316]">supervisor_account</span>
+                                    Human-in-the-Loop
+                                </span>
+                                <div class="space-y-1.5 text-[11px]">
+                                    <div class="flex items-center justify-between text-[#616161]">
+                                        <span>Urgent SLA:</span>
+                                        <span class="font-bold text-[#212121]">10 mins</span>
+                                    </div>
+                                    <div class="flex items-center justify-between text-[#616161]">
+                                        <span>Standard SLA:</span>
+                                        <span class="font-bold text-[#212121]">8 hours</span>
+                                    </div>
+                                    <div class="p-1.5 bg-[#FFF7ED] rounded border border-[#FFEDD5] text-[#C2410C] font-medium text-[10px]">
+                                        Auto-Ticket on Policy Exceptions
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 3. Our Customers & Live Deployments (ExpressBeas & ShopEase) -->
+        <section id="customers" class="border-b border-[#E0E0E0] py-16 md:py-20 bg-white">
+            <div class="max-w-[1100px] mx-auto px-6 space-y-10">
+                <div class="text-center max-w-2xl mx-auto space-y-2">
+                    <span class="text-xs font-bold uppercase tracking-wider text-[#F97316]">Live Deployments</span>
+                    <h2 class="text-2xl sm:text-3xl font-bold text-[#212121] tracking-tight">
+                        Our Customers
+                    </h2>
+                    <p class="text-sm text-[#616161]">
+                        Select a customer below to visit their live storefront template equipped with our AI support widget.
+                    </p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <!-- Customer 1: ExpressBeas Logistics -->
+                    <div class="bg-[#FAFAFA] border border-[#E0E0E0] rounded-xl p-8 flex flex-col justify-between space-y-6 hover:border-[#F97316] transition-all duration-200 shadow-sm hover:shadow-md">
+                        <div class="space-y-4">
+                            <!-- Header with Brand Logo & Category Badge -->
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-12 h-12 rounded-lg bg-[#212121] text-[#F97316] flex items-center justify-center font-bold text-xl shadow-inner">
+                                        <span class="material-symbols-outlined text-2xl">local_shipping</span>
+                                    </div>
+                                    <div>
+                                        <h3 class="text-xl font-bold text-[#212121] leading-tight">ExpressBeas</h3>
+                                        <span class="text-xs text-[#616161]">Nationwide Courier &amp; Logistics Network</span>
+                                    </div>
+                                </div>
+                                <span class="text-[11px] font-semibold bg-[#FFF7ED] text-[#EA580C] border border-[#FFEDD5] px-2.5 py-1 rounded-full">
+                                    Logistics
+                                </span>
+                            </div>
+
+                            <p class="text-sm text-[#616161] leading-relaxed">
+                                Automates real-time 15-digit AWB tracking, dispatch transit events, delay alerts, and delivery confirmations across nationwide distribution hubs.
+                            </p>
+
+                            <!-- Feature Tags -->
+                            <div class="space-y-2 pt-2 border-t border-[#E0E0E0]">
+                                <span class="text-[11px] font-semibold text-[#616161] uppercase tracking-wider">Production Capabilities:</span>
+                                <div class="flex flex-wrap gap-2 text-xs">
+                                    <span class="bg-white border border-[#E0E0E0] px-2.5 py-1 rounded text-[#212121] font-medium">&bull; 15-Digit AWB SQL Lookup</span>
+                                    <span class="bg-white border border-[#E0E0E0] px-2.5 py-1 rounded text-[#212121] font-medium">&bull; Transit Event Timeline</span>
+                                    <span class="bg-white border border-[#E0E0E0] px-2.5 py-1 rounded text-[#212121] font-medium">&bull; Delayed Parcel Routing</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div>
+                            {% if expressbeas %}
+                            <a href="/widget/{{ expressbeas.public_key }}/demo/" class="btn-primary w-full text-center text-sm font-semibold py-3" style="text-decoration: none;">
+                                Visit ExpressBeas Website &amp; Test Widget &rarr;
                             </a>
-                            <a href="{% url 'login' %}" class="btn-text" style="text-decoration: none;">
-                                Staff login &rarr;
+                            {% else %}
+                            <a href="/expressbeas/demo/" class="btn-primary w-full text-center text-sm font-semibold py-3" style="text-decoration: none;">
+                                Visit ExpressBeas Website &amp; Test Widget &rarr;
                             </a>
+                            {% endif %}
                         </div>
                     </div>
 
-                    <!-- Right: Embedded Live Chat Widget (Not a screenshot) -->
-                    <div class="lg:col-span-6">
-                        <div class="bg-white border border-[#E0E0E0] rounded-lg shadow-[0_4px_12px_rgba(0,0,0,0.08)] overflow-hidden">
-                            <div class="bg-[#F5F7FA] px-4 py-3 border-b border-[#E0E0E0] flex items-center justify-between text-xs text-[#616161]">
-                                <span class="font-medium text-[#212121]">Live Widget Preview &mdash; {{ shopease.name|default:"ShopEase" }}</span>
-                                <span class="text-[11px] bg-[#E3F2FD] text-[#0D47A1] px-2 py-0.5 rounded font-medium">Interactive</span>
+                    <!-- Customer 2: ShopEase E-Commerce -->
+                    <div class="bg-[#FAFAFA] border border-[#E0E0E0] rounded-xl p-8 flex flex-col justify-between space-y-6 hover:border-[#F97316] transition-all duration-200 shadow-sm hover:shadow-md">
+                        <div class="space-y-4">
+                            <!-- Header with Brand Logo & Category Badge -->
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-12 h-12 rounded-lg bg-[#F97316] text-white flex items-center justify-center font-bold text-xl shadow-inner">
+                                        <span class="material-symbols-outlined text-2xl">shopping_bag</span>
+                                    </div>
+                                    <div>
+                                        <h3 class="text-xl font-bold text-[#212121] leading-tight">ShopEase</h3>
+                                        <span class="text-xs text-[#616161]">Consumer Electronics &amp; Apparel</span>
+                                    </div>
+                                </div>
+                                <span class="text-[11px] font-semibold bg-[#FFF7ED] text-[#EA580C] border border-[#FFEDD5] px-2.5 py-1 rounded-full">
+                                    E-Commerce
+                                </span>
                             </div>
+
+                            <p class="text-sm text-[#616161] leading-relaxed">
+                                Handles multi-item order lookups, automated cancellations, 7-day return policy validations, and instant refund status updates with verified accuracy.
+                            </p>
+
+                            <!-- Feature Tags -->
+                            <div class="space-y-2 pt-2 border-t border-[#E0E0E0]">
+                                <span class="text-[11px] font-semibold text-[#616161] uppercase tracking-wider">Production Capabilities:</span>
+                                <div class="flex flex-wrap gap-2 text-xs">
+                                    <span class="bg-white border border-[#E0E0E0] px-2.5 py-1 rounded text-[#212121] font-medium">&bull; Order &amp; SKU SQL Querying</span>
+                                    <span class="bg-white border border-[#E0E0E0] px-2.5 py-1 rounded text-[#212121] font-medium">&bull; Automated Return Checks</span>
+                                    <span class="bg-white border border-[#E0E0E0] px-2.5 py-1 rounded text-[#212121] font-medium">&bull; Human Escalation Queue</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div>
                             {% if shopease %}
-                            <iframe src="/widget/{{ shopease.public_key }}/?embedded=true"
-                                    title="Supporto AI Live Chat Widget"
-                                    class="w-full h-[500px] border-none bg-white block"></iframe>
+                            <a href="/widget/{{ shopease.public_key }}/demo/" class="btn-primary w-full text-center text-sm font-semibold py-3" style="text-decoration: none;">
+                                Visit ShopEase Storefront &amp; Test Widget &rarr;
+                            </a>
                             {% else %}
-                            <div class="p-8 text-center text-sm text-[#616161]">
-                                Run <code class="font-mono text-xs bg-[#F5F7FA] px-1.5 py-0.5 rounded border border-[#E0E0E0]">python manage.py seed_demo</code> to load workspaces.
-                            </div>
+                            <a href="/shopease/demo/" class="btn-primary w-full text-center text-sm font-semibold py-3" style="text-decoration: none;">
+                                Visit ShopEase Storefront &amp; Test Widget &rarr;
+                            </a>
                             {% endif %}
                         </div>
                     </div>
@@ -66,55 +249,113 @@
             </div>
         </section>
 
-        <!-- 3. How It Works (4 numbered steps in one row) -->
-        <section class="border-b border-[#E0E0E0] bg-[#F5F7FA] py-12 md:py-16">
-            <div class="max-w-[1100px] mx-auto px-6 space-y-8">
-                <div>
-                    <h2 class="text-xl sm:text-2xl font-bold text-[#212121] tracking-tight">How it works</h2>
-                    <p class="text-sm text-[#616161] mt-1">Four simple steps from customer inquiry to resolution.</p>
+        <!-- 4. Features Section -->
+        <section id="features" class="border-b border-[#E0E0E0] py-16 md:py-20 bg-[#F8FAFC]">
+            <div class="max-w-[1100px] mx-auto px-6 space-y-10">
+                <div class="text-center max-w-2xl mx-auto space-y-2">
+                    <span class="text-xs font-bold uppercase tracking-wider text-[#F97316]">Core Architecture</span>
+                    <h2 class="text-2xl sm:text-3xl font-bold text-[#212121] tracking-tight">
+                        Built for Production Support
+                    </h2>
+                    <p class="text-sm text-[#616161]">
+                        Reliable tool execution without fabricated answers or out-of-context replies.
+                    </p>
                 </div>
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                    <!-- Step 1 -->
-                    <div class="bg-white p-6 rounded-lg border border-[#E0E0E0] space-y-3">
-                        <div class="w-8 h-8 rounded border border-[#E0E0E0] bg-[#F5F7FA] text-[#1976D2] font-bold text-sm flex items-center justify-center">
+                    <div class="bg-white p-6 rounded-xl border border-[#E0E0E0] space-y-3">
+                        <div class="w-10 h-10 rounded-lg bg-[#FFF7ED] text-[#EA580C] flex items-center justify-center font-bold text-lg">
+                            <span class="material-symbols-outlined text-xl">database</span>
+                        </div>
+                        <h3 class="font-bold text-base text-[#212121]">Direct SQL Tool Calling</h3>
+                        <p class="text-xs text-[#616161] leading-relaxed">
+                            Queries verified order and consignment records directly from your database. Enforces strict zero-leak identity checks.
+                        </p>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-xl border border-[#E0E0E0] space-y-3">
+                        <div class="w-10 h-10 rounded-lg bg-[#FFF7ED] text-[#EA580C] flex items-center justify-center font-bold text-lg">
+                            <span class="material-symbols-outlined text-xl">support_agent</span>
+                        </div>
+                        <h3 class="font-bold text-base text-[#212121]">Human-in-the-Loop Triage</h3>
+                        <p class="text-xs text-[#616161] leading-relaxed">
+                            Edge cases, policy disputes, and sensitive queries automatically open tracked tickets with active SLA timers for agents.
+                        </p>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-xl border border-[#E0E0E0] space-y-3">
+                        <div class="w-10 h-10 rounded-lg bg-[#FFF7ED] text-[#EA580C] flex items-center justify-center font-bold text-lg">
+                            <span class="material-symbols-outlined text-xl">mic</span>
+                        </div>
+                        <h3 class="font-bold text-base text-[#212121]">Omnichannel Ingestion</h3>
+                        <p class="text-xs text-[#616161] leading-relaxed">
+                            Seamless experience across web chat widgets, interactive browser WebRTC voice calls, and automated inbound email triage.
+                        </p>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-xl border border-[#E0E0E0] space-y-3">
+                        <div class="w-10 h-10 rounded-lg bg-[#FFF7ED] text-[#EA580C] flex items-center justify-center font-bold text-lg">
+                            <span class="material-symbols-outlined text-xl">insights</span>
+                        </div>
+                        <h3 class="font-bold text-base text-[#212121]">Weekly AI Insights</h3>
+                        <p class="text-xs text-[#616161] leading-relaxed">
+                            Automatically aggregates unresolved customer friction points and clusters recurring issues into weekly manager reports.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 5. How It Works (4 numbered steps) -->
+        <section id="how-it-works" class="border-b border-[#E0E0E0] py-16 md:py-20 bg-white">
+            <div class="max-w-[1100px] mx-auto px-6 space-y-10">
+                <div class="text-center max-w-2xl mx-auto space-y-2">
+                    <span class="text-xs font-bold uppercase tracking-wider text-[#F97316]">Workflow</span>
+                    <h2 class="text-2xl sm:text-3xl font-bold text-[#212121] tracking-tight">
+                        How it works
+                    </h2>
+                    <p class="text-sm text-[#616161]">
+                        From customer message to automated resolution or supervised agent handoff.
+                    </p>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <div class="bg-[#FAFAFA] p-6 rounded-xl border border-[#E0E0E0] space-y-3">
+                        <div class="w-8 h-8 rounded-full bg-[#212121] text-white font-bold text-xs flex items-center justify-center">
                             1
                         </div>
                         <h3 class="font-semibold text-base text-[#212121]">Customer asks</h3>
-                        <p class="text-sm text-[#616161] leading-relaxed">
+                        <p class="text-xs text-[#616161] leading-relaxed">
                             Inquiries arrive through the website chat widget, browser voice call, or inbound support email.
                         </p>
                     </div>
 
-                    <!-- Step 2 -->
-                    <div class="bg-white p-6 rounded-lg border border-[#E0E0E0] space-y-3">
-                        <div class="w-8 h-8 rounded border border-[#E0E0E0] bg-[#F5F7FA] text-[#1976D2] font-bold text-sm flex items-center justify-center">
+                    <div class="bg-[#FAFAFA] p-6 rounded-xl border border-[#E0E0E0] space-y-3">
+                        <div class="w-8 h-8 rounded-full bg-[#212121] text-white font-bold text-xs flex items-center justify-center">
                             2
                         </div>
-                        <h3 class="font-semibold text-base text-[#212121]">Agent classifies and checks tools</h3>
-                        <p class="text-sm text-[#616161] leading-relaxed">
+                        <h3 class="font-semibold text-base text-[#212121]">Agent checks tools</h3>
+                        <p class="text-xs text-[#616161] leading-relaxed">
                             Detects issue intent, verifies customer phone number, and retrieves verified order or tracking data from SQL.
                         </p>
                     </div>
 
-                    <!-- Step 3 -->
-                    <div class="bg-white p-6 rounded-lg border border-[#E0E0E0] space-y-3">
-                        <div class="w-8 h-8 rounded border border-[#E0E0E0] bg-[#F5F7FA] text-[#1976D2] font-bold text-sm flex items-center justify-center">
+                    <div class="bg-[#FAFAFA] p-6 rounded-xl border border-[#E0E0E0] space-y-3">
+                        <div class="w-8 h-8 rounded-full bg-[#212121] text-white font-bold text-xs flex items-center justify-center">
                             3
                         </div>
                         <h3 class="font-semibold text-base text-[#212121]">Answer or ticket</h3>
-                        <p class="text-sm text-[#616161] leading-relaxed">
+                        <p class="text-xs text-[#616161] leading-relaxed">
                             Answers routine questions from indexed FAQs; routes billing disputes and sensitive claims to human teams with SLA tracking.
                         </p>
                     </div>
 
-                    <!-- Step 4 -->
-                    <div class="bg-white p-6 rounded-lg border border-[#E0E0E0] space-y-3">
-                        <div class="w-8 h-8 rounded border border-[#E0E0E0] bg-[#F5F7FA] text-[#1976D2] font-bold text-sm flex items-center justify-center">
+                    <div class="bg-[#FAFAFA] p-6 rounded-xl border border-[#E0E0E0] space-y-3">
+                        <div class="w-8 h-8 rounded-full bg-[#212121] text-white font-bold text-xs flex items-center justify-center">
                             4
                         </div>
                         <h3 class="font-semibold text-base text-[#212121]">Weekly insights</h3>
-                        <p class="text-sm text-[#616161] leading-relaxed">
+                        <p class="text-xs text-[#616161] leading-relaxed">
                             Categorizes complaint volume and identifies recurring customer issues in automated weekly summary reports.
                         </p>
                     </div>
@@ -122,123 +363,10 @@
             </div>
         </section>
 
-        <!-- 4. Try It (Two tabs: ShopEase & ExpressBeas) -->
-        <section id="try-it" class="py-12 md:py-16">
-            <div class="max-w-[1100px] mx-auto px-6 space-y-8">
-                <div>
-                    <h2 class="text-xl sm:text-2xl font-bold text-[#212121] tracking-tight">Try it</h2>
-                    <p class="text-sm text-[#616161] mt-1">Select a workspace below to test real order lookup, consignment tracking, and human escalation.</p>
-                </div>
-
-                <!-- Tab Buttons -->
-                <div class="flex items-center gap-2 border-b border-[#E0E0E0]">
-                    <button type="button" id="tabBtnShopEase" onclick="selectDemoTab('shopease')" class="px-5 py-2.5 font-medium text-sm text-[#1976D2] border-b-2 border-[#1976D2] transition-colors">
-                        ShopEase (Online Store)
-                    </button>
-                    <button type="button" id="tabBtnExpressBeas" onclick="selectDemoTab('expressbeas')" class="px-5 py-2.5 font-medium text-sm text-[#616161] border-b-2 border-transparent hover:text-[#212121] transition-colors">
-                        ExpressBeas (Courier & Logistics)
-                    </button>
-                </div>
-
-                <!-- Tab 1: ShopEase -->
-                <div id="tabContentShopEase" class="space-y-6">
-                    <div class="bg-[#F5F7FA] p-6 rounded-lg border border-[#E0E0E0] space-y-4">
-                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                            <div>
-                                <h3 class="font-semibold text-base text-[#212121]">ShopEase E-Commerce Helpdesk</h3>
-                                <p class="text-xs text-[#616161] mt-0.5">Consumer electronics storefront. Order lookups, returns, and billing disputes.</p>
-                            </div>
-                            {% if shopease %}
-                            <a href="/widget/{{ shopease.public_key }}/demo/" class="btn-primary" style="text-decoration: none;">
-                                Open ShopEase demo
-                            </a>
-                            {% else %}
-                            <a href="/shopease/demo/" class="btn-primary" style="text-decoration: none;">
-                                Open ShopEase demo
-                            </a>
-                            {% endif %}
-                        </div>
-
-                        <!-- Verified Demo Personas -->
-                        <div class="pt-2 border-t border-[#E0E0E0] text-xs text-[#616161] flex flex-wrap items-center gap-x-6 gap-y-2">
-                            <span><strong>Customer A:</strong> Vansh Soni (<span class="font-mono text-[#212121]">6367743066</span>)</span>
-                            <span><strong>Customer B:</strong> Riya Sharma (<span class="font-mono text-[#212121]">9571538144</span>)</span>
-                        </div>
-                    </div>
-
-                    <!-- 4 Sample Question Chips -->
-                    <div class="space-y-2">
-                        <p class="text-xs font-semibold text-[#616161] uppercase tracking-wider">Sample Questions (click to copy):</p>
-                        <div class="flex flex-wrap gap-2.5">
-                            <button type="button" onclick="copyPrompt(this, 'What are my orders?')" class="chip">
-                                What are my orders?
-                            </button>
-                            <button type="button" onclick="copyPrompt(this, 'Where is order SE-84920?')" class="chip">
-                                Where is order SE-84920?
-                            </button>
-                            <button type="button" onclick="copyPrompt(this, 'What is the status of my return and refund?')" class="chip">
-                                What is the status of my return and refund?
-                            </button>
-                            <button type="button" onclick="copyPrompt(this, 'Cancel order SE-84922')" class="chip">
-                                Cancel order SE-84922
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Tab 2: ExpressBeas -->
-                <div id="tabContentExpressBeas" class="hidden space-y-6">
-                    <div class="bg-[#F5F7FA] p-6 rounded-lg border border-[#E0E0E0] space-y-4">
-                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                            <div>
-                                <h3 class="font-semibold text-base text-[#212121]">ExpressBeas Logistics Network</h3>
-                                <p class="text-xs text-[#616161] mt-0.5">Nationwide courier network. 15-digit AWB tracking, dispatch scans, and delivery verification.</p>
-                            </div>
-                            {% if expressbeas %}
-                            <a href="/widget/{{ expressbeas.public_key }}/demo/" class="btn-primary" style="text-decoration: none;">
-                                Open ExpressBeas demo
-                            </a>
-                            {% else %}
-                            <a href="/expressbeas/demo/" class="btn-primary" style="text-decoration: none;">
-                                Open ExpressBeas demo
-                            </a>
-                            {% endif %}
-                        </div>
-
-                        <!-- Verified Demo Personas -->
-                        <div class="pt-2 border-t border-[#E0E0E0] text-xs text-[#616161] flex flex-wrap items-center gap-x-6 gap-y-2">
-                            <span><strong>Customer A:</strong> Vansh Soni (<span class="font-mono text-[#212121]">6367743066</span>)</span>
-                            <span><strong>Customer B:</strong> Riya Sharma (<span class="font-mono text-[#212121]">9571538144</span>)</span>
-                        </div>
-                    </div>
-
-                    <!-- 4 Sample Question Chips -->
-                    <div class="space-y-2">
-                        <p class="text-xs font-semibold text-[#616161] uppercase tracking-wider">Sample Questions (click to copy):</p>
-                        <div class="flex flex-wrap gap-2.5">
-                            <button type="button" onclick="copyPrompt(this, 'What are my consignments?')" class="chip">
-                                What are my consignments?
-                            </button>
-                            <button type="button" onclick="copyPrompt(this, 'Where is my consignment 152785863851740?')" class="chip">
-                                Where is my consignment 152785863851740?
-                            </button>
-                            <button type="button" onclick="copyPrompt(this, 'Where is my shipment 152785863851741?')" class="chip">
-                                Where is my shipment 152785863851741?
-                            </button>
-                            <button type="button" onclick="copyPrompt(this, 'Where is parcel 152785863851742?')" class="chip">
-                                Where is parcel 152785863851742?
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-            </div>
-        </section>
-
     </main>
 
-    <!-- 5. Footer (Team name, Hackathon name, Repo link. Nothing else.) -->
-    <footer class="border-t border-[#E0E0E0] bg-[#F5F7FA] py-8">
+    <!-- 6. Footer -->
+    <footer class="border-t border-[#E0E0E0] bg-[#F8FAFC] py-8">
         <div class="max-w-[1100px] mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-[#616161]">
             <div class="flex items-center gap-3">
                 <span class="font-semibold text-[#212121]">Supporto AI</span>
@@ -246,7 +374,7 @@
                 <span>Hackathon 2.5</span>
             </div>
             <div>
-                <a href="https://github.com/vanshhsoniproduction-lgtm/supporto-ai" target="_blank" rel="noopener noreferrer" class="text-[#1976D2] hover:underline">
+                <a href="https://github.com/vanshhsoniproduction-lgtm/supporto-ai" target="_blank" rel="noopener noreferrer" class="text-[#F97316] hover:underline font-medium">
                     GitHub Repository
                 </a>
             </div>
@@ -254,48 +382,4 @@
     </footer>
 
 </div>
-
-<!-- Tab and Clipboard Scripts -->
-<script>
-function selectDemoTab(tab) {
-    const tabShopEase = document.getElementById('tabContentShopEase');
-    const tabExpressBeas = document.getElementById('tabContentExpressBeas');
-    const btnShopEase = document.getElementById('tabBtnShopEase');
-    const btnExpressBeas = document.getElementById('tabBtnExpressBeas');
-
-    if (tab === 'shopease') {
-        tabShopEase.classList.remove('hidden');
-        tabExpressBeas.classList.add('hidden');
-        btnShopEase.className = 'px-5 py-2.5 font-medium text-sm text-[#1976D2] border-b-2 border-[#1976D2] transition-colors';
-        btnExpressBeas.className = 'px-5 py-2.5 font-medium text-sm text-[#616161] border-b-2 border-transparent hover:text-[#212121] transition-colors';
-    } else {
-        tabShopEase.classList.add('hidden');
-        tabExpressBeas.classList.remove('hidden');
-        btnShopEase.className = 'px-5 py-2.5 font-medium text-sm text-[#616161] border-b-2 border-transparent hover:text-[#212121] transition-colors';
-        btnExpressBeas.className = 'px-5 py-2.5 font-medium text-sm text-[#1976D2] border-b-2 border-[#1976D2] transition-colors';
-    }
-}
-
-function copyPrompt(btn, text) {
-    navigator.clipboard.writeText(text).then(() => {
-        const orig = btn.innerText;
-        btn.innerText = 'Copied to clipboard';
-        btn.classList.add('chip-active');
-        setTimeout(() => {
-            btn.innerText = orig;
-            btn.classList.remove('chip-active');
-        }, 1800);
-    }).catch(() => {
-        // Fallback for older browsers
-        const ta = document.createElement('textarea');
-        ta.value = text;
-        document.body.appendChild(ta);
-        ta.select();
-        document.execCommand('copy');
-        document.body.removeChild(ta);
-        btn.innerText = 'Copied';
-        setTimeout(() => { btn.innerText = text; }, 1800);
-    });
-}
-</script>
 {% endblock %}
