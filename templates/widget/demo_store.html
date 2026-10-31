@@ -2,467 +2,754 @@
 
 {% block title %}
 {% if workspace.slug == 'expressbeas' %}
-ExpressBeas — Consignment Tracking & Logistics
+ExpressBeas Logistics — Express Courier, Cargo & Supply Chain
 {% else %}
-ShopEase — Customer Storefront & Orders
+ShopEase Store — Premium Electronics & Audio Accessories
 {% endif %}
 {% endblock %}
 
 {% block content %}
-<div class="min-h-screen bg-[#FAFAFA] flex flex-col justify-between text-[#212121]">
+<div class="min-h-screen bg-white flex flex-col justify-between text-[#212121]">
 
-    <!-- 1. Brand Store Header -->
-    <header class="border-b border-[#E0E0E0] bg-white sticky top-0 z-30 shadow-sm">
-        <div class="max-w-[1100px] mx-auto px-6 h-16 flex items-center justify-between">
+    {% if workspace.slug == 'expressbeas' %}
+    <!-- ================================================================= -->
+    <!-- REAL COURIER & LOGISTICS WEBSITE: EXPRESSBEAS                      -->
+    <!-- ================================================================= -->
+
+    <!-- Top Utility Bar -->
+    <div class="bg-[#18181B] text-[#A1A1AA] text-[11px] py-2 px-6 border-b border-[#27272A]">
+        <div class="max-w-[1200px] mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
             <div class="flex items-center gap-4">
-                <a href="/" class="text-xs font-semibold text-[#616161] hover:text-[#F97316] flex items-center gap-1 transition-colors" style="text-decoration: none;">
-                    &larr; Supporto AI
+                <span>&bull; Nationwide Logistics &amp; 3PL Supply Chain</span>
+                <span>&bull; Toll Free: 1800-209-6666</span>
+                <span class="hidden md:inline">&bull; ISO 9001:2015 Certified</span>
+            </div>
+            <div class="flex items-center gap-4 text-xs font-medium">
+                <a href="/" class="text-[#F97316] hover:underline flex items-center gap-1" style="text-decoration: none;">
+                    &larr; Supporto AI Platform
                 </a>
-                <span class="text-[#E0E0E0]">|</span>
-                <div class="flex items-center gap-2">
-                    {% if workspace.slug == 'expressbeas' %}
-                    <div class="w-8 h-8 rounded bg-[#212121] text-[#F97316] flex items-center justify-center font-bold">
-                        <span class="material-symbols-outlined text-lg">local_shipping</span>
+                <span class="text-[#3F3F46]">|</span>
+                <a href="{% url 'workspace_dashboard' company_slug=workspace.slug %}" class="hover:text-white" style="text-decoration: none;">
+                    Staff Portal
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Navigation Bar -->
+    <header class="border-b border-[#E0E0E0] bg-white sticky top-0 z-30 shadow-xs">
+        <div class="max-w-[1200px] mx-auto px-6 h-18 flex items-center justify-between">
+            <div class="flex items-center gap-8">
+                <!-- ExpressBeas Brand Logo -->
+                <a href="/widget/{{ public_key }}/demo/" class="flex items-center gap-3" style="text-decoration: none;">
+                    <div class="w-10 h-10 rounded-lg bg-[#18181B] text-[#F97316] flex items-center justify-center font-bold text-xl shadow-md">
+                        <span class="material-symbols-outlined text-2xl">local_shipping</span>
                     </div>
-                    <span class="font-bold text-base text-[#212121] tracking-tight">ExpressBeas Logistics</span>
-                    {% else %}
-                    <div class="w-8 h-8 rounded bg-[#F97316] text-white flex items-center justify-center font-bold">
-                        <span class="material-symbols-outlined text-lg">shopping_bag</span>
+                    <div>
+                        <span class="font-extrabold text-xl text-[#18181B] tracking-tight">Express<span class="text-[#F97316]">Beas</span></span>
+                        <span class="block text-[10px] uppercase tracking-wider text-[#71717A] font-semibold -mt-1">Logistics Network</span>
                     </div>
-                    <span class="font-bold text-base text-[#212121] tracking-tight">ShopEase Store</span>
-                    {% endif %}
-                </div>
+                </a>
+
+                <!-- Desktop Navigation Links -->
+                <nav class="hidden lg:flex items-center gap-6 text-xs font-semibold text-[#52525B]">
+                    <a href="#services" class="hover:text-[#F97316] transition-colors" style="text-decoration: none;">Services</a>
+                    <a href="#tracking" class="hover:text-[#F97316] transition-colors" style="text-decoration: none;">Track Shipment</a>
+                    <a href="#network" class="hover:text-[#F97316] transition-colors" style="text-decoration: none;">Network Coverage</a>
+                    <a href="#solutions" class="hover:text-[#F97316] transition-colors" style="text-decoration: none;">Enterprise 3PL</a>
+                    <a href="#company" class="hover:text-[#F97316] transition-colors" style="text-decoration: none;">About Us</a>
+                </nav>
             </div>
 
-            <nav class="flex items-center gap-4 text-xs font-medium">
-                <a href="{% url 'workspace_dashboard' company_slug=workspace.slug %}" class="text-[#616161] hover:text-[#212121] transition-colors" style="text-decoration: none;">
-                    Staff portal
-                </a>
-                <button type="button" onclick="openCustomerModal()" class="btn-primary py-2 px-3.5 text-xs font-semibold shadow-sm" style="text-decoration: none;">
-                    <span class="material-symbols-outlined text-base">support_agent</span>
-                    <span>Chat with support</span>
+            <div class="flex items-center gap-3">
+                <button type="button" onclick="openEmbeddedDrawerWithQuery('Where is my consignment?')" class="btn-primary py-2 px-4 text-xs font-semibold shadow-xs flex items-center gap-1.5" style="text-decoration: none;">
+                    <span class="material-symbols-outlined text-base">search</span>
+                    <span>Track AWB</span>
                 </button>
-            </nav>
+                <button type="button" onclick="toggleDrawer()" class="hidden sm:inline-flex btn-secondary py-2 px-3 text-xs font-medium" style="text-decoration: none;">
+                    Support Chat
+                </button>
+            </div>
         </div>
     </header>
 
-    <!-- 2. Main Storefront / Logistics Body -->
-    <main class="max-w-[1100px] mx-auto px-6 py-10 flex-1 w-full space-y-8">
+    <!-- Main Content -->
+    <main class="flex-1 w-full">
 
-        {% if workspace.slug == 'expressbeas' %}
-        <!-- ================= EXPRESSBEAS COURIER PORTAL ================= -->
-        <div class="space-y-8">
-            <!-- Tracking Hero Search -->
-            <div class="bg-white border border-[#E0E0E0] rounded-xl p-8 space-y-6 shadow-sm">
-                <div class="space-y-2">
-                    <span class="text-xs font-bold uppercase tracking-wider text-[#F97316]">Express Consignment Tracking</span>
-                    <h1 class="text-2xl sm:text-3xl font-extrabold text-[#212121] tracking-tight">Track Your Shipment</h1>
-                    <p class="text-sm text-[#616161]">
-                        Enter your 15-digit Air Waybill (AWB) number to view live dispatch milestones and hub scan events.
+        <!-- Hero Section with Real Logistics Imagery -->
+        <section class="relative bg-[#09090B] text-white py-20 md:py-28 overflow-hidden">
+            <!-- Background Image with Overlay -->
+            <div class="absolute inset-0 z-0 opacity-25">
+                <img src="https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=1600&q=80" 
+                     alt="ExpressBeas Cargo Distribution Hub" 
+                     class="w-full h-full object-cover">
+            </div>
+            <div class="absolute inset-0 bg-gradient-to-r from-[#09090B] via-[#09090B]/90 to-transparent z-1"></div>
+
+            <div class="relative z-10 max-w-[1200px] mx-auto px-6">
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+                    
+                    <!-- Left Hero Copy -->
+                    <div class="lg:col-span-7 space-y-6">
+                        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-[#F97316]/20 text-[#FB923C] border border-[#F97316]/30">
+                            <span class="w-2 h-2 rounded-full bg-[#F97316] animate-pulse"></span>
+                            <span>Delivering to 20,000+ Pin Codes Across India</span>
+                        </div>
+
+                        <h1 class="text-3xl sm:text-5xl lg:text-[54px] font-extrabold leading-[1.1] tracking-tight text-white">
+                            India's Fastest Express Logistics &amp; Supply Chain.
+                        </h1>
+
+                        <p class="text-base sm:text-lg text-[#A1A1AA] leading-relaxed max-w-xl">
+                            End-to-end B2C e-commerce fulfillment, B2B heavy cargo, and temperature-controlled freight with AI-powered consignment tracking.
+                        </p>
+
+                        <div class="flex flex-wrap items-center gap-4 pt-2">
+                            <a href="#tracking" class="btn-primary py-3 px-6 text-sm font-semibold shadow-md" style="text-decoration: none;">
+                                Track Consignment &rarr;
+                            </a>
+                            <button type="button" onclick="openEmbeddedDrawerWithQuery('I need assistance with a delivery')" class="bg-white/10 hover:bg-white/20 text-white border border-white/20 px-5 py-3 rounded-lg text-sm font-medium transition-colors">
+                                Talk to Virtual Agent
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Right: Quick Consignment Tracking Card -->
+                    <div id="tracking" class="lg:col-span-5">
+                        <div class="bg-white text-[#212121] rounded-2xl p-6 sm:p-8 shadow-2xl border border-[#E0E0E0] space-y-5">
+                            <div class="flex items-center justify-between pb-3 border-b border-[#EEEEEE]">
+                                <span class="text-xs font-bold uppercase tracking-wider text-[#F97316] flex items-center gap-1.5">
+                                    <span class="material-symbols-outlined text-base">pin_drop</span>
+                                    Real-Time Track &amp; Trace
+                                </span>
+                                <span class="text-[11px] bg-[#E8F5E9] text-[#2E7D32] px-2 py-0.5 rounded font-semibold">Live Fleet</span>
+                            </div>
+
+                            <p class="text-xs text-[#616161]">
+                                Enter your 15-digit Air Waybill (AWB) number to view dispatch status, transit hub scans, and estimated arrival.
+                            </p>
+
+                            <!-- Tracking Input -->
+                            <div class="space-y-3">
+                                <div>
+                                    <label class="block text-xs font-semibold text-[#212121] mb-1">Air Waybill (AWB) Number</label>
+                                    <input type="text" id="expressAwbInput" placeholder="Enter 15-digit AWB (e.g. 152785863851740)" class="input-text text-xs font-mono font-medium py-3">
+                                </div>
+
+                                <button type="button" onclick="trackFromHeroInput()" class="btn-primary w-full text-xs font-semibold py-3 shadow-sm flex items-center justify-center gap-2">
+                                    <span class="material-symbols-outlined text-base">search</span>
+                                    <span>Track Shipment via AI</span>
+                                </button>
+                            </div>
+
+                            <!-- Sample Testing Pills -->
+                            <div class="pt-3 border-t border-[#EEEEEE] space-y-2">
+                                <span class="text-[10px] font-semibold text-[#71717A] uppercase tracking-wider block">Sample Test Consignments (Click to track):</span>
+                                <div class="flex flex-col gap-1.5 text-xs">
+                                    <button type="button" onclick="openEmbeddedDrawerWithQuery('Where is my consignment 152785863851740?')" class="text-left p-2 rounded bg-[#F8FAFC] hover:bg-[#FFF7ED] border border-[#E2E8F0] hover:border-[#F97316] text-xs font-medium text-[#18181B] transition-colors flex items-center justify-between">
+                                        <span class="font-mono">152785863851740</span>
+                                        <span class="text-[10px] text-[#2E7D32] font-semibold bg-[#E8F5E9] px-2 py-0.5 rounded">Delivered</span>
+                                    </button>
+                                    <button type="button" onclick="openEmbeddedDrawerWithQuery('Where is my shipment 152785863851741?')" class="text-left p-2 rounded bg-[#F8FAFC] hover:bg-[#FFF7ED] border border-[#E2E8F0] hover:border-[#F97316] text-xs font-medium text-[#18181B] transition-colors flex items-center justify-between">
+                                        <span class="font-mono">152785863851741</span>
+                                        <span class="text-[10px] text-[#F57F17] font-semibold bg-[#FFF8E1] px-2 py-0.5 rounded">Delayed at Delhi Hub</span>
+                                    </button>
+                                    <button type="button" onclick="openEmbeddedDrawerWithQuery('Where is parcel 152785863851742?')" class="text-left p-2 rounded bg-[#F8FAFC] hover:bg-[#FFF7ED] border border-[#E2E8F0] hover:border-[#F97316] text-xs font-medium text-[#18181B] transition-colors flex items-center justify-between">
+                                        <span class="font-mono">152785863851742</span>
+                                        <span class="text-[10px] text-[#0D47A1] font-semibold bg-[#E3F2FD] px-2 py-0.5 rounded">Out for Delivery</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+        <!-- Stats Bar -->
+        <section id="network" class="bg-[#18181B] text-white py-10 border-b border-[#27272A]">
+            <div class="max-w-[1200px] mx-auto px-6 grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
+                <div>
+                    <div class="text-3xl sm:text-4xl font-extrabold text-[#F97316]">20,000+</div>
+                    <div class="text-xs text-[#A1A1AA] mt-1">Pin Codes Served</div>
+                </div>
+                <div>
+                    <div class="text-3xl sm:text-4xl font-extrabold text-white">3,500+</div>
+                    <div class="text-xs text-[#A1A1AA] mt-1">Delivery Hubs Nationwide</div>
+                </div>
+                <div>
+                    <div class="text-3xl sm:text-4xl font-extrabold text-[#F97316]">2.5M+</div>
+                    <div class="text-xs text-[#A1A1AA] mt-1">Daily Parcels Handled</div>
+                </div>
+                <div>
+                    <div class="text-3xl sm:text-4xl font-extrabold text-white">99.4%</div>
+                    <div class="text-xs text-[#A1A1AA] mt-1">On-Time SLA Delivery</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Core Services Section -->
+        <section id="services" class="py-16 md:py-24 bg-[#FAFAFA]">
+            <div class="max-w-[1200px] mx-auto px-6 space-y-12">
+                <div class="text-center max-w-2xl mx-auto space-y-2">
+                    <span class="text-xs font-bold uppercase tracking-wider text-[#F97316]">Express Portfolio</span>
+                    <h2 class="text-2xl sm:text-3xl font-extrabold text-[#18181B] tracking-tight">Comprehensive Logistics Services</h2>
+                    <p class="text-sm text-[#71717A]">
+                        Integrated logistics solutions engineered for enterprise e-commerce platforms, retail chains, and direct-to-consumer brands.
                     </p>
                 </div>
 
-                <!-- Search Input Bar -->
-                <div class="flex flex-col sm:flex-row items-center gap-3 max-w-2xl">
-                    <div class="relative w-full">
-                        <span class="absolute left-3.5 top-1/2 -translate-y-1/2 material-symbols-outlined text-[#757575] text-lg">search</span>
-                        <input type="text" id="awbSearchInput" placeholder="Enter 15-digit AWB (e.g. 152785863851740)" class="input-text pl-10 text-xs font-mono font-medium">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <!-- Service 1 -->
+                    <div class="bg-white rounded-xl border border-[#E0E0E0] overflow-hidden shadow-xs hover:shadow-md transition-shadow">
+                        <img src="https://images.unsplash.com/photo-1566576912321-d58ddd7a6088?auto=format&fit=crop&w=600&q=80" alt="B2C E-Commerce Express Delivery" class="w-full h-40 object-cover">
+                        <div class="p-5 space-y-2">
+                            <h3 class="font-bold text-base text-[#18181B]">B2C E-Commerce Express</h3>
+                            <p class="text-xs text-[#71717A] leading-relaxed">
+                                Next-day urban deliveries, cash-on-delivery collection, and automated doorstep quality checks for returns.
+                            </p>
+                        </div>
                     </div>
-                    <button type="button" onclick="trackFromInput()" class="btn-primary w-full sm:w-auto px-6 py-2.5 text-xs font-semibold whitespace-nowrap">
-                        Track Shipment
-                    </button>
-                </div>
 
-                <!-- Test Sample AWBs -->
-                <div class="pt-2 border-t border-[#EEEEEE] flex flex-wrap items-center gap-2 text-xs">
-                    <span class="text-[#616161] font-medium">Sample AWBs for testing:</span>
-                    <button type="button" onclick="openCustomerModal('Where is my consignment 152785863851740?')" class="chip text-xs font-mono">
-                        152785863851740 (Delivered)
-                    </button>
-                    <button type="button" onclick="openCustomerModal('Where is my shipment 152785863851741?')" class="chip text-xs font-mono">
-                        152785863851741 (Delayed Hub)
-                    </button>
-                    <button type="button" onclick="openCustomerModal('Where is parcel 152785863851742?')" class="chip text-xs font-mono">
-                        152785863851742 (Out for Delivery)
+                    <!-- Service 2 -->
+                    <div class="bg-white rounded-xl border border-[#E0E0E0] overflow-hidden shadow-xs hover:shadow-md transition-shadow">
+                        <img src="https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?auto=format&fit=crop&w=600&q=80" alt="B2B Heavy Cargo & Freight" class="w-full h-40 object-cover">
+                        <div class="p-5 space-y-2">
+                            <h3 class="font-bold text-base text-[#18181B]">B2B Heavy Cargo</h3>
+                            <p class="text-xs text-[#71717A] leading-relaxed">
+                                FTL &amp; PTL freight linehaul solutions connecting major manufacturing clusters with dedicated containerized fleets.
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Service 3 -->
+                    <div class="bg-white rounded-xl border border-[#E0E0E0] overflow-hidden shadow-xs hover:shadow-md transition-shadow">
+                        <img src="https://images.unsplash.com/photo-1587293852726-70cdb56c2866?auto=format&fit=crop&w=600&q=80" alt="3PL Smart Fulfillment Centers" class="w-full h-40 object-cover">
+                        <div class="p-5 space-y-2">
+                            <h3 class="font-bold text-base text-[#18181B]">Smart Fulfillment Centers</h3>
+                            <p class="text-xs text-[#71717A] leading-relaxed">
+                                5M+ sq.ft of grade-A automated sorting hubs with automated picking, packing, and high-speed multi-carrier dispatch.
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Service 4 -->
+                    <div class="bg-white rounded-xl border border-[#E0E0E0] overflow-hidden shadow-xs hover:shadow-md transition-shadow">
+                        <img src="https://images.unsplash.com/photo-1578575437130-527eed3abbec?auto=format&fit=crop&w=600&q=80" alt="Cross-Border Global Express" class="w-full h-40 object-cover">
+                        <div class="p-5 space-y-2">
+                            <h3 class="font-bold text-base text-[#18181B]">Cross-Border Express</h3>
+                            <p class="text-xs text-[#71717A] leading-relaxed">
+                                Global multimodal air and sea cargo with fast-track digital customs clearance in over 190 worldwide destinations.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Technology & Support Banner -->
+        <section id="solutions" class="py-14 bg-white border-y border-[#E0E0E0]">
+            <div class="max-w-[1200px] mx-auto px-6">
+                <div class="bg-[#FFF7ED] border border-[#FFEDD5] rounded-2xl p-8 flex flex-col md:flex-row items-center justify-between gap-6">
+                    <div class="space-y-2 max-w-xl">
+                        <span class="text-xs font-bold text-[#EA580C] uppercase tracking-wider">AI Customer Support Embedded</span>
+                        <h3 class="text-xl font-bold text-[#18181B]">Need assistance with an ongoing dispatch or delivery?</h3>
+                        <p class="text-xs text-[#71717A] leading-relaxed">
+                            ExpressBeas is integrated with Supporto AI. Ask questions about your AWB number, reschedule a delivery, or report dispatch delays directly through our live assistant.
+                        </p>
+                    </div>
+                    <button type="button" onclick="toggleDrawer()" class="btn-primary py-3 px-6 text-xs font-semibold shadow-sm whitespace-nowrap">
+                        Open Support Assistant &rarr;
                     </button>
                 </div>
             </div>
+        </section>
 
-            <!-- Recent Consignments Overview Table -->
-            <div class="border border-[#E0E0E0] rounded-xl overflow-hidden bg-white shadow-sm">
-                <div class="bg-[#F8FAFC] px-5 py-3.5 border-b border-[#E0E0E0] flex items-center justify-between">
+    </main>
+
+    <!-- Logistics Corporate Footer -->
+    <footer id="company" class="bg-[#09090B] text-[#A1A1AA] py-14 border-t border-[#27272A] text-xs">
+        <div class="max-w-[1200px] mx-auto px-6 grid grid-cols-1 md:grid-cols-4 gap-10">
+            <div class="space-y-4">
+                <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 rounded bg-[#18181B] text-[#F97316] flex items-center justify-center font-bold">
+                        <span class="material-symbols-outlined text-lg">local_shipping</span>
+                    </div>
+                    <span class="font-bold text-base text-white">ExpressBeas</span>
+                </div>
+                <p class="text-[#71717A] leading-relaxed">
+                    National Head Office: Cyber City, Gurugram, Haryana. Regional hubs in Mumbai, Bengaluru, Chennai, and Jaipur.
+                </p>
+            </div>
+            <div>
+                <h4 class="font-bold text-white mb-3 uppercase tracking-wider text-[11px]">Solutions</h4>
+                <ul class="space-y-2 text-[#71717A]">
+                    <li><a href="#services" class="hover:text-white">B2C Surface Express</a></li>
+                    <li><a href="#services" class="hover:text-white">Air Cargo Priority</a></li>
+                    <li><a href="#services" class="hover:text-white">Warehousing &amp; 3PL</a></li>
+                    <li><a href="#services" class="hover:text-white">Reverse Logistics</a></li>
+                </ul>
+            </div>
+            <div>
+                <h4 class="font-bold text-white mb-3 uppercase tracking-wider text-[11px]">Customer Support</h4>
+                <ul class="space-y-2 text-[#71717A]">
+                    <li><button type="button" onclick="openEmbeddedDrawerWithQuery('Where is my consignment?')" class="hover:text-white">Track AWB</button></li>
+                    <li><button type="button" onclick="toggleDrawer()" class="hover:text-white">Live AI Assistant</button></li>
+                    <li><a href="#tracking" class="hover:text-white">Delivery SLA Terms</a></li>
+                    <li><a href="#company" class="hover:text-white">Claims &amp; Disputes</a></li>
+                </ul>
+            </div>
+            <div>
+                <h4 class="font-bold text-white mb-3 uppercase tracking-wider text-[11px]">Security &amp; Compliance</h4>
+                <p class="text-[#71717A] leading-relaxed">
+                    ISO 9001:2015 &bull; IATA Cargo Certified &bull; 256-Bit Data Encryption on all tracking endpoints.
+                </p>
+            </div>
+        </div>
+        <div class="max-w-[1200px] mx-auto px-6 pt-10 mt-10 border-t border-[#27272A] flex flex-col sm:flex-row items-center justify-between gap-4 text-[#71717A]">
+            <p>&copy; 2026 ExpressBeas Logistics Network Limited. All rights reserved.</p>
+            <p>Customer Support powered by <a href="/" class="text-[#F97316] hover:underline">Supporto AI</a></p>
+        </div>
+    </footer>
+
+
+    {% else %}
+    <!-- ================================================================= -->
+    <!-- REAL E-COMMERCE STORE WEBSITE: SHOPEASE                           -->
+    <!-- ================================================================= -->
+
+    <!-- Top Announcement Bar -->
+    <div class="bg-[#F97316] text-white text-[11px] font-semibold py-2 px-6 text-center">
+        <div class="max-w-[1200px] mx-auto flex items-center justify-between">
+            <span class="hidden sm:inline">⚡ Summer Tech Carnival</span>
+            <span>Get 15% Instant Discount with UPI &bull; Free Next-Day Delivery on all orders above &#8377;999</span>
+            <div class="flex items-center gap-3">
+                <a href="/" class="text-white hover:underline text-[11px]">&larr; Supporto AI</a>
+                <span>&bull;</span>
+                <a href="{% url 'workspace_dashboard' company_slug=workspace.slug %}" class="text-white hover:underline text-[11px]">Staff Portal</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main E-Commerce Header -->
+    <header class="border-b border-[#E0E0E0] bg-white sticky top-0 z-30 shadow-xs">
+        <div class="max-w-[1200px] mx-auto px-6 h-18 flex items-center justify-between gap-6">
+            <!-- Brand Logo -->
+            <a href="/widget/{{ public_key }}/demo/" class="flex items-center gap-2.5 flex-shrink-0" style="text-decoration: none;">
+                <div class="w-10 h-10 rounded-xl bg-[#F97316] text-white flex items-center justify-center font-bold text-xl shadow-md">
+                    <span class="material-symbols-outlined text-2xl">shopping_bag</span>
+                </div>
+                <div>
+                    <span class="font-extrabold text-xl text-[#18181B] tracking-tight">Shop<span class="text-[#F97316]">Ease</span></span>
+                    <span class="block text-[10px] uppercase tracking-wider text-[#71717A] font-semibold -mt-1">Consumer Electronics</span>
+                </div>
+            </a>
+
+            <!-- Search Bar -->
+            <div class="hidden md:flex flex-1 max-w-lg relative">
+                <span class="absolute left-3.5 top-1/2 -translate-y-1/2 material-symbols-outlined text-[#71717A] text-lg">search</span>
+                <input type="text" placeholder="Search wireless headphones, 65W GaN chargers, earbuds..." class="input-text pl-10 text-xs py-2.5 bg-[#F8FAFC]">
+            </div>
+
+            <!-- Customer Actions -->
+            <div class="flex items-center gap-4 text-xs font-semibold">
+                <button type="button" onclick="openEmbeddedDrawerWithQuery('What are my orders?')" class="flex items-center gap-1.5 text-[#52525B] hover:text-[#F97316] transition-colors">
+                    <span class="material-symbols-outlined text-xl">inventory</span>
+                    <span class="hidden sm:inline">My Orders</span>
+                </button>
+                <div class="relative cursor-pointer flex items-center gap-1 text-[#52525B]">
+                    <span class="material-symbols-outlined text-xl">shopping_cart</span>
+                    <span class="bg-[#F97316] text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center font-bold -ml-1">1</span>
+                </div>
+                <button type="button" onclick="toggleDrawer()" class="btn-primary py-2 px-3.5 text-xs font-semibold shadow-xs flex items-center gap-1.5">
+                    <span class="material-symbols-outlined text-base">support_agent</span>
+                    <span>Support</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Category Bar -->
+        <div class="border-t border-[#F1F5F9] bg-[#FAFAFA] px-6 hidden sm:block">
+            <div class="max-w-[1200px] mx-auto flex items-center gap-8 h-10 text-xs font-semibold text-[#64748B]">
+                <a href="#catalog" class="hover:text-[#F97316] transition-colors">Active Noise Cancelling</a>
+                <a href="#catalog" class="hover:text-[#F97316] transition-colors">Wireless Chargers</a>
+                <a href="#catalog" class="hover:text-[#F97316] transition-colors">Fast Power Delivery</a>
+                <a href="#catalog" class="hover:text-[#F97316] transition-colors">Smart Watches</a>
+                <a href="#catalog" class="hover:text-[#F97316] transition-colors">Audio Cables</a>
+                <span class="text-[#F97316] font-bold ml-auto">Free 7-Day Returns</span>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-1 w-full space-y-12">
+
+        <!-- Hero Promotional Product Banner -->
+        <section class="bg-gradient-to-r from-[#18181B] to-[#27272A] text-white py-16 md:py-20">
+            <div class="max-w-[1200px] mx-auto px-6 grid grid-cols-1 md:grid-cols-12 gap-10 items-center">
+                <div class="md:col-span-7 space-y-5">
+                    <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-[#F97316]/20 text-[#FB923C] border border-[#F97316]/30">
+                        <span>New Flagship Release</span>
+                    </div>
+
+                    <h1 class="text-3xl sm:text-5xl font-extrabold text-white leading-tight tracking-tight">
+                        StudioSound Pro ANC Wireless Headphones.
+                    </h1>
+
+                    <p class="text-sm sm:text-base text-[#D4D4D8] leading-relaxed max-w-lg">
+                        Engineered with 45dB Hybrid Active Noise Cancellation, custom 40mm titanium drivers, and 50-hour ultra battery life.
+                    </p>
+
+                    <div class="flex items-center gap-3 text-lg font-bold">
+                        <span class="text-[#F97316] text-2xl">&#8377;4,999.00</span>
+                        <span class="text-[#71717A] line-through text-base">&#8377;9,999.00</span>
+                        <span class="text-[11px] bg-[#EA580C] text-white px-2 py-0.5 rounded font-semibold uppercase">50% Off</span>
+                    </div>
+
+                    <div class="flex flex-wrap items-center gap-4 pt-2">
+                        <button type="button" onclick="openEmbeddedDrawerWithQuery('Where is order SE-84920?')" class="btn-primary py-3 px-6 text-sm font-semibold shadow-md">
+                            Track Order #SE-84920 &rarr;
+                        </button>
+                        <button type="button" onclick="openEmbeddedDrawerWithQuery('What is your return policy?')" class="bg-white/10 hover:bg-white/20 text-white border border-white/20 px-5 py-3 rounded-lg text-sm font-medium transition-colors">
+                            Return Policy &bull; 7 Days
+                        </button>
+                    </div>
+                </div>
+
+                <div class="md:col-span-5 flex justify-center">
+                    <div class="relative rounded-2xl overflow-hidden shadow-2xl border border-white/10 max-w-sm">
+                        <img src="https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=800&q=80" 
+                             alt="StudioSound Pro ANC Wireless Headphones" 
+                             class="w-full h-80 object-cover">
+                        <div class="absolute bottom-3 left-3 right-3 bg-black/60 backdrop-blur-md p-3 rounded-lg text-xs flex items-center justify-between">
+                            <div>
+                                <p class="font-bold text-white">StudioSound Pro ANC</p>
+                                <p class="text-[11px] text-[#A1A1AA]">Order #SE-84920 on file</p>
+                            </div>
+                            <span class="badge badge-success text-[10px]">Delivered</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Store Value Guarantees -->
+        <section class="max-w-[1200px] mx-auto px-6">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-6 p-6 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] text-xs">
+                <div class="flex items-center gap-3">
+                    <span class="material-symbols-outlined text-2xl text-[#F97316]">local_shipping</span>
                     <div>
-                        <h2 class="text-sm font-bold text-[#212121]">Active Network Consignments</h2>
-                        <p class="text-[11px] text-[#616161]">Real-time SQL tracking records managed by ExpressBeas fleet</p>
+                        <p class="font-bold text-[#18181B]">Free 2-Day Delivery</p>
+                        <p class="text-[#64748B] text-[11px]">All orders across India</p>
                     </div>
-                    <span class="text-xs bg-[#FFF7ED] text-[#C2410C] border border-[#FFEDD5] px-2.5 py-0.5 rounded font-medium">
-                        Live Database
-                    </span>
                 </div>
-                <div class="divide-y divide-[#E0E0E0] text-xs">
-                    <div class="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-[#FAFAFA] transition-colors">
-                        <div class="space-y-1">
-                            <div class="flex items-center gap-2">
-                                <span class="font-mono font-bold text-[#212121]">AWB 152785863851740</span>
-                                <span class="badge badge-success">Delivered</span>
-                            </div>
-                            <p class="text-[#616161]">Route: Ghaziabad &rarr; Jaipur (1.2 kg Surface) &bull; Origin: Cloudtail Logistics Hub</p>
-                        </div>
-                        <button type="button" onclick="openCustomerModal('Where is my consignment 152785863851740?')" class="btn-secondary py-1.5 px-3 text-xs self-start sm:self-center font-medium">
-                            Track AWB
-                        </button>
+                <div class="flex items-center gap-3">
+                    <span class="material-symbols-outlined text-2xl text-[#F97316]">sync</span>
+                    <div>
+                        <p class="font-bold text-[#18181B]">7-Day Easy Returns</p>
+                        <p class="text-[#64748B] text-[11px]">Instant UPI refund</p>
                     </div>
-
-                    <div class="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-[#FAFAFA] transition-colors">
-                        <div class="space-y-1">
-                            <div class="flex items-center gap-2">
-                                <span class="font-mono font-bold text-[#212121]">AWB 152785863851741</span>
-                                <span class="badge badge-warning">Delayed at Delhi Hub</span>
-                            </div>
-                            <p class="text-[#616161]">Route: Delhi &rarr; Mumbai (18.5 kg Surface) &bull; Origin: Tech Warehouses Ltd</p>
-                        </div>
-                        <button type="button" onclick="openCustomerModal('Where is my shipment 152785863851741?')" class="btn-secondary py-1.5 px-3 text-xs self-start sm:self-center font-medium">
-                            Track AWB
-                        </button>
+                </div>
+                <div class="flex items-center gap-3">
+                    <span class="material-symbols-outlined text-2xl text-[#F97316]">verified_user</span>
+                    <div>
+                        <p class="font-bold text-[#18181B]">1-Year Warranty</p>
+                        <p class="text-[#64748B] text-[11px]">Brand certified</p>
                     </div>
-
-                    <div class="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-[#FAFAFA] transition-colors">
-                        <div class="space-y-1">
-                            <div class="flex items-center gap-2">
-                                <span class="font-mono font-bold text-[#212121]">AWB 152785863851742</span>
-                                <span class="badge badge-info">Out for Delivery</span>
-                            </div>
-                            <p class="text-[#616161]">Route: Bangalore &rarr; Jaipur (0.3 kg Air Express) &bull; Origin: National Fulfillment Center</p>
-                        </div>
-                        <button type="button" onclick="openCustomerModal('Where is parcel 152785863851742?')" class="btn-secondary py-1.5 px-3 text-xs self-start sm:self-center font-medium">
-                            Track AWB
-                        </button>
+                </div>
+                <div class="flex items-center gap-3">
+                    <span class="material-symbols-outlined text-2xl text-[#F97316]">support_agent</span>
+                    <div>
+                        <p class="font-bold text-[#18181B]">24/7 AI Support</p>
+                        <p class="text-[#64748B] text-[11px]">Live order resolution</p>
                     </div>
                 </div>
             </div>
+        </section>
 
-            <!-- Quick Inquiry Chips -->
-            <div class="space-y-2">
-                <p class="text-xs font-semibold text-[#616161] uppercase tracking-wider">Common Inquiries (click to test in widget):</p>
-                <div class="flex flex-wrap gap-2">
-                    <button type="button" onclick="openCustomerModal('What are my consignments?')" class="chip text-xs">
-                        What are my consignments?
+        <!-- Product Catalog Grid -->
+        <section id="catalog" class="max-w-[1200px] mx-auto px-6 space-y-8">
+            <div class="flex items-center justify-between border-b border-[#E0E0E0] pb-4">
+                <div>
+                    <h2 class="text-xl sm:text-2xl font-extrabold text-[#18181B] tracking-tight">Trending Electronics &amp; Accessories</h2>
+                    <p class="text-xs text-[#64748B] mt-0.5">Verified products connected to the ShopEase SQL database</p>
+                </div>
+                <span class="text-xs font-semibold text-[#F97316]">View All 24 Items &rarr;</span>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                
+                <!-- Product 1: SE-84920 Item -->
+                <div class="bg-white border border-[#E2E8F0] rounded-xl overflow-hidden shadow-xs hover:shadow-md transition-all flex flex-col justify-between">
+                    <div>
+                        <div class="relative">
+                            <img src="https://images.unsplash.com/photo-1546435770-a3e426bf472b?auto=format&fit=crop&w=600&q=80" alt="Wireless Noise-Canceling Headphones" class="w-full h-48 object-cover">
+                            <span class="absolute top-2 left-2 bg-[#18181B] text-white text-[10px] font-bold px-2 py-0.5 rounded">Order #SE-84920</span>
+                        </div>
+                        <div class="p-4 space-y-2">
+                            <div class="flex items-center justify-between text-xs text-[#64748B]">
+                                <span>Audio &bull; Over-Ear</span>
+                                <span>★ 4.8 (340 reviews)</span>
+                            </div>
+                            <h3 class="font-bold text-sm text-[#18181B]">Wireless Noise-Canceling Headphones ANC-700</h3>
+                            <p class="text-xs text-[#64748B]">Titanium drivers, active noise suppression, 40-hr battery.</p>
+                            <div class="text-sm font-extrabold text-[#18181B] pt-1">&#8377;4,999.00</div>
+                        </div>
+                    </div>
+                    <div class="p-4 pt-0 flex items-center gap-2">
+                        <button type="button" onclick="openEmbeddedDrawerWithQuery('Where is order SE-84920?')" class="btn-primary w-full text-xs font-semibold py-2">
+                            Track Order
+                        </button>
+                        <button type="button" onclick="openEmbeddedDrawerWithQuery('What is the return status for order SE-84920?')" class="btn-secondary w-full text-xs font-medium py-2">
+                            Return Status
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Product 2: SE-84922 Item -->
+                <div class="bg-white border border-[#E2E8F0] rounded-xl overflow-hidden shadow-xs hover:shadow-md transition-all flex flex-col justify-between">
+                    <div>
+                        <div class="relative">
+                            <img src="https://images.unsplash.com/photo-1622445268046-6f81ef697e88?auto=format&fit=crop&w=600&q=80" alt="Magnetic Wireless Charging Pad" class="w-full h-48 object-cover">
+                            <span class="absolute top-2 left-2 bg-[#EA580C] text-white text-[10px] font-bold px-2 py-0.5 rounded">Order #SE-84922</span>
+                        </div>
+                        <div class="p-4 space-y-2">
+                            <div class="flex items-center justify-between text-xs text-[#64748B]">
+                                <span>Charging &bull; Qi2 Certified</span>
+                                <span>★ 4.6 (128 reviews)</span>
+                            </div>
+                            <h3 class="font-bold text-sm text-[#18181B]">Magnetic Wireless Charging Pad 15W</h3>
+                            <p class="text-xs text-[#64748B]">Ultra-fast magnetic alignment for iPhone and Android devices.</p>
+                            <div class="text-sm font-extrabold text-[#18181B] pt-1">&#8377;1,499.00</div>
+                        </div>
+                    </div>
+                    <div class="p-4 pt-0">
+                        <button type="button" onclick="openEmbeddedDrawerWithQuery('Cancel order SE-84922')" class="btn-secondary w-full text-xs font-medium py-2 text-[#C2410C]">
+                            Cancel Order via AI &rarr;
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Product 3 -->
+                <div class="bg-white border border-[#E2E8F0] rounded-xl overflow-hidden shadow-xs hover:shadow-md transition-all flex flex-col justify-between">
+                    <div>
+                        <img src="https://images.unsplash.com/photo-1583863788434-e58a36330cf0?auto=format&fit=crop&w=600&q=80" alt="Ultra-Slim 65W GaN Fast Charger" class="w-full h-48 object-cover">
+                        <div class="p-4 space-y-2">
+                            <div class="flex items-center justify-between text-xs text-[#64748B]">
+                                <span>Power Delivery &bull; GaN III</span>
+                                <span>★ 4.9 (512 reviews)</span>
+                            </div>
+                            <h3 class="font-bold text-sm text-[#18181B]">Ultra-Slim 65W GaN Fast Charger Dual USB-C</h3>
+                            <p class="text-xs text-[#64748B]">Pocket-sized dual port charger for laptops, phones, and tablets.</p>
+                            <div class="text-sm font-extrabold text-[#18181B] pt-1">&#8377;1,999.00</div>
+                        </div>
+                    </div>
+                    <div class="p-4 pt-0">
+                        <button type="button" onclick="openEmbeddedDrawerWithQuery('Do you have stock for 65W GaN Charger?')" class="btn-secondary w-full text-xs font-medium py-2">
+                            Check Stock via Support
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Product 4 -->
+                <div class="bg-white border border-[#E2E8F0] rounded-xl overflow-hidden shadow-xs hover:shadow-md transition-all flex flex-col justify-between">
+                    <div>
+                        <img src="https://images.unsplash.com/photo-1590658268037-6bf12165a8df?auto=format&fit=crop&w=600&q=80" alt="True Wireless Earbuds" class="w-full h-48 object-cover">
+                        <div class="p-4 space-y-2">
+                            <div class="flex items-center justify-between text-xs text-[#64748B]">
+                                <span>Audio &bull; In-Ear</span>
+                                <span>★ 4.7 (219 reviews)</span>
+                            </div>
+                            <h3 class="font-bold text-sm text-[#18181B]">True Wireless Earbuds with ENC Pro</h3>
+                            <p class="text-xs text-[#64748B]">Quad microphone environmental noise cancellation for crystal clear calls.</p>
+                            <div class="text-sm font-extrabold text-[#18181B] pt-1">&#8377;2,499.00</div>
+                        </div>
+                    </div>
+                    <div class="p-4 pt-0">
+                        <button type="button" onclick="openEmbeddedDrawerWithQuery('What are my orders?')" class="btn-secondary w-full text-xs font-medium py-2">
+                            View Order Status
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Product 5 -->
+                <div class="bg-white border border-[#E2E8F0] rounded-xl overflow-hidden shadow-xs hover:shadow-md transition-all flex flex-col justify-between">
+                    <div>
+                        <img src="https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=600&q=80" alt="Smart Fitness Watch" class="w-full h-48 object-cover">
+                        <div class="p-4 space-y-2">
+                            <div class="flex items-center justify-between text-xs text-[#64748B]">
+                                <span>Wearables &bull; AMOLED</span>
+                                <span>★ 4.5 (88 reviews)</span>
+                            </div>
+                            <h3 class="font-bold text-sm text-[#18181B]">Smart Fitness Watch AMOLED with SpO2</h3>
+                            <p class="text-xs text-[#64748B]">Always-on display, heart-rate tracking, 100+ workout modes.</p>
+                            <div class="text-sm font-extrabold text-[#18181B] pt-1">&#8377;3,499.00</div>
+                        </div>
+                    </div>
+                    <div class="p-4 pt-0">
+                        <button type="button" onclick="openEmbeddedDrawerWithQuery('What are my orders?')" class="btn-secondary w-full text-xs font-medium py-2">
+                            View Order Status
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Product 6 -->
+                <div class="bg-white border border-[#E2E8F0] rounded-xl overflow-hidden shadow-xs hover:shadow-md transition-all flex flex-col justify-between">
+                    <div>
+                        <img src="https://images.unsplash.com/photo-1585338107529-13afc5f02586?auto=format&fit=crop&w=600&q=80" alt="Braided Fast Charging Cable" class="w-full h-48 object-cover">
+                        <div class="p-4 space-y-2">
+                            <div class="flex items-center justify-between text-xs text-[#64748B]">
+                                <span>Cables &bull; Kevlar Reinforced</span>
+                                <span>★ 4.9 (640 reviews)</span>
+                            </div>
+                            <h3 class="font-bold text-sm text-[#18181B]">Braided Kevlar USB-C Fast Charging Cable 2m</h3>
+                            <p class="text-xs text-[#64748B]">100W PD rated with military grade ballistic nylon braiding.</p>
+                            <div class="text-sm font-extrabold text-[#18181B] pt-1">&#8377;499.00</div>
+                        </div>
+                    </div>
+                    <div class="p-4 pt-0">
+                        <button type="button" onclick="openEmbeddedDrawerWithQuery('What are my orders?')" class="btn-secondary w-full text-xs font-medium py-2">
+                            View Order Status
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- Quick Help Chips Bar -->
+        <section class="max-w-[1200px] mx-auto px-6">
+            <div class="p-6 rounded-xl bg-[#FFF7ED] border border-[#FFEDD5] space-y-3">
+                <span class="text-xs font-bold text-[#EA580C] uppercase tracking-wider block">Customer Helpdesk &bull; Click to ask live AI assistant:</span>
+                <div class="flex flex-wrap gap-2 text-xs">
+                    <button type="button" onclick="openEmbeddedDrawerWithQuery('What are my orders?')" class="chip text-xs bg-white">
+                        What are my orders?
                     </button>
-                    <button type="button" onclick="openCustomerModal('Where is my consignment 152785863851740?')" class="chip text-xs">
-                        Where is my consignment 152785863851740?
+                    <button type="button" onclick="openEmbeddedDrawerWithQuery('Where is order SE-84920?')" class="chip text-xs bg-white">
+                        Where is order SE-84920?
                     </button>
-                    <button type="button" onclick="openCustomerModal('Why is shipment 152785863851741 delayed?')" class="chip text-xs">
-                        Why is shipment 152785863851741 delayed?
+                    <button type="button" onclick="openEmbeddedDrawerWithQuery('What is the status of my return and refund?')" class="chip text-xs bg-white">
+                        What is the status of my return and refund?
                     </button>
-                    <button type="button" onclick="openCustomerModal('I want to speak with a human support agent.')" class="chip text-xs">
+                    <button type="button" onclick="openEmbeddedDrawerWithQuery('Cancel order SE-84922')" class="chip text-xs bg-white">
+                        Cancel order SE-84922
+                    </button>
+                    <button type="button" onclick="openEmbeddedDrawerWithQuery('I want to speak with a human agent.')" class="chip text-xs bg-white">
                         Talk to a human agent
                     </button>
                 </div>
             </div>
-        </div>
-
-        {% else %}
-        <!-- ================= SHOPEASE E-COMMERCE STORE ================= -->
-        <div class="space-y-8">
-            <!-- Storefront Banner -->
-            <div class="bg-white border border-[#E0E0E0] rounded-xl p-8 space-y-4 shadow-sm">
-                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <div class="space-y-2">
-                        <span class="text-xs font-bold uppercase tracking-wider text-[#F97316]">Consumer Electronics Store</span>
-                        <h1 class="text-2xl sm:text-3xl font-extrabold text-[#212121] tracking-tight">Welcome to ShopEase</h1>
-                        <p class="text-sm text-[#616161] max-w-xl">
-                            Browse high-performance audio, charging essentials, and smart workspace accessories with 7-day hassle-free returns.
-                        </p>
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <button type="button" onclick="openCustomerModal('What are my orders?')" class="btn-primary py-2.5 px-4 text-xs font-semibold">
-                            View My Orders
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Test Sample Orders -->
-                <div class="pt-3 border-t border-[#EEEEEE] flex flex-wrap items-center gap-2 text-xs">
-                    <span class="text-[#616161] font-medium">Sample Orders for testing:</span>
-                    <button type="button" onclick="openCustomerModal('Where is order SE-84920?')" class="chip text-xs font-mono">
-                        SE-84920 (Delivered &bull; Return Eligible)
-                    </button>
-                    <button type="button" onclick="openCustomerModal('Cancel order SE-84922')" class="chip text-xs font-mono">
-                        SE-84922 (Placed &bull; Cancellable)
-                    </button>
-                    <button type="button" onclick="openCustomerModal('What is the status of my return and refund?')" class="chip text-xs">
-                        Check Return &amp; Refund Status
-                    </button>
-                </div>
-            </div>
-
-            <!-- Recent Orders Self-Service Card -->
-            <div class="border border-[#E0E0E0] rounded-xl overflow-hidden bg-white shadow-sm">
-                <div class="bg-[#F8FAFC] px-5 py-3.5 border-b border-[#E0E0E0] flex items-center justify-between">
-                    <div>
-                        <h2 class="text-sm font-bold text-[#212121]">Order History &amp; Returns</h2>
-                        <p class="text-[11px] text-[#616161]">Verify orders, initiate returns, or cancel pending shipments</p>
-                    </div>
-                    <span class="text-xs bg-[#FFF7ED] text-[#C2410C] border border-[#FFEDD5] px-2.5 py-0.5 rounded font-medium">
-                        Live Database
-                    </span>
-                </div>
-                <div class="divide-y divide-[#E0E0E0] text-xs">
-                    <!-- Order 1 -->
-                    <div class="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-[#FAFAFA] transition-colors">
-                        <div class="space-y-1">
-                            <div class="flex items-center gap-2">
-                                <span class="font-mono font-bold text-[#212121]">Order #SE-84920</span>
-                                <span class="badge badge-success">Delivered (Return Scheduled)</span>
-                            </div>
-                            <p class="text-[#616161]">Wireless Noise-Canceling Headphones &bull; &#8377;4,999.00 (Card ending 4242) &bull; FedEx Express</p>
-                        </div>
-                        <div class="flex items-center gap-2">
-                            <button type="button" onclick="openCustomerModal('Where is order SE-84920?')" class="btn-secondary py-1.5 px-3 text-xs font-medium">
-                                Track Order
-                            </button>
-                            <button type="button" onclick="openCustomerModal('What is the status of my return for order SE-84920?')" class="btn-secondary py-1.5 px-3 text-xs font-medium">
-                                Return Status
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Order 2 -->
-                    <div class="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-[#FAFAFA] transition-colors">
-                        <div class="space-y-1">
-                            <div class="flex items-center gap-2">
-                                <span class="font-mono font-bold text-[#212121]">Order #SE-84922</span>
-                                <span class="badge badge-warning">Placed (Cancellable)</span>
-                            </div>
-                            <p class="text-[#616161]">Magnetic Wireless Charging Pad 15W &bull; &#8377;1,499.00 (UPI) &bull; Bluedart Surface</p>
-                        </div>
-                        <button type="button" onclick="openCustomerModal('Cancel order SE-84922')" class="btn-secondary py-1.5 px-3 text-xs font-medium text-[#C2410C]">
-                            Cancel via AI
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Quick Inquiry Chips -->
-            <div class="space-y-2">
-                <p class="text-xs font-semibold text-[#616161] uppercase tracking-wider">Sample Inquiries (click to test in widget):</p>
-                <div class="flex flex-wrap gap-2">
-                    <button type="button" onclick="openCustomerModal('What are my orders?')" class="chip text-xs">
-                        What are my orders?
-                    </button>
-                    <button type="button" onclick="openCustomerModal('Where is order SE-84920?')" class="chip text-xs">
-                        Where is order SE-84920?
-                    </button>
-                    <button type="button" onclick="openCustomerModal('What is the status of my return and refund?')" class="chip text-xs">
-                        What is the status of my return and refund?
-                    </button>
-                    <button type="button" onclick="openCustomerModal('Cancel order SE-84922')" class="chip text-xs">
-                        Cancel order SE-84922
-                    </button>
-                </div>
-            </div>
-        </div>
-        {% endif %}
+        </section>
 
     </main>
 
-    <!-- 3. Pre-Chat Identity Modal (NOT PRE-FILLED, REAL SAAS CLEAN STYLE) -->
-    <div id="customerModal" class="hidden fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4">
-        <div class="bg-white rounded-xl max-w-sm w-full p-6 shadow-[0_12px_40px_rgba(0,0,0,0.12)] border border-[#E0E0E0] space-y-4">
-            <div class="flex items-center justify-between pb-2 border-b border-[#E0E0E0]">
+    <!-- E-Commerce Footer -->
+    <footer class="bg-[#18181B] text-[#A1A1AA] py-14 border-t border-[#27272A] text-xs mt-16">
+        <div class="max-w-[1200px] mx-auto px-6 grid grid-cols-1 md:grid-cols-4 gap-10">
+            <div class="space-y-4">
                 <div class="flex items-center gap-2">
-                    <div class="w-6 h-6 rounded bg-[#FFF7ED] text-[#EA580C] flex items-center justify-center font-bold">
-                        <span class="material-symbols-outlined text-sm">support_agent</span>
+                    <div class="w-8 h-8 rounded-lg bg-[#F97316] text-white flex items-center justify-center font-bold">
+                        <span class="material-symbols-outlined text-lg">shopping_bag</span>
                     </div>
-                    <h3 class="font-bold text-sm text-[#212121]">Start Support Session</h3>
+                    <span class="font-bold text-base text-white">ShopEase Store</span>
                 </div>
-                <button type="button" onclick="closeCustomerModal()" class="text-[#757575] hover:text-[#212121] transition-colors">
-                    <span class="material-symbols-outlined text-lg">close</span>
-                </button>
+                <p class="text-[#71717A] leading-relaxed">
+                    Direct-to-consumer tech accessories brand. Certified 100% genuine components with pan-India warranty and doorstep returns.
+                </p>
             </div>
-
-            <p class="text-xs text-[#616161] leading-relaxed">
-                Enter your name and registered 10-digit mobile number to verify your identity.
-            </p>
-
-            <form onsubmit="launchFullScreenChat(event)" class="space-y-3">
-                <div>
-                    <label for="custNameInput" class="block text-xs font-semibold text-[#212121] mb-1">Full Name *</label>
-                    <input type="text" id="custNameInput" required placeholder="e.g. Rahul Sharma" class="input-text">
-                </div>
-
-                <div>
-                    <label for="custPhoneInput" class="block text-xs font-semibold text-[#212121] mb-1">Mobile Phone Number *</label>
-                    <div class="flex items-center gap-1.5 border border-[#E0E0E0] rounded-lg px-3 py-2 bg-white focus-within:border-[#F97316] focus-within:ring-1 focus-within:ring-[#F97316]">
-                        <span class="text-xs font-medium text-[#757575]">+91</span>
-                        <input type="tel" id="custPhoneInput" required maxlength="10" placeholder="10-digit mobile number" class="w-full text-xs font-mono font-medium outline-none bg-transparent text-[#212121]">
-                    </div>
-                    <div id="custPhoneError" class="input-error-msg hidden">Please enter a valid 10-digit Indian mobile number (starts with 6, 7, 8, or 9).</div>
-                </div>
-
-                <div>
-                    <label for="custEmailInput" class="block text-xs font-semibold text-[#212121] mb-1">Email (Optional)</label>
-                    <input type="email" id="custEmailInput" placeholder="name@example.com" class="input-text">
-                </div>
-
-                <div>
-                    <label for="custInitialQueryInput" class="block text-xs font-semibold text-[#212121] mb-1">Inquiry</label>
-                    <input type="text" id="custInitialQueryInput" placeholder="e.g. What are my orders? / Track my parcel" class="input-text">
-                </div>
-
-                <div class="pt-2 space-y-2">
-                    <button type="submit" class="btn-primary w-full text-xs font-semibold py-2.5 shadow-sm">
-                        Start support session
-                    </button>
-                    <button type="button" onclick="openEmbeddedDrawer()" class="btn-secondary w-full text-xs font-medium py-2">
-                        Open embedded drawer
-                    </button>
-                </div>
-            </form>
+            <div>
+                <h4 class="font-bold text-white mb-3 uppercase tracking-wider text-[11px]">Shop Categories</h4>
+                <ul class="space-y-2 text-[#71717A]">
+                    <li><a href="#catalog" class="hover:text-white">Active Noise Cancellation</a></li>
+                    <li><a href="#catalog" class="hover:text-white">Wireless Qi2 Chargers</a></li>
+                    <li><a href="#catalog" class="hover:text-white">GaN Fast Adapters</a></li>
+                    <li><a href="#catalog" class="hover:text-white">Smart Fitness Bands</a></li>
+                </ul>
+            </div>
+            <div>
+                <h4 class="font-bold text-white mb-3 uppercase tracking-wider text-[11px]">Customer Support</h4>
+                <ul class="space-y-2 text-[#71717A]">
+                    <li><button type="button" onclick="openEmbeddedDrawerWithQuery('Where is my order?')" class="hover:text-white">Track Order</button></li>
+                    <li><button type="button" onclick="openEmbeddedDrawerWithQuery('How do I return a product?')" class="hover:text-white">Return Policy (7 Days)</button></li>
+                    <li><button type="button" onclick="toggleDrawer()" class="hover:text-white">Chat with AI Support</button></li>
+                    <li><a href="mailto:support@shopease.com" class="hover:text-white">Email Support</a></li>
+                </ul>
+            </div>
+            <div>
+                <h4 class="font-bold text-white mb-3 uppercase tracking-wider text-[11px]">Payment Methods</h4>
+                <p class="text-[#71717A] leading-relaxed">
+                    UPI (Google Pay, PhonePe, Paytm), Credit &amp; Debit Cards (Visa, MasterCard, RuPay), NetBanking, and Cash on Delivery.
+                </p>
+            </div>
         </div>
-    </div>
+        <div class="max-w-[1200px] mx-auto px-6 pt-10 mt-10 border-t border-[#27272A] flex flex-col sm:flex-row items-center justify-between gap-4 text-[#71717A]">
+            <p>&copy; 2026 ShopEase Technologies Pvt. Ltd. All rights reserved.</p>
+            <p>Customer Support powered by <a href="/" class="text-[#F97316] hover:underline">Supporto AI</a></p>
+        </div>
+    </footer>
 
-    <!-- 4. Floating Widget Drawer -->
-    <div id="widgetDrawer" class="hidden fixed bottom-6 right-6 z-50 w-full max-w-sm sm:max-w-md h-[580px] bg-white rounded-xl shadow-[0_12px_40px_rgba(0,0,0,0.15)] border border-[#E0E0E0] overflow-hidden flex flex-col">
-        <div class="h-11 bg-[#F8FAFC] px-4 flex items-center justify-between text-xs text-[#212121] border-b border-[#E0E0E0]">
+    {% endif %}
+
+
+    <!-- ================================================================= -->
+    <!-- FLOATING SUPPORTO AI CHAT DRAWER & CORNER LAUNCHER                -->
+    <!-- ================================================================= -->
+
+    <!-- Floating Drawer Window (Right side slide-over) -->
+    <div id="widgetDrawer" class="hidden fixed bottom-20 sm:bottom-24 right-4 sm:right-6 z-50 w-[92vw] sm:w-[420px] h-[580px] bg-white rounded-2xl shadow-[0_16px_50px_rgba(0,0,0,0.2)] border border-[#E0E0E0] overflow-hidden flex flex-col transition-all duration-300">
+        <!-- Drawer Header -->
+        <div class="h-12 bg-[#18181B] text-white px-4 flex items-center justify-between text-xs border-b border-[#27272A]">
             <div class="flex items-center gap-2">
-                <span class="w-2 h-2 rounded-full bg-[#F97316]"></span>
-                <span class="font-bold">{{ workspace.name }} Helpdesk</span>
+                <span class="w-2 h-2 rounded-full bg-[#F97316] animate-pulse"></span>
+                <span class="font-bold tracking-tight">{{ workspace.name }} AI Assistant</span>
+                <span class="text-[10px] bg-[#27272A] text-[#A1A1AA] px-1.5 py-0.5 rounded">Online</span>
             </div>
-            <div class="flex items-center gap-2">
-                <a id="drawerPopoutLink" href="{% url 'widget_embed' public_key=public_key %}" target="_blank" title="Open full page" class="text-[#616161] hover:text-[#212121]">
+            <div class="flex items-center gap-3">
+                <a id="drawerPopoutLink" href="{% url 'widget_embed' public_key=public_key %}" target="_blank" title="Open full screen" class="text-[#A1A1AA] hover:text-white transition-colors">
                     <span class="material-symbols-outlined text-base">open_in_new</span>
                 </a>
-                <button type="button" onclick="toggleDrawer()" class="text-[#616161] hover:text-[#212121]">
+                <button type="button" onclick="toggleDrawer()" class="text-[#A1A1AA] hover:text-white transition-colors">
                     <span class="material-symbols-outlined text-base">close</span>
                 </button>
             </div>
         </div>
-        <iframe id="widgetIframe" src="{% url 'widget_embed' public_key=public_key %}" class="flex-1 w-full border-none"></iframe>
+        <!-- Embedded Live Widget Iframe -->
+        <iframe id="widgetIframe" src="{% url 'widget_embed' public_key=public_key %}" class="flex-1 w-full border-none bg-white"></iframe>
     </div>
 
-    <!-- Floating Chat Button (bottom right) -->
-    <button type="button" onclick="openCustomerModal()" title="Open Chat" class="fixed bottom-6 right-6 z-40 w-13 h-13 rounded-full bg-[#F97316] hover:bg-[#EA580C] text-white shadow-[0_6px_20px_rgba(249,115,22,0.35)] flex items-center justify-center transition-all duration-200 hover:scale-105">
-        <span class="material-symbols-outlined text-2xl">chat</span>
-    </button>
-
-    <!-- 5. Minimal Footer -->
-    <footer class="border-t border-[#E0E0E0] bg-white py-6 px-6 text-xs text-[#616161] mt-12">
-        <div class="max-w-[1100px] mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
-            <p>&copy; 2026 {{ workspace.name }} &bull; Customer Helpdesk powered by Supporto AI.</p>
-            <div class="flex items-center gap-4">
-                <a href="{% url 'workspace_dashboard' company_slug=workspace.slug %}" class="hover:text-[#F97316]">Staff portal</a>
-                <span>&bull;</span>
-                <a href="/" class="hover:text-[#F97316]">Platform home</a>
-            </div>
+    <!-- Bottom-Right Floating Chat Button Launcher -->
+    <div class="fixed bottom-6 right-6 z-40 flex items-center gap-3">
+        <!-- Floating Prompt Tooltip Pill -->
+        <div onclick="toggleDrawer()" class="cursor-pointer hidden sm:flex items-center gap-2 bg-[#18181B] text-white text-xs font-semibold py-2 px-3.5 rounded-full shadow-lg border border-[#27272A] hover:bg-[#27272A] transition-all hover:scale-102">
+            <span class="w-2 h-2 rounded-full bg-[#F97316]"></span>
+            <span>Need help? Chat with AI</span>
         </div>
-    </footer>
+
+        <!-- Round Action Launcher Button -->
+        <button type="button" onclick="toggleDrawer()" title="Open Support Assistant" class="w-14 h-14 rounded-full bg-[#F97316] hover:bg-[#EA580C] text-white shadow-[0_8px_25px_rgba(249,115,22,0.4)] flex items-center justify-center transition-all duration-200 hover:scale-108 focus:outline-none">
+            <span class="material-symbols-outlined text-2xl">chat</span>
+        </button>
+    </div>
 
 </div>
 
 <script>
     const publicKey = "{{ public_key }}";
 
-    function validatePhone(phone) {
-        const cleaned = (phone || "").replace(/\D/g, "");
-        if (cleaned.length === 10 && /^[6-9]/.test(cleaned)) {
-            return cleaned;
-        }
-        return null;
+    function toggleDrawer() {
+        const drawer = document.getElementById("widgetDrawer");
+        drawer.classList.toggle("hidden");
     }
 
-    function openCustomerModal(prefillQuery) {
-        const modal = document.getElementById("customerModal");
-        if (prefillQuery) {
-            document.getElementById("custInitialQueryInput").value = prefillQuery;
-        }
-        // Load any previously saved session identity from localStorage
-        const savedName = localStorage.getItem(`supporto_name_${publicKey}`) || "";
-        const savedPhone = localStorage.getItem(`supporto_phone_${publicKey}`) || "";
-        const savedEmail = localStorage.getItem(`supporto_email_${publicKey}`) || "";
-        
-        if (savedName) document.getElementById("custNameInput").value = savedName;
-        if (savedPhone) document.getElementById("custPhoneInput").value = savedPhone;
-        if (savedEmail) document.getElementById("custEmailInput").value = savedEmail;
-
-        document.getElementById("custPhoneError").classList.add("hidden");
-        modal.classList.remove("hidden");
-    }
-
-    function closeCustomerModal() {
-        document.getElementById("customerModal").classList.add("hidden");
-    }
-
-    function trackFromInput() {
-        const input = document.getElementById("awbSearchInput");
-        const awb = (input ? input.value : "").trim();
-        if (awb) {
-            openCustomerModal("Where is my consignment " + awb + "?");
-        } else {
-            openCustomerModal("What are my consignments?");
-        }
-    }
-
-    function launchFullScreenChat(e) {
-        e.preventDefault();
-        const name = document.getElementById("custNameInput").value.trim();
-        const rawPhone = document.getElementById("custPhoneInput").value.trim();
-        const email = document.getElementById("custEmailInput").value.trim();
-        const query = document.getElementById("custInitialQueryInput").value.trim();
-
-        const validPhone = validatePhone(rawPhone);
-        if (!validPhone) {
-            document.getElementById("custPhoneError").classList.remove("hidden");
-            document.getElementById("custPhoneInput").focus();
-            return;
-        }
-        document.getElementById("custPhoneError").classList.add("hidden");
-
-        localStorage.setItem(`supporto_name_${publicKey}`, name);
-        localStorage.setItem(`supporto_phone_${publicKey}`, validPhone);
-        if (email) localStorage.setItem(`supporto_email_${publicKey}`, email);
-
-        const params = new URLSearchParams({
-            name: name,
-            phone: validPhone,
-            email: email,
-            q: query
-        });
-
-        window.location.href = `/widget/${publicKey}/?` + params.toString();
-    }
-
-    function openEmbeddedDrawer() {
-        const name = document.getElementById("custNameInput").value.trim();
-        const rawPhone = document.getElementById("custPhoneInput").value.trim();
-        const email = document.getElementById("custEmailInput").value.trim();
-        const query = document.getElementById("custInitialQueryInput").value.trim();
-
-        const validPhone = validatePhone(rawPhone);
-        if (!validPhone) {
-            document.getElementById("custPhoneError").classList.remove("hidden");
-            document.getElementById("custPhoneInput").focus();
-            return;
-        }
-        document.getElementById("custPhoneError").classList.add("hidden");
-
-        localStorage.setItem(`supporto_name_${publicKey}`, name);
-        localStorage.setItem(`supporto_phone_${publicKey}`, validPhone);
-        if (email) localStorage.setItem(`supporto_email_${publicKey}`, email);
-
-        closeCustomerModal();
-
-        const params = new URLSearchParams({
-            embedded: "true",
-            name: name,
-            phone: validPhone,
-            email: email,
-            q: query
-        });
-
+    function openEmbeddedDrawerWithQuery(query) {
         const drawer = document.getElementById("widgetDrawer");
         const iframe = document.getElementById("widgetIframe");
         const popout = document.getElementById("drawerPopoutLink");
+
+        const params = new URLSearchParams({
+            embedded: "true",
+            q: query || ""
+        });
 
         const targetUrl = `/widget/${publicKey}/?` + params.toString();
         iframe.src = targetUrl;
@@ -470,9 +757,14 @@ ShopEase — Customer Storefront & Orders
         drawer.classList.remove("hidden");
     }
 
-    function toggleDrawer() {
-        const drawer = document.getElementById("widgetDrawer");
-        drawer.classList.toggle("hidden");
+    function trackFromHeroInput() {
+        const input = document.getElementById("expressAwbInput");
+        const awb = (input ? input.value : "").trim();
+        if (awb) {
+            openEmbeddedDrawerWithQuery("Where is my consignment " + awb + "?");
+        } else {
+            openEmbeddedDrawerWithQuery("What are my consignments?");
+        }
     }
 </script>
 {% endblock %}

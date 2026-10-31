@@ -138,112 +138,83 @@
             </div>
         </section>
 
-        <!-- 3. Our Customers & Live Deployments (ExpressBeas & ShopEase) -->
-        <section id="customers" class="border-b border-[#E0E0E0] py-16 md:py-20 bg-white">
-            <div class="max-w-[1100px] mx-auto px-6 space-y-10">
-                <div class="text-center max-w-2xl mx-auto space-y-2">
-                    <span class="text-xs font-bold uppercase tracking-wider text-[#F97316]">Live Deployments</span>
-                    <h2 class="text-2xl sm:text-3xl font-bold text-[#212121] tracking-tight">
-                        Our Customers
-                    </h2>
-                    <p class="text-sm text-[#616161]">
-                        Select a customer below to visit their live storefront template equipped with our AI support widget.
+        <!-- 3. Our Customers - Horizontal Scrolling Greyish Logos -->
+        <section id="customers" class="border-b border-[#E0E0E0] py-10 bg-white">
+            <div class="max-w-[1100px] mx-auto px-6 space-y-4">
+                <div class="text-center">
+                    <p class="text-xs font-semibold text-[#757575] uppercase tracking-wider">
+                        Our Customers &bull; Click to launch live demo storefront
                     </p>
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <!-- Customer 1: ExpressBeas Logistics -->
-                    <div class="bg-[#FAFAFA] border border-[#E0E0E0] rounded-xl p-8 flex flex-col justify-between space-y-6 hover:border-[#F97316] transition-all duration-200 shadow-sm hover:shadow-md">
-                        <div class="space-y-4">
-                            <!-- Header with Brand Logo & Category Badge -->
-                            <div class="flex items-center justify-between">
-                                <div class="flex items-center gap-3">
-                                    <div class="w-12 h-12 rounded-lg bg-[#212121] text-[#F97316] flex items-center justify-center font-bold text-xl shadow-inner">
-                                        <span class="material-symbols-outlined text-2xl">local_shipping</span>
-                                    </div>
-                                    <div>
-                                        <h3 class="text-xl font-bold text-[#212121] leading-tight">ExpressBeas</h3>
-                                        <span class="text-xs text-[#616161]">Nationwide Courier &amp; Logistics Network</span>
-                                    </div>
-                                </div>
-                                <span class="text-[11px] font-semibold bg-[#FFF7ED] text-[#EA580C] border border-[#FFEDD5] px-2.5 py-1 rounded-full">
-                                    Logistics
-                                </span>
-                            </div>
-
-                            <p class="text-sm text-[#616161] leading-relaxed">
-                                Automates real-time 15-digit AWB tracking, dispatch transit events, delay alerts, and delivery confirmations across nationwide distribution hubs.
-                            </p>
-
-                            <!-- Feature Tags -->
-                            <div class="space-y-2 pt-2 border-t border-[#E0E0E0]">
-                                <span class="text-[11px] font-semibold text-[#616161] uppercase tracking-wider">Production Capabilities:</span>
-                                <div class="flex flex-wrap gap-2 text-xs">
-                                    <span class="bg-white border border-[#E0E0E0] px-2.5 py-1 rounded text-[#212121] font-medium">&bull; 15-Digit AWB SQL Lookup</span>
-                                    <span class="bg-white border border-[#E0E0E0] px-2.5 py-1 rounded text-[#212121] font-medium">&bull; Transit Event Timeline</span>
-                                    <span class="bg-white border border-[#E0E0E0] px-2.5 py-1 rounded text-[#212121] font-medium">&bull; Delayed Parcel Routing</span>
-                                </div>
-                            </div>
+                <!-- Horizontal Scrollable Logo Bar -->
+                <div class="flex items-center gap-6 overflow-x-auto py-3 px-2 no-scrollbar justify-start sm:justify-center">
+                    <!-- ExpressBeas Logo Card -->
+                    {% if expressbeas %}
+                    <a href="/widget/{{ expressbeas.public_key }}/demo/" 
+                       class="flex-shrink-0 group flex items-center gap-3 px-5 py-3 rounded-xl border border-[#E0E0E0] bg-[#FAFAFA] hover:bg-white hover:border-[#F97316] transition-all duration-200"
+                       style="text-decoration: none;">
+                    {% else %}
+                    <a href="/expressbeas/demo/" 
+                       class="flex-shrink-0 group flex items-center gap-3 px-5 py-3 rounded-xl border border-[#E0E0E0] bg-[#FAFAFA] hover:bg-white hover:border-[#F97316] transition-all duration-200"
+                       style="text-decoration: none;">
+                    {% endif %}
+                        <div class="w-9 h-9 rounded-lg bg-[#757575] group-hover:bg-[#212121] text-white flex items-center justify-center transition-colors">
+                            <span class="material-symbols-outlined text-xl">local_shipping</span>
                         </div>
-
-                        <div>
-                            {% if expressbeas %}
-                            <a href="/widget/{{ expressbeas.public_key }}/demo/" class="btn-primary w-full text-center text-sm font-semibold py-3" style="text-decoration: none;">
-                                Visit ExpressBeas Website &amp; Test Widget &rarr;
-                            </a>
-                            {% else %}
-                            <a href="/expressbeas/demo/" class="btn-primary w-full text-center text-sm font-semibold py-3" style="text-decoration: none;">
-                                Visit ExpressBeas Website &amp; Test Widget &rarr;
-                            </a>
-                            {% endif %}
+                        <div class="text-left">
+                            <div class="text-sm font-bold text-[#757575] group-hover:text-[#212121] transition-colors flex items-center gap-2">
+                                <span>ExpressBeas</span>
+                                <span class="text-[10px] bg-[#FFF7ED] text-[#EA580C] border border-[#FFEDD5] px-1.5 py-0.2 rounded font-semibold">Live Demo</span>
+                            </div>
+                            <span class="text-[11px] text-[#9E9E9E]">Logistics Network</span>
                         </div>
+                    </a>
+
+                    <!-- ShopEase Logo Card -->
+                    {% if shopease %}
+                    <a href="/widget/{{ shopease.public_key }}/demo/"
+                       class="flex-shrink-0 group flex items-center gap-3 px-5 py-3 rounded-xl border border-[#E0E0E0] bg-[#FAFAFA] hover:bg-white hover:border-[#F97316] transition-all duration-200"
+                       style="text-decoration: none;">
+                    {% else %}
+                    <a href="/shopease/demo/"
+                       class="flex-shrink-0 group flex items-center gap-3 px-5 py-3 rounded-xl border border-[#E0E0E0] bg-[#FAFAFA] hover:bg-white hover:border-[#F97316] transition-all duration-200"
+                       style="text-decoration: none;">
+                    {% endif %}
+                        <div class="w-9 h-9 rounded-lg bg-[#757575] group-hover:bg-[#F97316] text-white flex items-center justify-center transition-colors">
+                            <span class="material-symbols-outlined text-xl">shopping_bag</span>
+                        </div>
+                        <div class="text-left">
+                            <div class="text-sm font-bold text-[#757575] group-hover:text-[#212121] transition-colors flex items-center gap-2">
+                                <span>ShopEase</span>
+                                <span class="text-[10px] bg-[#FFF7ED] text-[#EA580C] border border-[#FFEDD5] px-1.5 py-0.2 rounded font-semibold">Live Demo</span>
+                            </div>
+                            <span class="text-[11px] text-[#9E9E9E]">Electronics Store</span>
+                        </div>
+                    </a>
+
+                    <!-- Bluedart Partner Logo (Greyish) -->
+                    <div class="flex-shrink-0 flex items-center gap-2 px-4 py-2.5 rounded-lg text-[#9E9E9E] hover:text-[#616161] transition-colors select-none">
+                        <span class="material-symbols-outlined text-lg">flight_takeoff</span>
+                        <span class="text-sm font-semibold tracking-tight">BlueDart</span>
                     </div>
 
-                    <!-- Customer 2: ShopEase E-Commerce -->
-                    <div class="bg-[#FAFAFA] border border-[#E0E0E0] rounded-xl p-8 flex flex-col justify-between space-y-6 hover:border-[#F97316] transition-all duration-200 shadow-sm hover:shadow-md">
-                        <div class="space-y-4">
-                            <!-- Header with Brand Logo & Category Badge -->
-                            <div class="flex items-center justify-between">
-                                <div class="flex items-center gap-3">
-                                    <div class="w-12 h-12 rounded-lg bg-[#F97316] text-white flex items-center justify-center font-bold text-xl shadow-inner">
-                                        <span class="material-symbols-outlined text-2xl">shopping_bag</span>
-                                    </div>
-                                    <div>
-                                        <h3 class="text-xl font-bold text-[#212121] leading-tight">ShopEase</h3>
-                                        <span class="text-xs text-[#616161]">Consumer Electronics &amp; Apparel</span>
-                                    </div>
-                                </div>
-                                <span class="text-[11px] font-semibold bg-[#FFF7ED] text-[#EA580C] border border-[#FFEDD5] px-2.5 py-1 rounded-full">
-                                    E-Commerce
-                                </span>
-                            </div>
+                    <!-- Delhivery Partner Logo (Greyish) -->
+                    <div class="flex-shrink-0 flex items-center gap-2 px-4 py-2.5 rounded-lg text-[#9E9E9E] hover:text-[#616161] transition-colors select-none">
+                        <span class="material-symbols-outlined text-lg">inventory_2</span>
+                        <span class="text-sm font-semibold tracking-tight">Delhivery</span>
+                    </div>
 
-                            <p class="text-sm text-[#616161] leading-relaxed">
-                                Handles multi-item order lookups, automated cancellations, 7-day return policy validations, and instant refund status updates with verified accuracy.
-                            </p>
+                    <!-- Shadowfax Partner Logo (Greyish) -->
+                    <div class="flex-shrink-0 flex items-center gap-2 px-4 py-2.5 rounded-lg text-[#9E9E9E] hover:text-[#616161] transition-colors select-none">
+                        <span class="material-symbols-outlined text-lg">electric_moped</span>
+                        <span class="text-sm font-semibold tracking-tight">Shadowfax</span>
+                    </div>
 
-                            <!-- Feature Tags -->
-                            <div class="space-y-2 pt-2 border-t border-[#E0E0E0]">
-                                <span class="text-[11px] font-semibold text-[#616161] uppercase tracking-wider">Production Capabilities:</span>
-                                <div class="flex flex-wrap gap-2 text-xs">
-                                    <span class="bg-white border border-[#E0E0E0] px-2.5 py-1 rounded text-[#212121] font-medium">&bull; Order &amp; SKU SQL Querying</span>
-                                    <span class="bg-white border border-[#E0E0E0] px-2.5 py-1 rounded text-[#212121] font-medium">&bull; Automated Return Checks</span>
-                                    <span class="bg-white border border-[#E0E0E0] px-2.5 py-1 rounded text-[#212121] font-medium">&bull; Human Escalation Queue</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div>
-                            {% if shopease %}
-                            <a href="/widget/{{ shopease.public_key }}/demo/" class="btn-primary w-full text-center text-sm font-semibold py-3" style="text-decoration: none;">
-                                Visit ShopEase Storefront &amp; Test Widget &rarr;
-                            </a>
-                            {% else %}
-                            <a href="/shopease/demo/" class="btn-primary w-full text-center text-sm font-semibold py-3" style="text-decoration: none;">
-                                Visit ShopEase Storefront &amp; Test Widget &rarr;
-                            </a>
-                            {% endif %}
-                        </div>
+                    <!-- Shopify Partner Logo (Greyish) -->
+                    <div class="flex-shrink-0 flex items-center gap-2 px-4 py-2.5 rounded-lg text-[#9E9E9E] hover:text-[#616161] transition-colors select-none">
+                        <span class="material-symbols-outlined text-lg">storefront</span>
+                        <span class="text-sm font-semibold tracking-tight">Shopify</span>
                     </div>
                 </div>
             </div>
