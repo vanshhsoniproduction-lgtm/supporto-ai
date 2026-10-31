@@ -25,7 +25,14 @@ class Command(BaseCommand):
 
         # Order matters — delete child tables before parents (FK constraints)
         tables_to_clear = [
+            # Orders & Shipments
+            "orders_shipmentevent",
+            "orders_shipment",
+            "orders_returnrequest",
+            "orders_orderitem",
+            "orders_order",
             # Analytics / Audit
+            "analytics_sentimentlog",
             "analytics_auditlog",
             # Emails
             "emails_ticketproposal",
@@ -49,11 +56,14 @@ class Command(BaseCommand):
             "voice_support_ivrmenu",
             "voice_support_voiceconfiguration",
             # AI Engine
+            "ai_engine_toolexecution",
+            "ai_engine_agentrun",
             "ai_engine_agentconfiguration",
             # Teams
             "teams_teammembership",
             "teams_team",
             # Workspaces
+            "workspaces_workspaceauthorizedemail_assigned_teams",
             "workspaces_workspacewebhook",
             "workspaces_workspaceauthorizedemail",
             "workspaces_workspacemembership",

@@ -1,18 +1,29 @@
 """
-seed_demo.py - Multi-tenant demo seeder for Supporto AI.
-Seeds 4 realistic client workspaces:
-  1. ExpressBeas (Courier & Logistics)
-  2. ShopEase (Electronics E-commerce)
-  3. TechNova (SaaS Platform)
-  4. FreshMart (Hyperlocal Grocery Delivery)
+seed_demo.py - Comprehensive multi-tenant demo seeder for Supporto AI.
+Seeds real SQL data layers for:
+  1. ShopEase (Electronics E-commerce)
+  2. ExpressBeas (Logistics & Supply-Chain Network)
+  (TechNova & FreshMart available via --all flag)
 
-Owner for all workspaces: vanshhsoni.production@gmail.com
-Deterministic Public UUIDs guaranteed across database wipes.
+Features:
+- Idempotent execution inside transaction.atomic
+- Superuser: admin@admin.com / admin (staff, platform admin)
+- Workspace staff:
+  * ShopEase: owner@shopease.com / ShopEase@123, agent@shopease.com / Agent@123
+  * ExpressBeas: owner@expressbeas.in / ExpressBeas@123, agent@expressbeas.in / Agent@123
+- Phone-verified customer dataset:
+  * Customer A: Vansh Soni (6367743066)
+  * Customer B: Riya Sharma (9571538144)
+- 3 weeks of historical analytics & ticket logs
+- Honest external webhook configuration (zero fake mock endpoints)
 """
 import uuid
 from datetime import timedelta
+from decimal import Decimal
 from django.core.management.base import BaseCommand
+from django.core.management import call_command
 from django.contrib.auth import get_user_model
+from django.db import transaction
 from django.utils import timezone
 from apps.workspaces.models import (
     Workspace,
@@ -30,7 +41,8 @@ from apps.knowledge_base.services.document_processor import document_processor
 from apps.ai_engine.models import AgentConfiguration
 from apps.voice_support.models import VoiceConfiguration
 from apps.emails.models import MailboxConnection, InboundEmail
-from apps.emails.services.email_triage import email_triage_service
+from apps.orders.models import Order, OrderItem, Shipment, ShipmentEvent, ReturnRequest
+from apps.orders.utils import normalize_phone
 
 User = get_user_model()
 
@@ -40,7 +52,6 @@ OWNER_EMAILS = [
     "vanshhsoni@gmail.com",
 ]
 
-# Fixed Deterministic Public UUIDs
 FIXED_WORKSPACE_KEYS = {
     "shopease": uuid.UUID("205efaa9-4d66-4903-b6f6-cccb701c8668"),
     "expressbeas": uuid.UUID("4ecc8df2-e72a-49e5-bb37-bb0211a39a05"),
@@ -50,16 +61,43 @@ FIXED_WORKSPACE_KEYS = {
 
 
 class Command(BaseCommand):
-    help = "Seeds professional demo data: ExpressBeas, ShopEase, TechNova, FreshMart."
+    help = "Seeds deterministic demo dataset for Supporto AI (ShopEase & ExpressBeas)."
+
+    def add_arguments(self, parser):
+        parser.add_argument(
+            "--reset",
+            action="store_true",
+            help="Wipe all existing database records before seeding.",
+        )
+        parser.add_argument(
+            "--all",
+            action="store_true",
+            help="Seed all 4 workspaces (including TechNova and FreshMart). Default seeds only ShopEase and ExpressBeas.",
+        )
 
     def handle(self, *args, **options):
-        self.stdout.write("\n[*] Seeding Supporto AI multi-tenant demo data...\n")
+        reset = options.get("reset", False)
+        seed_all = options.get("all", False)
 
-        # ── 0. Platform Admin ────────────────────────────────────────────────
-        admin_user, _ = User.objects.get_or_create(
-            email="admin@supporto.ai",
+        if reset:
+            self.stdout.write(self.style.WARNING("[!] Running database reset (--reset)..."))
+            call_command("clear_db", "--yes")
+
+        with transaction.atomic():
+            self._seed_platform_admin()
+            self._seed_workspaces(seed_all=seed_all)
+
+        self._print_summary(seed_all=seed_all)
+
+    # -------------------------------------------------------------------------
+    # 0. Platform Superuser & Admin
+    # -------------------------------------------------------------------------
+
+    def _seed_platform_admin(self):
+        admin_user, created = User.objects.get_or_create(
+            email="admin@admin.com",
             defaults={
-                "username": "admin@supporto.ai",
+                "username": "admin@admin.com",
                 "first_name": "Platform",
                 "last_name": "Admin",
                 "is_staff": True,
@@ -67,551 +105,884 @@ class Command(BaseCommand):
                 "platform_role": User.PlatformRole.PLATFORM_ADMIN,
             }
         )
-        admin_user.set_password("Supporto@Admin123")
+        admin_user.set_password("admin")
         admin_user.is_staff = True
         admin_user.is_superuser = True
         admin_user.platform_role = User.PlatformRole.PLATFORM_ADMIN
         admin_user.save()
-        self.stdout.write("  [+] Platform admin ready (admin@supporto.ai)")
 
-        # ── 1. Workspace Configurations ──────────────────────────────────────
-        workspaces_config = [
-            {
-                "slug": "expressbeas",
-                "name": "ExpressBeas",
-                "description": "Fast and reliable nationwide courier and supply-chain logistics. Real-time AWB tracking, express delivery, and last-mile fulfillment.",
-                "website": "https://expressbeas.in",
-                "support_email": "vanshhsoni.production@gmail.com",
-                "welcome_message": "Welcome to ExpressBeas Support! Track your shipment AWB, report a delayed parcel, or schedule a pickup. How can we help today?",
-                "sla_urgent": 10,
-                "sla_standard": 8,
-                "orders_webhook": "http://127.0.0.1:8000/api/v1/mock-store/lookup/",
-                "orders_secret": "sk_expressbeas_live_awb_2026",
-                "webhooks": [
-                    {
-                        "name": "ExpressBeas Public AWB Tracking API",
-                        "type": WorkspaceWebhook.WebhookType.TRACKING,
-                        "url": "http://127.0.0.1:8000/api/v1/mock-store/lookup/",
-                        "secret": "sk_expressbeas_live_awb_2026"
-                    },
-                    {
-                        "name": "Delhivery Partner Fleet API",
-                        "type": WorkspaceWebhook.WebhookType.TRACKING,
-                        "url": "https://dlv-api.delhivery.com/api/v1/packages/json",
-                        "secret": "delhivery_api_token_live"
-                    }
-                ],
-                "system_prompt": (
-                    "You are Supporto AI for ExpressBeas Logistics. "
-                    "Help customers track Air Waybill (AWB) consignment numbers (e.g. EB987654321, EB123456789), "
-                    "schedule pickups, report damaged or missing parcels, and understand delivery timelines. "
-                    "For lost packages or damaged consignments, immediately escalate to Claims & Disputes. "
-                    "Keep answers concise, actionable, and accurate."
-                ),
-                "mailbox_email": "support@expressbeas.in",
-                "teams": [
-                    {"slug": "tracking-delivery", "name": "Tracking & Delivery", "desc": "Handles live AWB tracking, delivery delay investigations, and last-mile rider coordination."},
-                    {"slug": "claims-disputes", "name": "Claims & Disputes", "desc": "Handles lost parcels, damaged consignments, compensation claims, and vendor disputes."},
-                ],
-                "staff": [
-                    ("priya.sharma@expressbeas.in", "Priya", "Sharma", "AGENT", ["tracking-delivery"]),
-                    ("rahul.mehta@expressbeas.in", "Rahul", "Mehta", "AGENT", ["tracking-delivery", "claims-disputes"]),
-                    ("anjali.singh@expressbeas.in", "Anjali", "Singh", "MANAGER", ["tracking-delivery", "claims-disputes"]),
-                ],
-                "faqs": [
-                    (
-                        "AWB Tracking & Status Scans",
-                        "How do I track my ExpressBeas shipment with AWB number?",
-                        "Enter your 11-digit AWB number (starts with EB, like EB987654321) in the chat or visit expressbeas.in/track. Scans are recorded at each sort facility: Booked -> Hub Inward -> In Transit -> Out for Delivery -> Delivered."
-                    ),
-                    (
-                        "Delivery Timelines & Express Slots",
-                        "How long does delivery take for standard and express shipments?",
-                        "Same-city deliveries take 24 hours. Metro-to-metro surface shipments arrive in 2-3 business days. Air Express arrives within 24-48 hours. Remote locations take 4-6 business days."
-                    ),
-                    (
-                        "Lost or Damaged Parcel Claim",
-                        "What is the claim process for lost or damaged goods?",
-                        "Claims must be lodged within 7 days of scheduled delivery. Provide your AWB number and damage photos. Our Claims team investigates within 48 business hours, and refunds or insurance settlements are credited within 5-7 business days."
-                    ),
-                    (
-                        "Schedule a Doorstep Pickup",
-                        "Can I schedule a doorstep pickup for my package?",
-                        "Yes. Pickups scheduled before 12:00 PM are completed the same day between 2:00 PM and 6:00 PM. Our dispatch rider will weigh the package and provide your official AWB receipt upon collection."
-                    ),
-                ],
-                "sample_emails": [
-                    (
-                        "eb_msg_001",
-                        "rohit.kumar@example.com",
-                        "Rohit Kumar",
-                        "Urgent: Consignment EB987654321 delayed at Delhi hub for 5 days",
-                        "Hello, my shipment with AWB EB987654321 contains urgent medical supplies. Tracking shows it stuck at Delhi Sort Hub since Oct 26. Please escalate immediately to rider dispatch.",
-                        "CRITICAL",
-                        "SHIPPING",
-                        "tracking-delivery",
-                    ),
-                    (
-                        "eb_msg_002",
-                        "meera.patel@example.com",
-                        "Meera Patel",
-                        "Damage claim for crushed package EB112233445",
-                        "The delivery arrived yesterday with outer carton crushed. The internal electronic tablet is broken. I want to file a formal damage compensation claim under invoice #INV-9921.",
-                        "HIGH",
-                        "RETURNS",
-                        "claims-disputes",
-                    ),
-                    (
-                        "eb_msg_003",
-                        "arjun.nair@example.com",
-                        "Arjun Nair",
-                        "Pickup inquiry for 25 bulk cartons from Pune warehouse",
-                        "We need to schedule a truck pickup tomorrow for 25 commercial parcels from our Pune industrial unit to Bangalore. Please confirm rates and vehicle assignment.",
-                        "LOW",
-                        "GENERAL",
-                        "tracking-delivery",
-                    ),
-                ],
-                "customers": [
-                    ("Rohit Kumar", "rohit.kumar@example.com", "WIDGET", "WEB_CHAT",
-                     "Delayed AWB EB987654321", "FRUSTRATED", "CRITICAL",
-                     "Consignment EB987654321 delayed at Delhi hub for 5 days without updates.",
-                     "EB-TK-101", "Delayed Consignment EB987654321 at Delhi Hub", "Logistics & Delivery",
-                     "CRITICAL", "IN_PROGRESS", "tracking-delivery", "rahul.mehta@expressbeas.in", 1, None),
-                    ("Meera Patel", "meera.patel@example.com", "EMAIL", "EMAIL",
-                     "Damage Claim EB112233445", "ANGRY", "HIGH",
-                     "Package delivered with outer carton crushed; internal tablet screen shattered.",
-                     "EB-TK-102", "Damage Claim for Crushed Package EB112233445", "Claims & Disputes",
-                     "HIGH", "OPEN", "claims-disputes", "anjali.singh@expressbeas.in", 2, None),
-                    ("Sameer Sen", "sameer.sen@example.com", "WIDGET", "WEB_CHAT",
-                     "Failed Delivery Attempt", "FRUSTRATED", "MEDIUM",
-                     "Rider marked customer unavailable although I was home all afternoon waiting.",
-                     "EB-TK-103", "False Delivery Attempt - Customer Was Home", "Logistics & Delivery",
-                     "MEDIUM", "RESOLVED", "tracking-delivery", "priya.sharma@expressbeas.in", 3, 3.8),
-                    ("Kavita Reddy", "kavita.reddy@example.com", "WIDGET", "WEB_CHAT",
-                     "Address Correction", "NEUTRAL", "HIGH",
-                     "Requested urgent flat number correction for out-for-delivery parcel EB123456789.",
-                     "EB-TK-104", "Urgent Address Correction for AWB EB123456789", "Logistics & Delivery",
-                     "HIGH", "RESOLVED", "tracking-delivery", "rahul.mehta@expressbeas.in", 4, 1.5),
-                    ("Vikram Malhotra", "vikram.m@example.com", "EMAIL", "EMAIL",
-                     "Lost Commercial Cargo", "ANGRY", "CRITICAL",
-                     "Commercial parcel missing for 12 days between Jaipur hub and Ahmedabad.",
-                     "EB-TK-105", "Lost Shipment Investigation for Commercial Cargo", "Claims & Disputes",
-                     "CRITICAL", "IN_PROGRESS", "claims-disputes", "anjali.singh@expressbeas.in", 5, None),
-                    ("Anita Rao", "anita.rao@example.com", "WIDGET", "WEB_CHAT",
-                     "Pickup Reschedule", "NEUTRAL", "LOW",
-                     "Client requested rescheduling warehouse parcel pickup from morning to 4 PM.",
-                     "EB-TK-106", "Pickup Reschedule Request for Bangalore Unit", "Logistics & Delivery",
-                     "LOW", "RESOLVED", "tracking-delivery", "priya.sharma@expressbeas.in", 6, 2.2),
-                    ("Siddharth Joshi", "siddharth.j@example.com", "WIDGET", "WEB_CHAT",
-                     "Missing Scan Status", "FRUSTRATED", "MEDIUM",
-                     "Tracking status not updated since parcel departed Mumbai Airport 48h ago.",
-                     "EB-TK-107", "Missing Inward Scan After Mumbai Airport Departure", "Logistics & Delivery",
-                     "MEDIUM", "OPEN", "tracking-delivery", "rahul.mehta@expressbeas.in", 7, None),
-                ]
-            },
-            {
-                "slug": "shopease",
+        self.stdout.write(self.style.SUCCESS("  [+] Platform superuser ready (admin@admin.com / admin)"))
+        self.stdout.write(self.style.WARNING("  [!] SECURITY WARNING: Default superuser admin@admin.com:admin created. Change password for public deployment!"))
+
+    # -------------------------------------------------------------------------
+    # 1. Workspaces, Staff, Settings & Real SQL Data Layer
+    # -------------------------------------------------------------------------
+
+    def _seed_workspaces(self, seed_all=False):
+        now = timezone.now()
+
+        # ---------------------------------------------------------------------
+        # Workspace 1: ShopEase (E-commerce Storefront)
+        # ---------------------------------------------------------------------
+        shopease, _ = Workspace.objects.get_or_create(
+            slug="shopease",
+            defaults={
                 "name": "ShopEase",
-                "description": "Premier modern e-commerce storefront specializing in smart electronics, home devices, and audio accessories.",
-                "website": "https://shopease.example.com",
+                "public_key": FIXED_WORKSPACE_KEYS["shopease"],
+                "status": Workspace.Status.ACTIVE,
+            }
+        )
+        shopease.public_key = FIXED_WORKSPACE_KEYS["shopease"]
+        shopease.status = Workspace.Status.ACTIVE
+        shopease.save()
+
+        # Settings
+        settings_se, _ = WorkspaceSettings.objects.get_or_create(
+            workspace=shopease,
+            defaults={
+                "company_website": "https://shopease.example.com",
                 "support_email": "vanshhsoni.production@gmail.com",
                 "welcome_message": "Welcome to ShopEase Support! How can our AI assistant help you with your order, returns, or billing today?",
-                "sla_urgent": 15,
-                "sla_standard": 12,
-                "orders_webhook": "http://127.0.0.1:8000/api/v1/mock-store/lookup/",
-                "orders_secret": "sk_shopease_demo_secret_2026",
-                "webhooks": [
-                    {
-                        "name": "Shopify Store Orders API",
-                        "type": WorkspaceWebhook.WebhookType.ORDERS,
-                        "url": "http://127.0.0.1:8000/api/v1/mock-store/lookup/",
-                        "secret": "sk_shopease_demo_secret_2026"
-                    }
-                ],
+                "sla_urgent_minutes": 15,
+                "sla_standard_hours": 12,
+                "ticket_auto_assignment": True,
+            }
+        )
+        settings_se.orders_api_webhook_url = ""  # Zero fake mock webhooks
+        settings_se.save()
+
+        AgentConfiguration.objects.get_or_create(
+            workspace=shopease,
+            defaults={
                 "system_prompt": (
                     "You are Supporto AI for ShopEase. Empathize with the customer, keep responses concise, "
-                    "and refer strictly to ShopEase policies. For double charges, immediately escalate to Billing Support."
+                    "and refer strictly to ShopEase policies and verified order records. For double charges, immediately escalate to Billing Support."
                 ),
-                "mailbox_email": "support@shopease.com",
-                "teams": [
-                    {"slug": "order-support", "name": "Order Support", "desc": "Handles shipments, fulfillment, order status, and delivery issues."},
-                    {"slug": "billing-support", "name": "Billing Support", "desc": "Handles payment discrepancies, refunds, duplicate charges, and invoices."},
-                    {"slug": "technical-support", "name": "Technical Support", "desc": "Handles app crashes, website login issues, software bugs, and device integration."},
-                ],
-                "staff": [
-                    ("sarah.connor@shopease.com", "Sarah", "Connor", "AGENT", ["order-support", "technical-support"]),
-                    ("marcus.wright@shopease.com", "Marcus", "Wright", "AGENT", ["order-support", "billing-support", "technical-support"]),
-                    ("kyle.reese@shopease.com", "Kyle", "Reese", "AGENT", ["billing-support"]),
-                    ("john.connor@shopease.com", "John", "Connor", "MANAGER", ["order-support", "billing-support", "technical-support"]),
-                ],
-                "faqs": [
-                    ("Return & Exchange Policy",
-                     "What is ShopEase's return and exchange policy?",
-                     "We offer a 30-day hassle-free return window on all electronics and accessories in their original packaging. Return shipping is completely free for damaged or defective items."),
-                    ("Standard Shipping Timelines",
-                     "How long does delivery take for standard orders?",
-                     "Standard domestic shipping takes 3 to 5 business days. Express 2-day delivery is available at checkout. Tracking information is sent via email once your package departs our warehouse."),
-                    ("Duplicate Charge & Billing Resolution",
-                     "What should I do if my credit card was charged twice?",
-                     "If you see a duplicate pending authorization on your bank statement, please notify our Billing Support team with your order number. Our automated verification releases secondary holds within 2-4 business hours."),
-                    ("Canceling or Modifying an Order",
-                     "Can I cancel or change my shipping address after placing an order?",
-                     "Orders can be canceled or updated within 1 hour of placement before warehouse dispatch by contacting support with your order number."),
-                ],
-                "sample_emails": [
-                    ("se_msg_001", "alex.rivera@example.com", "Alex Rivera",
-                     "Double charge on my credit card for Order #SE-99124",
-                     "Hello Support, I noticed my bank account was charged twice for $149.99 on Order #SE-99124. This is an unauthorized duplicate charge. Please refund the duplicate immediately as this is urgent.",
-                     "CRITICAL", "BILLING", "billing-support"),
-                    ("se_msg_002", "jordan.lee@example.com", "Jordan Lee",
-                     "Order status inquiry for package #SE-88210",
-                     "Hi there, I placed an order three days ago for smart wireless headphones. Can you please check when it is scheduled to arrive at my address?",
-                     "LOW", "SHIPPING", "order-support"),
-                ],
-                "customers": [
-                    ("Elena Fisher", "elena.fisher@example.com", "WIDGET", "WEB_CHAT",
-                     "Duplicate Payment Discrepancy", "FRUSTRATED", "CRITICAL",
-                     "My credit card was charged twice ($199) for order SE-84920! Cancel it and refund my money immediately!",
-                     "TK-84920", "Double Charge on Order #SE-84920 ($199)", "Billing & Payments",
-                     "CRITICAL", "IN_PROGRESS", "billing-support", "marcus.wright@shopease.com", 1, None),
-                    ("David Miller", "david.m@example.com", "EMAIL", "EMAIL",
-                     "Shipping Delay Inquiry", "NEUTRAL", "MEDIUM",
-                     "Order SE-88210 smart wireless headphones delayed beyond estimated delivery date.",
-                     "TK-88210", "Delayed Shipment for Order #SE-88210", "Order & Shipping",
-                     "MEDIUM", "OPEN", "order-support", "sarah.connor@shopease.com", 2, None),
-                    ("Claire Redfield", "claire.r@example.com", "WIDGET", "WEB_CHAT",
-                     "Damaged Item on Delivery", "ANGRY", "HIGH",
-                     "Screen cracked on arrival for 4K Ultra HD Monitor; protective seal was broken.",
-                     "TK-89101", "Damaged Item - Cracked Screen on Ultra HD Monitor", "Damaged & Defective",
-                     "HIGH", "OPEN", "order-support", "sarah.connor@shopease.com", 3, None),
-                    ("Nathan Drake", "nathan.d@example.com", "WIDGET", "WEB_CHAT",
-                     "Return Window Question", "POSITIVE", "LOW",
-                     "Customer inquired about 30-day return policy for unopened noise-canceling headphones.",
-                     "TK-89102", "Return Policy Inquiry for Audio Headphones", "Returns & Exchanges",
-                     "LOW", "RESOLVED", "order-support", "john.connor@shopease.com", 4, 2.4),
-                    ("Leon Kennedy", "leon.k@example.com", "EMAIL", "EMAIL",
-                     "Checkout Payment Error", "FRUSTRATED", "HIGH",
-                     "Bank deducted amount during checkout timeout but order confirmation was not generated.",
-                     "TK-89103", "Gateway Timeout During Order Placement", "Billing & Payments",
-                     "HIGH", "RESOLVED", "billing-support", "kyle.reese@shopease.com", 5, 2.1),
-                    ("Jill Valentine", "jill.v@example.com", "WIDGET", "WEB_CHAT",
-                     "Shipping Address Update", "NEUTRAL", "MEDIUM",
-                     "Customer submitted apartment number change within 30 minutes of placing order SE-90112.",
-                     "TK-89104", "Delivery Address Modification Pre-Dispatch", "Order & Shipping",
-                     "MEDIUM", "RESOLVED", "order-support", "sarah.connor@shopease.com", 6, 1.2),
-                    ("Sam Fisher", "sam.fisher@example.com", "EMAIL", "EMAIL",
-                     "Defective Cable Replacement", "NEUTRAL", "MEDIUM",
-                     "Braided USB-C fast charging cable stopped working after 3 days of light use.",
-                     "TK-89105", "Defective USB-C Braided Cable Replacement", "Damaged & Defective",
-                     "MEDIUM", "RESOLVED", "order-support", "john.connor@shopease.com", 7, 3.5),
-                    ("Chloe Frazer", "chloe.f@example.com", "WIDGET", "WEB_CHAT",
-                     "Where is My Order", "NEUTRAL", "LOW",
-                     "Where is my order SE-84920? Requested current transit tracking status.",
-                     "TK-89106", "Order Tracking Verification for SE-84920", "Order & Shipping",
-                     "LOW", "RESOLVED", "order-support", "marcus.wright@shopease.com", 8, 0.8),
-                ]
+                "temperature": 0.1,
+                "max_tokens": 200,
             }
+        )
+
+        VoiceConfiguration.objects.get_or_create(
+            workspace=shopease,
+            defaults={"voice_name": "af_sarah", "speed": 1.05}
+        )
+
+        MailboxConnection.objects.get_or_create(
+            workspace=shopease,
+            email_address="support@shopease.com",
+            defaults={"status": MailboxConnection.Status.ACTIVE}
+        )
+
+        # Teams
+        team_se_orders, _ = Team.objects.get_or_create(
+            workspace=shopease, slug="order-support",
+            defaults={"name": "Order Support", "description": "Handles fulfillment, order tracking, and cancellations."}
+        )
+        team_se_billing, _ = Team.objects.get_or_create(
+            workspace=shopease, slug="billing-support",
+            defaults={"name": "Billing Support", "description": "Handles payments, refunds, double charges, and disputes."}
+        )
+        team_se_tech, _ = Team.objects.get_or_create(
+            workspace=shopease, slug="technical-support",
+            defaults={"name": "Technical Support", "description": "Handles app errors, firmware bugs, and account issues."}
+        )
+
+        # Staff Users
+        se_owner = self._create_user("owner@shopease.com", "ShopEase@123", "ShopEase", "Owner")
+        se_agent = self._create_user("agent@shopease.com", "Agent@123", "Alex", "Agent")
+        WorkspaceMembership.objects.get_or_create(workspace=shopease, user=se_owner, defaults={"role": WorkspaceMembership.Role.OWNER, "is_active": True})
+        WorkspaceMembership.objects.get_or_create(workspace=shopease, user=se_agent, defaults={"role": WorkspaceMembership.Role.AGENT, "is_active": True})
+
+        # Add Google login owners
+        for email in OWNER_EMAILS:
+            user = self._create_user(email, "GoogleLoginUser@123", "Vansh", "Soni")
+            WorkspaceMembership.objects.get_or_create(workspace=shopease, user=user, defaults={"role": WorkspaceMembership.Role.OWNER, "is_active": True})
+            WorkspaceAuthorizedEmail.objects.get_or_create(
+                workspace=shopease, email=email,
+                defaults={"normalized_email": email.lower().strip(), "assigned_role": WorkspaceMembership.Role.OWNER, "status": WorkspaceAuthorizedEmail.Status.AUTHORIZED}
+            )
+
+        TeamMembership.objects.get_or_create(team=team_se_orders, user=se_agent, defaults={"role": TeamMembership.Role.MEMBER})
+        TeamMembership.objects.get_or_create(team=team_se_billing, user=se_agent, defaults={"role": TeamMembership.Role.MEMBER})
+        TeamMembership.objects.get_or_create(team=team_se_tech, user=se_agent, defaults={"role": TeamMembership.Role.MEMBER})
+
+        # RAG Knowledge Base Docs
+        self._seed_shopease_faqs(shopease)
+
+        # Customers & SQL Orders
+        self._seed_shopease_orders_and_customers(shopease, team_se_orders, team_se_billing, se_agent, now)
+
+        self.stdout.write("  [+] ShopEase workspace & SQL data layer seeded.")
+
+        # ---------------------------------------------------------------------
+        # Workspace 2: ExpressBeas (Courier & Logistics)
+        # ---------------------------------------------------------------------
+        expressbeas, _ = Workspace.objects.get_or_create(
+            slug="expressbeas",
+            defaults={
+                "name": "ExpressBeas",
+                "public_key": FIXED_WORKSPACE_KEYS["expressbeas"],
+                "status": Workspace.Status.ACTIVE,
+            }
+        )
+        expressbeas.public_key = FIXED_WORKSPACE_KEYS["expressbeas"]
+        expressbeas.status = Workspace.Status.ACTIVE
+        expressbeas.save()
+
+        # Settings
+        settings_eb, _ = WorkspaceSettings.objects.get_or_create(
+            workspace=expressbeas,
+            defaults={
+                "company_website": "https://expressbeas.in",
+                "support_email": "vanshhsoni.production@gmail.com",
+                "welcome_message": "Welcome to ExpressBeas Support! Track your shipment AWB, report a delayed parcel, or schedule a pickup. How can we help today?",
+                "sla_urgent_minutes": 10,
+                "sla_standard_hours": 8,
+                "ticket_auto_assignment": True,
+            }
+        )
+        settings_eb.orders_api_webhook_url = ""  # Zero fake mock webhooks
+        settings_eb.save()
+
+        AgentConfiguration.objects.get_or_create(
+            workspace=expressbeas,
+            defaults={
+                "system_prompt": (
+                    "You are Supporto AI for ExpressBeas Logistics. Help customers track Air Waybill (AWB) consignment numbers, "
+                    "report delivery delays or damages, and schedule pickups. Answer accurately from verified consignment timelines."
+                ),
+                "temperature": 0.1,
+                "max_tokens": 200,
+            }
+        )
+
+        VoiceConfiguration.objects.get_or_create(
+            workspace=expressbeas,
+            defaults={"voice_name": "af_sarah", "speed": 1.05}
+        )
+
+        MailboxConnection.objects.get_or_create(
+            workspace=expressbeas,
+            email_address="support@expressbeas.in",
+            defaults={"status": MailboxConnection.Status.ACTIVE}
+        )
+
+        # Teams
+        team_eb_tracking, _ = Team.objects.get_or_create(
+            workspace=expressbeas, slug="tracking-delivery",
+            defaults={"name": "Tracking & Delivery", "description": "Handles live AWB tracking, delay investigations, and rider dispatch."}
+        )
+        team_eb_claims, _ = Team.objects.get_or_create(
+            workspace=expressbeas, slug="claims-disputes",
+            defaults={"name": "Claims & Disputes", "description": "Handles lost shipments, damaged packages, and insurance settlements."}
+        )
+
+        # Staff Users
+        eb_owner = self._create_user("owner@expressbeas.in", "ExpressBeas@123", "ExpressBeas", "Owner")
+        eb_agent = self._create_user("agent@expressbeas.in", "Agent@123", "Priya", "Agent")
+        WorkspaceMembership.objects.get_or_create(workspace=expressbeas, user=eb_owner, defaults={"role": WorkspaceMembership.Role.OWNER, "is_active": True})
+        WorkspaceMembership.objects.get_or_create(workspace=expressbeas, user=eb_agent, defaults={"role": WorkspaceMembership.Role.AGENT, "is_active": True})
+
+        # Add Google login owners
+        for email in OWNER_EMAILS:
+            user = self._create_user(email, "GoogleLoginUser@123", "Vansh", "Soni")
+            WorkspaceMembership.objects.get_or_create(workspace=expressbeas, user=user, defaults={"role": WorkspaceMembership.Role.OWNER, "is_active": True})
+            WorkspaceAuthorizedEmail.objects.get_or_create(
+                workspace=expressbeas, email=email,
+                defaults={"normalized_email": email.lower().strip(), "assigned_role": WorkspaceMembership.Role.OWNER, "status": WorkspaceAuthorizedEmail.Status.AUTHORIZED}
+            )
+
+        TeamMembership.objects.get_or_create(team=team_eb_tracking, user=eb_agent, defaults={"role": TeamMembership.Role.MEMBER})
+        TeamMembership.objects.get_or_create(team=team_eb_claims, user=eb_agent, defaults={"role": TeamMembership.Role.MEMBER})
+
+        # RAG Knowledge Base Docs
+        self._seed_expressbeas_faqs(expressbeas)
+
+        # Customers & SQL Shipments
+        self._seed_expressbeas_shipments_and_customers(expressbeas, team_eb_tracking, team_eb_claims, eb_agent, now)
+
+        self.stdout.write("  [+] ExpressBeas workspace & SQL carrier network seeded.")
+
+        # ---------------------------------------------------------------------
+        # Optional: TechNova & FreshMart (if --all is passed)
+        # ---------------------------------------------------------------------
+        if seed_all:
+            self._seed_technova_and_freshmart(now)
+
+    # -------------------------------------------------------------------------
+    # Helper: Create or retrieve user
+    # -------------------------------------------------------------------------
+
+    def _create_user(self, email, password, first_name="", last_name=""):
+        user, _ = User.objects.get_or_create(
+            email=email,
+            defaults={
+                "username": email,
+                "first_name": first_name,
+                "last_name": last_name,
+            }
+        )
+        user.set_password(password)
+        user.first_name = first_name
+        user.last_name = last_name
+        user.save()
+        return user
+
+    # -------------------------------------------------------------------------
+    # ShopEase FAQs & Knowledge Base
+    # -------------------------------------------------------------------------
+
+    def _seed_shopease_faqs(self, workspace):
+        faqs = [
+            (
+                "ShopEase Return & Refund Policy",
+                "What is the return and refund policy at ShopEase?",
+                "ShopEase offers a 30-day hassle-free return window for electronics in original packaging. Once a return request is submitted, a reverse pickup is scheduled within 24-48 hours. After quality inspection, refunds are credited to the original payment method within 3-5 business days."
+            ),
+            (
+                "Order Cancellation Policy",
+                "Can I cancel my ShopEase order?",
+                "Orders in 'Placed' or 'Processing' status can be cancelled immediately through chat or your order dashboard. Once an order is dispatched or In Transit with a courier carrier, it cannot be cancelled mid-shipment. In that case, you can initiate a return after doorstep delivery."
+            ),
+            (
+                "Double Charge & Billing Inquiries",
+                "What should I do if my card is charged twice?",
+                "If an unauthorized or duplicate charge occurs, our AI immediately escalates the case to our dedicated Billing Support team with Critical priority. A human billing specialist reviews the payment gateway logs and initiates an immediate reversal within 15 minutes."
+            ),
+            (
+                "Standard Shipping & Delivery",
+                "How long does delivery take?",
+                "Standard orders are delivered in 2-4 business days via FedEx, Bluedart, or Delhivery. Orders above ₹999 qualify for complimentary express delivery."
+            ),
+        ]
+        for title, q, content in faqs:
+            doc, created = KnowledgeDocument.objects.get_or_create(
+                workspace=workspace,
+                title=title,
+                defaults={
+                    "doc_type": KnowledgeDocument.DocType.FAQ,
+                    "question": q,
+                    "answer": content,
+                    "content": f"Question: {q}\n\nAnswer: {content}",
+                    "is_active": True,
+                }
+            )
+            if created or not doc.chunks.exists():
+                doc.question = q
+                doc.answer = content
+                doc.content = f"Question: {q}\n\nAnswer: {content}"
+                doc.is_active = True
+                doc.save()
+                document_processor.process_document(doc)
+
+    # -------------------------------------------------------------------------
+    # ExpressBeas FAQs & Knowledge Base
+    # -------------------------------------------------------------------------
+
+    def _seed_expressbeas_faqs(self, workspace):
+        faqs = [
+            (
+                "AWB Tracking & Status Scans",
+                "How do I track my ExpressBeas shipment with AWB number?",
+                "Enter your 15-digit AWB number (e.g. 152785863851740) in the chat or visit expressbeas.in/track. Scans are recorded at each sort facility: Booked -> Hub Inward -> In Transit -> Out for Delivery -> Delivered with OTP verification."
+            ),
+            (
+                "Delivery Timelines & Express Slots",
+                "How long does delivery take for standard and air shipments?",
+                "Intra-city deliveries take 24 hours. Metro-to-metro surface shipments arrive in 2-3 business days. Air Express arrives within 24-48 hours. Delayed parcels due to weather or road closures receive automated tracking remarks."
+            ),
+            (
+                "Lost or Damaged Parcel Claim",
+                "What is the claim process for damaged or lost goods?",
+                "Claims must be lodged within 7 days of scheduled delivery. Provide your AWB consignment number and damage photos. Our Claims & Disputes desk investigates within 48 business hours, and insurance settlements are processed directly."
+            ),
+            (
+                "Schedule a Doorstep Pickup",
+                "Can I schedule a doorstep courier pickup?",
+                "Yes. Pickups scheduled before 12:00 PM are completed the same day between 2:00 PM and 6:00 PM. Our dispatch rider weighs the package and generates an official AWB receipt upon collection."
+            ),
+        ]
+        for title, q, content in faqs:
+            doc, created = KnowledgeDocument.objects.get_or_create(
+                workspace=workspace,
+                title=title,
+                defaults={
+                    "doc_type": KnowledgeDocument.DocType.FAQ,
+                    "question": q,
+                    "answer": content,
+                    "content": f"Question: {q}\n\nAnswer: {content}",
+                    "is_active": True,
+                }
+            )
+            if created or not doc.chunks.exists():
+                doc.question = q
+                doc.answer = content
+                doc.content = f"Question: {q}\n\nAnswer: {content}"
+                doc.is_active = True
+                doc.save()
+                document_processor.process_document(doc)
+
+    # -------------------------------------------------------------------------
+    # ShopEase SQL Orders & Demo Customers
+    # -------------------------------------------------------------------------
+
+    def _seed_shopease_orders_and_customers(self, workspace, team_orders, team_billing, agent_user, now):
+        # 1. Customer A: Vansh Soni
+        cust_a, _ = Customer.objects.get_or_create(
+            workspace=workspace,
+            normalized_phone="6367743066",
+            defaults={
+                "name": "Vansh Soni",
+                "email": "vansh.soni@example.com",
+                "phone": "+91 63677 43066",
+                "city": "Jaipur",
+                "source": Customer.Source.WIDGET,
+                "is_anonymous": False,
+            }
+        )
+
+        # 2. Customer B: Riya Sharma
+        cust_b, _ = Customer.objects.get_or_create(
+            workspace=workspace,
+            normalized_phone="9571538144",
+            defaults={
+                "name": "Riya Sharma",
+                "email": "riya.sharma@example.com",
+                "phone": "+91 95715 38144",
+                "city": "Jaipur",
+                "source": Customer.Source.WIDGET,
+                "is_anonymous": False,
+            }
+        )
+
+        # Order SE-84920 (Delivered + Return Scheduled + Support Ticket)
+        ord_84920, _ = Order.objects.get_or_create(
+            workspace=workspace,
+            order_number="SE-84920",
+            defaults={
+                "customer": cust_a,
+                "customer_name": "Vansh Soni",
+                "customer_phone": "6367743066",
+                "customer_email": "vansh.soni@example.com",
+                "status": Order.Status.DELIVERED,
+                "payment_method": Order.PaymentMethod.CARD,
+                "payment_status": Order.PaymentStatus.PAID,
+                "subtotal": Decimal("4999.00"),
+                "shipping_fee": Decimal("0.00"),
+                "discount": Decimal("0.00"),
+                "total": Decimal("4999.00"),
+                "shipping_address": "12, Civil Lines",
+                "city": "Jaipur",
+                "pincode": "302006",
+                "placed_at": now - timedelta(days=5),
+                "estimated_delivery": now - timedelta(days=3),
+                "delivered_at": now - timedelta(days=3),
+                "carrier": "FedEx Express (FX-94001118)",
+                "return_eligible_until": now + timedelta(days=27),
+            }
+        )
+        OrderItem.objects.get_or_create(
+            order=ord_84920, sku="ANC-HP-01",
+            defaults={"name": "Wireless Noise-Canceling Headphones", "quantity": 1, "unit_price": Decimal("4999.00")}
+        )
+
+        # ReturnRequest for SE-84920
+        ret_84920, _ = ReturnRequest.objects.get_or_create(
+            order=ord_84920,
+            defaults={
+                "type": ReturnRequest.Type.RETURN_AND_REFUND,
+                "reason": "Sound profile too bass heavy for my preference",
+                "status": ReturnRequest.Status.PICKUP_SCHEDULED,
+                "refund_amount": Decimal("4999.00"),
+                "refund_method": "Original Payment Method (Card ending 4242)",
+                "refund_status": ReturnRequest.RefundStatus.PENDING,
+                "expected_refund_by": now + timedelta(days=2),
+            }
+        )
+
+        # Support Ticket for SE-84920 with 3 events
+        ticket_84920, t_created = Ticket.objects.get_or_create(
+            workspace=workspace,
+            ticket_number="TK-84920",
+            defaults={
+                "customer": cust_a,
+                "related_order": ord_84920,
+                "subject": "Return Request for Order #SE-84920",
+                "description": "Customer requested return for Wireless Noise-Canceling Headphones. Return request approved and reverse pickup scheduled.",
+                "priority": Ticket.Priority.MEDIUM,
+                "category": "Returns & Exchanges",
+                "status": Ticket.Status.IN_PROGRESS,
+                "assigned_team": team_orders,
+                "assigned_agent": agent_user,
+            }
+        )
+        if t_created:
+            TicketEvent.objects.create(ticket=ticket_84920, event_type="RETURN_REQUESTED", description="Return request submitted by customer via chat widget.", created_at=now - timedelta(days=2))
+            TicketEvent.objects.create(ticket=ticket_84920, event_type="RETURN_APPROVED", description="Return request approved by Returns specialist.", created_at=now - timedelta(days=1))
+            TicketEvent.objects.create(ticket=ticket_84920, event_type="PICKUP_SCHEDULED", description="Reverse pickup scheduled with courier for tomorrow.", created_at=now - timedelta(hours=6))
+
+        # Order SE-84921 (In Transit via Delhivery)
+        ord_84921, _ = Order.objects.get_or_create(
+            workspace=workspace,
+            order_number="SE-84921",
+            defaults={
+                "customer": cust_a,
+                "customer_name": "Vansh Soni",
+                "customer_phone": "6367743066",
+                "customer_email": "vansh.soni@example.com",
+                "status": Order.Status.IN_TRANSIT,
+                "payment_method": Order.PaymentMethod.CARD,
+                "payment_status": Order.PaymentStatus.PAID,
+                "subtotal": Decimal("64999.00"),
+                "shipping_fee": Decimal("0.00"),
+                "discount": Decimal("0.00"),
+                "total": Decimal("64999.00"),
+                "shipping_address": "12, Civil Lines",
+                "city": "Jaipur",
+                "pincode": "302006",
+                "placed_at": now - timedelta(days=2),
+                "estimated_delivery": now + timedelta(days=1),
+                "carrier": "Delhivery (AWB DEL8492100)",
+            }
+        )
+        OrderItem.objects.get_or_create(
+            order=ord_84921, sku="LAP-AIR-15",
+            defaults={"name": "Ultra-Slim Laptop Air 15\"", "quantity": 1, "unit_price": Decimal("64999.00")}
+        )
+
+        # Order SE-84922 (Processing & Cancellable)
+        ord_84922, _ = Order.objects.get_or_create(
+            workspace=workspace,
+            order_number="SE-84922",
+            defaults={
+                "customer": cust_a,
+                "customer_name": "Vansh Soni",
+                "customer_phone": "6367743066",
+                "customer_email": "vansh.soni@example.com",
+                "status": Order.Status.PROCESSING,
+                "payment_method": Order.PaymentMethod.UPI,
+                "payment_status": Order.PaymentStatus.PAID,
+                "subtotal": Decimal("2499.00"),
+                "shipping_fee": Decimal("0.00"),
+                "discount": Decimal("0.00"),
+                "total": Decimal("2499.00"),
+                "shipping_address": "12, Civil Lines",
+                "city": "Jaipur",
+                "pincode": "302006",
+                "placed_at": now - timedelta(minutes=45),
+                "estimated_delivery": now + timedelta(days=3),
+                "carrier": "Pending Fulfillment Dispatch",
+            }
+        )
+        OrderItem.objects.get_or_create(
+            order=ord_84922, sku="WATCH-PRO-02",
+            defaults={"name": "Smart Fitness Watch Pro", "quantity": 1, "unit_price": Decimal("2499.00")}
+        )
+
+        # Order SE-84923 (Delivered 40d ago - Return Expired)
+        ord_84923, _ = Order.objects.get_or_create(
+            workspace=workspace,
+            order_number="SE-84923",
+            defaults={
+                "customer": cust_a,
+                "customer_name": "Vansh Soni",
+                "customer_phone": "6367743066",
+                "customer_email": "vansh.soni@example.com",
+                "status": Order.Status.DELIVERED,
+                "payment_method": Order.PaymentMethod.UPI,
+                "payment_status": Order.PaymentStatus.PAID,
+                "subtotal": Decimal("1298.00"),
+                "shipping_fee": Decimal("0.00"),
+                "discount": Decimal("0.00"),
+                "total": Decimal("1298.00"),
+                "shipping_address": "12, Civil Lines",
+                "city": "Jaipur",
+                "pincode": "302006",
+                "placed_at": now - timedelta(days=42),
+                "estimated_delivery": now - timedelta(days=40),
+                "delivered_at": now - timedelta(days=40),
+                "carrier": "Bluedart Ground",
+                "return_eligible_until": now - timedelta(days=10),  # Expired
+            }
+        )
+        OrderItem.objects.get_or_create(
+            order=ord_84923, sku="CASE-SIL-01",
+            defaults={"name": "Silicon Phone Case", "quantity": 1, "unit_price": Decimal("499.00")}
+        )
+        OrderItem.objects.get_or_create(
+            order=ord_84923, sku="CHG-65W-01",
+            defaults={"name": "65W Fast Charger", "quantity": 1, "unit_price": Decimal("799.00")}
+        )
+
+        # Customer B: Riya Sharma Orders
+        ord_85001, _ = Order.objects.get_or_create(
+            workspace=workspace,
+            order_number="SE-85001",
+            defaults={
+                "customer": cust_b,
+                "customer_name": "Riya Sharma",
+                "customer_phone": "9571538144",
+                "customer_email": "riya.sharma@example.com",
+                "status": Order.Status.OUT_FOR_DELIVERY,
+                "payment_method": Order.PaymentMethod.UPI,
+                "payment_status": Order.PaymentStatus.PAID,
+                "subtotal": Decimal("3299.00"),
+                "shipping_fee": Decimal("0.00"),
+                "discount": Decimal("0.00"),
+                "total": Decimal("3299.00"),
+                "shipping_address": "45, Malviya Nagar",
+                "city": "Jaipur",
+                "pincode": "302017",
+                "placed_at": now - timedelta(days=3),
+                "estimated_delivery": now,
+                "carrier": "Bluedart Express",
+            }
+        )
+        OrderItem.objects.get_or_create(
+            order=ord_85001, sku="SHOE-RN-07",
+            defaults={"name": "Running Shoes (Size 7)", "quantity": 1, "unit_price": Decimal("3299.00")}
+        )
+
+        ord_85002, _ = Order.objects.get_or_create(
+            workspace=workspace,
+            order_number="SE-85002",
+            defaults={
+                "customer": cust_b,
+                "customer_name": "Riya Sharma",
+                "customer_phone": "9571538144",
+                "customer_email": "riya.sharma@example.com",
+                "status": Order.Status.CANCELLED,
+                "payment_method": Order.PaymentMethod.UPI,
+                "payment_status": Order.PaymentStatus.REFUNDED,
+                "subtotal": Decimal("1899.00"),
+                "shipping_fee": Decimal("0.00"),
+                "discount": Decimal("0.00"),
+                "total": Decimal("1899.00"),
+                "shipping_address": "45, Malviya Nagar",
+                "city": "Jaipur",
+                "pincode": "302017",
+                "placed_at": now - timedelta(days=6),
+                "cancelled_at": now - timedelta(days=6, minutes=-20),
+                "notes": "Cancelled by customer within 1-hour grace window. UPI refund completed.",
+            }
+        )
+        OrderItem.objects.get_or_create(
+            order=ord_85002, sku="SPK-BT-MINI",
+            defaults={"name": "Bluetooth Speaker", "quantity": 1, "unit_price": Decimal("1899.00")}
+        )
+
+        # 3 Weeks of Historical Analytics Tickets
+        self._seed_historical_tickets(workspace, [team_orders, team_billing], agent_user, now)
+
+    # -------------------------------------------------------------------------
+    # ExpressBeas SQL Shipments & Carrier Timeline Events
+    # -------------------------------------------------------------------------
+
+    def _seed_expressbeas_shipments_and_customers(self, workspace, team_tracking, team_claims, agent_user, now):
+        # 1. Customer A: Vansh Soni
+        cust_a, _ = Customer.objects.get_or_create(
+            workspace=workspace,
+            normalized_phone="6367743066",
+            defaults={
+                "name": "Vansh Soni",
+                "email": "vansh.soni@example.com",
+                "phone": "+91 63677 43066",
+                "city": "Jaipur",
+                "source": Customer.Source.WIDGET,
+                "is_anonymous": False,
+            }
+        )
+
+        # 2. Customer B: Riya Sharma
+        cust_b, _ = Customer.objects.get_or_create(
+            workspace=workspace,
+            normalized_phone="9571538144",
+            defaults={
+                "name": "Riya Sharma",
+                "email": "riya.sharma@example.com",
+                "phone": "+91 95715 38144",
+                "city": "Jaipur",
+                "source": Customer.Source.WIDGET,
+                "is_anonymous": False,
+            }
+        )
+
+        # Consignment 152785863851740 (Delivered - Exact 6-event timeline from 20 Sep 2026)
+        ship_1, created_s1 = Shipment.objects.get_or_create(
+            workspace=workspace,
+            awb="152785863851740",
+            defaults={
+                "service_type": Shipment.ServiceType.SURFACE,
+                "weight_kg": Decimal("1.20"),
+                "origin_city": "Ghaziabad",
+                "destination_city": "Jaipur",
+                "sender_name": "Cloudtail India",
+                "sender_phone": "9811002233",
+                "receiver_name": "Vansh Soni",
+                "receiver_phone": "6367743066",
+                "status": Shipment.Status.DELIVERED,
+                "current_location": "Jaipur Delivery Center",
+                "delivered_at": timezone.datetime(2026, 9, 22, 15, 42, tzinfo=timezone.utc),
+            }
+        )
+        if created_s1 or not ship_1.events.exists():
+            ShipmentEvent.objects.create(shipment=ship_1, status="Manifest Uploaded & Data Received", location="Ghaziabad Hub", occurred_at=timezone.datetime(2026, 9, 20, 9, 12, tzinfo=timezone.utc), remarks="Consignment electronic manifest received from seller.")
+            ShipmentEvent.objects.create(shipment=ship_1, status="Pickup Done", location="Ghaziabad Facility", occurred_at=timezone.datetime(2026, 9, 20, 14, 30, tzinfo=timezone.utc), remarks="Package received from Cloudtail warehouse.")
+            ShipmentEvent.objects.create(shipment=ship_1, status="In Transit", location="Delhi Main Sort Hub", occurred_at=timezone.datetime(2026, 9, 20, 21, 15, tzinfo=timezone.utc), remarks="Inward sorting scan completed.")
+            ShipmentEvent.objects.create(shipment=ship_1, status="In Transit", location="Delhi Highway Dispatch", occurred_at=timezone.datetime(2026, 9, 21, 4, 20, tzinfo=timezone.utc), remarks="Dispatched in vehicle DL-1C-5012 to Jaipur.")
+            ShipmentEvent.objects.create(shipment=ship_1, status="Reached at Destination", location="Jaipur Central Mother Hub", occurred_at=timezone.datetime(2026, 9, 21, 23, 45, tzinfo=timezone.utc), remarks="Arrival scan completed at destination mother hub.")
+            ShipmentEvent.objects.create(shipment=ship_1, status="Delivered", location="Jaipur Delivery Center", occurred_at=timezone.datetime(2026, 9, 22, 15, 42, tzinfo=timezone.utc), remarks="Delivered to recipient with OTP verification.")
+
+        # Consignment 152785863851741 (In Transit - Delayed at Delhi Sort Hub)
+        ship_2, created_s2 = Shipment.objects.get_or_create(
+            workspace=workspace,
+            awb="152785863851741",
+            defaults={
+                "service_type": Shipment.ServiceType.SURFACE,
+                "weight_kg": Decimal("18.50"),
+                "origin_city": "Delhi",
+                "destination_city": "Mumbai",
+                "sender_name": "Tech Distributors",
+                "sender_phone": "9811998877",
+                "receiver_name": "Vansh Soni",
+                "receiver_phone": "6367743066",
+                "status": Shipment.Status.IN_TRANSIT,
+                "current_location": "Delhi Central Sort Hub",
+                "estimated_delivery": now + timedelta(days=2),
+            }
+        )
+        if created_s2 or not ship_2.events.exists():
+            ShipmentEvent.objects.create(shipment=ship_2, status="Pickup Done", location="Delhi Okhla Hub", occurred_at=now - timedelta(days=2), remarks="Commercial heavy cargo collected.")
+            ShipmentEvent.objects.create(shipment=ship_2, status="In Transit", location="Delhi Central Sort Hub", occurred_at=now - timedelta(days=1, hours=12), remarks="Inward weighing and dimension verification complete.")
+            ShipmentEvent.objects.create(shipment=ship_2, status="In Transit", location="Delhi Sort Facility", occurred_at=now - timedelta(days=1), remarks="Staged for long-haul trailer dispatch.")
+            ShipmentEvent.objects.create(shipment=ship_2, status="Delayed", location="Delhi Sort Hub", occurred_at=now - timedelta(hours=14), remarks="Delayed at Delhi Sort Hub due to road closure on NH-48. Staged for departure.")
+
+        # Consignment 152785863851742 (Air Express - Out for Delivery Today)
+        ship_3, created_s3 = Shipment.objects.get_or_create(
+            workspace=workspace,
+            awb="152785863851742",
+            defaults={
+                "service_type": Shipment.ServiceType.AIR_EXPRESS,
+                "weight_kg": Decimal("0.30"),
+                "origin_city": "Bangalore",
+                "destination_city": "Jaipur",
+                "sender_name": "HDFC Bank Cards",
+                "sender_phone": "9880011223",
+                "receiver_name": "Vansh Soni",
+                "receiver_phone": "6367743066",
+                "status": Shipment.Status.OUT_FOR_DELIVERY,
+                "current_location": "Jaipur Delivery Center",
+                "estimated_delivery": now,
+            }
+        )
+        if created_s3 or not ship_3.events.exists():
+            ShipmentEvent.objects.create(shipment=ship_3, status="Pickup Done", location="Bangalore Air Hub", occurred_at=now - timedelta(days=1), remarks="Handed over to Air Cargo dispatch.")
+            ShipmentEvent.objects.create(shipment=ship_3, status="In Transit", location="Jaipur Airport Cargo Terminal", occurred_at=now - timedelta(hours=18), remarks="Flight arrived and deplaned.")
+            ShipmentEvent.objects.create(shipment=ship_3, status="Reached at Destination", location="Jaipur Central Hub", occurred_at=now - timedelta(hours=10), remarks="Inward sorted at local distribution facility.")
+            ShipmentEvent.objects.create(shipment=ship_3, status="In Transit", location="Jaipur Mansarovar Hub", occurred_at=now - timedelta(hours=4), remarks="Assigned to local delivery run.")
+            ShipmentEvent.objects.create(shipment=ship_3, status="Out for Delivery", location="Jaipur Delivery Center", occurred_at=now - timedelta(hours=2), remarks="Out for delivery with delivery agent Rajesh (+91 98765 43210).")
+
+        # Customer B: Riya Sharma Consignments
+        ship_b1, _ = Shipment.objects.get_or_create(
+            workspace=workspace,
+            awb="152785863852001",
+            defaults={
+                "service_type": Shipment.ServiceType.SURFACE,
+                "weight_kg": Decimal("2.10"),
+                "origin_city": "Pune",
+                "destination_city": "Jaipur",
+                "sender_name": "Lifestyle Retail",
+                "sender_phone": "9765432100",
+                "receiver_name": "Riya Sharma",
+                "receiver_phone": "9571538144",
+                "status": Shipment.Status.DELIVERED,
+                "delivered_at": now - timedelta(days=4),
+            }
+        )
+        if not ship_b1.events.exists():
+            ShipmentEvent.objects.create(shipment=ship_b1, status="Delivered", location="Jaipur Recipient Address", occurred_at=now - timedelta(days=4), remarks="Delivered to recipient.")
+
+        ship_b2, _ = Shipment.objects.get_or_create(
+            workspace=workspace,
+            awb="152785863852002",
+            defaults={
+                "service_type": Shipment.ServiceType.SURFACE,
+                "weight_kg": Decimal("0.80"),
+                "origin_city": "Jaipur",
+                "destination_city": "Hyderabad",
+                "sender_name": "Riya Sharma",
+                "sender_phone": "9571538144",
+                "receiver_name": "Kavita Reddy",
+                "receiver_phone": "9848011223",
+                "status": Shipment.Status.PICKUP_SCHEDULED,
+                "estimated_delivery": now + timedelta(days=4),
+            }
+        )
+        if not ship_b2.events.exists():
+            ShipmentEvent.objects.create(shipment=ship_b2, status="Pickup Scheduled", location="Jaipur Malviya Nagar", occurred_at=now - timedelta(hours=3), remarks="Doorstep collection scheduled between 2:00 PM and 6:00 PM.")
+
+        ship_b3, _ = Shipment.objects.get_or_create(
+            workspace=workspace,
+            awb="152785863852003",
+            defaults={
+                "service_type": Shipment.ServiceType.SURFACE,
+                "weight_kg": Decimal("3.50"),
+                "origin_city": "Ahmedabad",
+                "destination_city": "Jaipur",
+                "sender_name": "Crafts of Gujarat",
+                "sender_phone": "9925011223",
+                "receiver_name": "Riya Sharma",
+                "receiver_phone": "9571538144",
+                "status": Shipment.Status.DELAYED,
+                "current_location": "Jaipur Central Hub",
+                "estimated_delivery": now + timedelta(days=1),
+            }
+        )
+        if not ship_b3.events.exists():
+            ShipmentEvent.objects.create(shipment=ship_b3, status="Delayed", location="Jaipur Central Hub", occurred_at=now - timedelta(hours=5), remarks="Address verification needed; house number missing in shipping label.")
+
+        # 3 Weeks of Historical Analytics Tickets
+        self._seed_historical_tickets(workspace, [team_tracking, team_claims], agent_user, now, prefix="EB")
+
+    # -------------------------------------------------------------------------
+    # 3 Weeks of Historical Analytics Tickets
+    # -------------------------------------------------------------------------
+
+    def _seed_historical_tickets(self, workspace, teams, agent_user, now, prefix="TK"):
+        categories = ["Shipping & Logistics", "Returns & Exchanges", "Billing & Payments", "Technical Support", "General Support"]
+        sentiments = ["POSITIVE", "NEUTRAL", "FRUSTRATED", "ANGRY"]
+
+        historical_data = [
+            ("Delayed Consignment Investigation", "Package delayed at central sort hub.", 20, Ticket.Priority.HIGH, Ticket.Status.RESOLVED, 0),
+            ("Address Correction Request", "Customer provided corrected apartment number.", 18, Ticket.Priority.MEDIUM, Ticket.Status.RESOLVED, 1),
+            ("Double Charge Billing Inquiry", "Customer reported duplicate debit hold on credit card.", 16, Ticket.Priority.CRITICAL, Ticket.Status.CLOSED, 0),
+            ("Return Policy Clarification", "Inquiry regarding electronics return window.", 14, Ticket.Priority.LOW, Ticket.Status.RESOLVED, 1),
+            ("Doorstep Pickup Reschedule", "Pickup requested for evening slot.", 12, Ticket.Priority.LOW, Ticket.Status.RESOLVED, 0),
+            ("Damaged Outer Box Claim", "Outer cardboard carton crushed during transit.", 10, Ticket.Priority.HIGH, Ticket.Status.IN_PROGRESS, 1),
+            ("Invoice & GST Receipt Request", "Customer requested business GST tax invoice.", 8, Ticket.Priority.LOW, Ticket.Status.RESOLVED, 0),
+            ("Lost Package Trace Request", "Consignment not scanned for 48 hours.", 6, Ticket.Priority.CRITICAL, Ticket.Status.OPEN, 1),
+            ("Cancellation Fee Inquiry", "Clarification on cancellation charges before dispatch.", 4, Ticket.Priority.LOW, Ticket.Status.RESOLVED, 0),
+            ("Order Status Follow-up", "Follow-up regarding out-for-delivery package.", 2, Ticket.Priority.MEDIUM, Ticket.Status.CLOSED, 1),
         ]
 
-        # ── 2. Seed Each Workspace ───────────────────────────────────────────
-        all_outputs = []
+        for i, (subj, desc, days_ago, prio, stat, team_idx) in enumerate(historical_data, start=100):
+            ticket_num = f"{prefix}-{i}"
+            created_dt = now - timedelta(days=days_ago)
+            cust_name = f"Demo User {i}"
+            cust_phone = f"987654{i:04d}"
 
-        for ws_data in workspaces_config:
-            slug = ws_data["slug"]
-            self.stdout.write(f"\n  -> Setting up workspace: {ws_data['name']} (/{slug}/)")
-
-            # Create or update Workspace with deterministic public_key
-            workspace, _ = Workspace.objects.get_or_create(
-                slug=slug,
-                defaults={
-                    "name": ws_data["name"],
-                    "description": ws_data["description"],
-                    "status": Workspace.Status.ACTIVE,
-                }
-            )
-            workspace.name = ws_data["name"]
-            workspace.description = ws_data["description"]
-            workspace.status = Workspace.Status.ACTIVE
-            if slug in FIXED_WORKSPACE_KEYS:
-                workspace.public_key = FIXED_WORKSPACE_KEYS[slug]
-            workspace.save()
-
-            # Settings
-            ws_settings, _ = WorkspaceSettings.objects.get_or_create(
+            cust, _ = Customer.objects.get_or_create(
                 workspace=workspace,
-                defaults={
-                    "company_website": ws_data["website"],
-                    "support_email": ws_data["support_email"],
-                    "welcome_message": ws_data["welcome_message"],
-                    "sla_urgent_minutes": ws_data["sla_urgent"],
-                    "sla_standard_hours": ws_data["sla_standard"],
-                    "ticket_auto_assignment": True,
-                    "orders_api_webhook_url": ws_data["orders_webhook"],
-                    "orders_api_secret_key": ws_data["orders_secret"],
-                    "customer_verification_secret": f"hmac_secret_{slug}_2026",
-                }
-            )
-            ws_settings.company_website = ws_data["website"]
-            ws_settings.support_email = ws_data["support_email"]
-            ws_settings.welcome_message = ws_data["welcome_message"]
-            ws_settings.orders_api_webhook_url = ws_data["orders_webhook"]
-            ws_settings.orders_api_secret_key = ws_data["orders_secret"]
-            ws_settings.customer_verification_secret = f"hmac_secret_{slug}_2026"
-            ws_settings.save()
-
-            # Seed Webhooks
-            for wh_info in ws_data.get("webhooks", []):
-                WorkspaceWebhook.objects.get_or_create(
-                    workspace=workspace,
-                    url=wh_info["url"],
-                    defaults={
-                        "name": wh_info["name"],
-                        "webhook_type": wh_info["type"],
-                        "secret_key": wh_info["secret"],
-                        "is_active": True,
-                    }
-                )
-
-            # Pre-Authorize Owners (vanshhsoni.production@gmail.com, etc.)
-            for dev_email in OWNER_EMAILS:
-                dev_user, _ = User.objects.get_or_create(
-                    email=dev_email,
-                    defaults={"first_name": "Vansh", "last_name": "Soni", "username": dev_email}
-                )
-                WorkspaceMembership.objects.update_or_create(
-                    workspace=workspace,
-                    user=dev_user,
-                    defaults={"role": WorkspaceMembership.Role.OWNER, "is_active": True}
-                )
-                WorkspaceAuthorizedEmail.objects.update_or_create(
-                    workspace=workspace,
-                    normalized_email=dev_email,
-                    defaults={
-                        "email": dev_email,
-                        "assigned_role": WorkspaceMembership.Role.OWNER,
-                        "status": WorkspaceAuthorizedEmail.Status.AUTHORIZED,
-                        "linked_user": dev_user,
-                        "invited_by": admin_user,
-                    }
-                )
-
-            # Seed Teams
-            teams_map = {}
-            for t_info in ws_data["teams"]:
-                team, _ = Team.objects.get_or_create(
-                    workspace=workspace,
-                    slug=t_info["slug"],
-                    defaults={"name": t_info["name"], "description": t_info["desc"], "is_active": True}
-                )
-                team.name = t_info["name"]
-                team.description = t_info["desc"]
-                team.is_active = True
-                team.save()
-                teams_map[t_info["slug"]] = team
-
-            # Seed Staff Users
-            staff_users = {}
-            for email, fn, ln, role_str, team_slugs in ws_data["staff"]:
-                staff_u, _ = User.objects.get_or_create(
-                    email=email,
-                    defaults={"first_name": fn, "last_name": ln, "username": email}
-                )
-                staff_u.set_password("Support@Demo123")
-                staff_u.save()
-
-                role = getattr(WorkspaceMembership.Role, role_str, WorkspaceMembership.Role.AGENT)
-                WorkspaceMembership.objects.update_or_create(
-                    workspace=workspace,
-                    user=staff_u,
-                    defaults={"role": role, "is_active": True}
-                )
-
-                assigned_teams = [teams_map[ts] for ts in team_slugs if ts in teams_map]
-                auth_rec, _ = WorkspaceAuthorizedEmail.objects.update_or_create(
-                    workspace=workspace,
-                    normalized_email=email,
-                    defaults={
-                        "email": email,
-                        "assigned_role": role,
-                        "status": WorkspaceAuthorizedEmail.Status.AUTHORIZED,
-                        "linked_user": staff_u,
-                        "invited_by": admin_user,
-                    }
-                )
-                auth_rec.assigned_teams.set(assigned_teams)
-
-                for team_obj in assigned_teams:
-                    TeamMembership.objects.get_or_create(
-                        team=team_obj,
-                        user=staff_u,
-                        defaults={"role": TeamMembership.Role.MEMBER}
-                    )
-                staff_users[email] = staff_u
-
-            # Knowledge Base FAQs
-            for title, q, a in ws_data["faqs"]:
-                doc, _ = KnowledgeDocument.objects.get_or_create(
-                    workspace=workspace,
-                    title=title,
-                    defaults={
-                        "doc_type": KnowledgeDocument.DocType.FAQ,
-                        "question": q,
-                        "answer": a,
-                        "content": f"Q: {q}\nA: {a}",
-                        "is_active": True,
-                    }
-                )
-                try:
-                    document_processor.chunk_and_index(doc)
-                except Exception:
-                    pass
-
-            # AI & Voice Configurations
-            AgentConfiguration.objects.update_or_create(
-                workspace=workspace,
-                defaults={
-                    "system_prompt": ws_data["system_prompt"],
-                    "confidence_threshold": 0.75,
-                    "auto_escalate_urgent": True,
-                }
-            )
-            VoiceConfiguration.objects.get_or_create(
-                workspace=workspace,
-                defaults={"is_enabled": True, "voice_name": "af_sarah", "speed": 1.0}
+                normalized_phone=cust_phone,
+                defaults={"name": cust_name, "email": f"user{i}@example.com", "phone": cust_phone}
             )
 
-            # Mailbox Connection
-            mailbox, _ = MailboxConnection.objects.get_or_create(
+            conv, _ = Conversation.objects.get_or_create(
                 workspace=workspace,
-                email_address=ws_data["mailbox_email"],
+                customer=cust,
+                channel=Conversation.Channel.WEB_CHAT,
+                created_at=created_dt,
                 defaults={
-                    "provider": MailboxConnection.Provider.GMAIL,
-                    "status": MailboxConnection.Status.ACTIVE,
-                    "provider_account_id": f"{slug}_support_inbox",
-                    "last_successful_sync_at": timezone.now(),
+                    "status": Conversation.Status.COMPLETED,
+                    "sentiment": sentiments[i % len(sentiments)],
+                    "intent": "SUPPORT",
+                    "urgency": prio,
                 }
             )
 
-            # Seed Sample Inbound Emails
-            for p_id, s_email, s_name, subj, body, urg, intent, team_slug in ws_data["sample_emails"]:
-                inbound_email, created = InboundEmail.objects.get_or_create(
-                    workspace=workspace,
-                    provider_message_id=p_id,
-                    defaults={
-                        "mailbox_connection": mailbox,
-                        "sender_email": s_email,
-                        "sender_name": s_name,
-                        "recipient": ws_data["mailbox_email"],
-                        "subject": subj,
-                        "original_text_body": body,
-                        "normalized_text_body": body,
-                        "received_at": timezone.now(),
-                        "processing_status": InboundEmail.ProcessingStatus.TICKET_PROPOSED,
-                    }
-                )
-                if created:
-                    try:
-                        email_triage_service.process_inbound_email(inbound_email)
-                    except Exception:
-                        pass
+            team = teams[team_idx % len(teams)]
+            t, t_created = Ticket.objects.get_or_create(
+                workspace=workspace,
+                ticket_number=ticket_num,
+                defaults={
+                    "customer": cust,
+                    "conversation": conv,
+                    "subject": subj,
+                    "description": desc,
+                    "priority": prio,
+                    "category": categories[i % len(categories)],
+                    "status": stat,
+                    "assigned_team": team,
+                    "assigned_agent": agent_user,
+                    "created_at": created_dt,
+                    "updated_at": created_dt + timedelta(hours=2),
+                }
+            )
+            if t_created:
+                TicketEvent.objects.create(ticket=t, event_type="CREATED", description=f"Ticket #{ticket_num} created.", created_at=created_dt)
+                if stat in [Ticket.Status.RESOLVED, Ticket.Status.CLOSED]:
+                    TicketEvent.objects.create(ticket=t, event_type="RESOLVED", description=f"Resolved by agent {agent_user.email}.", created_at=created_dt + timedelta(hours=3))
 
-            # Seed Customers & Historical Tickets
-            first_team = list(teams_map.values())[0] if teams_map else None
-            now = timezone.now()
+    # -------------------------------------------------------------------------
+    # Optional TechNova & FreshMart Seeding
+    # -------------------------------------------------------------------------
 
-            for item in ws_data["customers"]:
-                (cust_name, cust_email, source, channel,
-                 intent, sentiment, urgency, summary,
-                 ticket_no, ticket_subj, ticket_cat, ticket_pri, ticket_status,
-                 team_slug, agent_email, days_ago, res_hours) = item
+    def _seed_technova_and_freshmart(self, now):
+        # TechNova
+        tn, _ = Workspace.objects.get_or_create(
+            slug="technova",
+            defaults={"name": "TechNova", "public_key": FIXED_WORKSPACE_KEYS["technova"], "status": Workspace.Status.ACTIVE}
+        )
+        WorkspaceSettings.objects.get_or_create(
+            workspace=tn,
+            defaults={"welcome_message": "Welcome to TechNova Developer Support!"}
+        )
+        self.stdout.write("  [+] TechNova workspace seeded.")
 
-                customer, _ = Customer.objects.get_or_create(
-                    workspace=workspace,
-                    normalized_email=cust_email,
-                    defaults={
-                        "name": cust_name,
-                        "email": cust_email,
-                        "is_anonymous": False,
-                        "source": getattr(Customer.Source, source, Customer.Source.WIDGET),
-                    }
-                )
+        # FreshMart
+        fm, _ = Workspace.objects.get_or_create(
+            slug="freshmart",
+            defaults={"name": "FreshMart", "public_key": FIXED_WORKSPACE_KEYS["freshmart"], "status": Workspace.Status.ACTIVE}
+        )
+        WorkspaceSettings.objects.get_or_create(
+            workspace=fm,
+            defaults={"welcome_message": "Welcome to FreshMart 15-Minute Delivery Support!"}
+        )
+        self.stdout.write("  [+] FreshMart workspace seeded.")
 
-                created_time = now - timedelta(days=days_ago, hours=2)
+    # -------------------------------------------------------------------------
+    # Summary Table Output
+    # -------------------------------------------------------------------------
 
-                conv_status = Conversation.Status.ACTIVE if ticket_status != "RESOLVED" else Conversation.Status.COMPLETED
-                conv_sentiment = getattr(Conversation.Sentiment, sentiment, None)
-                if not conv_sentiment:
-                    conv_sentiment = Conversation.Sentiment.FRUSTRATED if sentiment == "ANGRY" else Conversation.Sentiment.NEUTRAL
+    def _print_summary(self, seed_all=False):
+        summary = f"""
+========================================================================================
+                      SUPPORTO AI DEMO SEEDING COMPLETE
+========================================================================================
 
-                assigned_team = teams_map.get(team_slug, first_team)
-                assigned_agent = staff_users.get(agent_email)
+[1] PLATFORM ADMIN LOGIN:
+    • URL:      http://127.0.0.1:8000/admin/
+    • Email:    admin@admin.com
+    • Password: admin
+    • Role:     Superuser, Django Staff, Platform Admin
 
-                ticket = Ticket.objects.filter(workspace=workspace, ticket_number=ticket_no).first()
-                if not ticket:
-                    conv = Conversation.objects.create(
-                        workspace=workspace,
-                        customer=customer,
-                        channel=getattr(Conversation.Channel, channel, Conversation.Channel.WEB_CHAT),
-                        status=conv_status,
-                        intent=intent,
-                        sentiment=conv_sentiment,
-                        urgency=getattr(Conversation.Urgency, urgency, Conversation.Urgency.MEDIUM),
-                        summary=summary,
-                    )
-                    Conversation.objects.filter(id=conv.id).update(created_at=created_time)
+[2] WORKSPACE STAFF LOGINS:
+    • ShopEase (E-commerce):
+        - Owner:  owner@shopease.com    / ShopEase@123
+        - Agent:  agent@shopease.com    / Agent@123
+        - Portal: http://127.0.0.1:8000/shopease/dashboard/
+    • ExpressBeas (Logistics):
+        - Owner:  owner@expressbeas.in  / ExpressBeas@123
+        - Agent:  agent@expressbeas.in  / Agent@123
+        - Portal: http://127.0.0.1:8000/expressbeas/dashboard/
 
-                    ticket_defaults = {
-                        "customer": customer,
-                        "conversation": conv,
-                        "subject": ticket_subj,
-                        "description": summary,
-                        "category": ticket_cat,
-                        "priority": getattr(Ticket.Priority, ticket_pri, Ticket.Priority.MEDIUM),
-                        "status": getattr(Ticket.Status, ticket_status, Ticket.Status.OPEN),
-                        "assigned_team": assigned_team,
-                    }
-                    if assigned_agent:
-                        ticket_defaults["assigned_agent"] = assigned_agent
+[3] CUSTOMER WIDGET & DEMO STOREFRONTS:
+    • ShopEase Storefront:   http://127.0.0.1:8000/shopease/demo/
+    • ExpressBeas Tracking:  http://127.0.0.1:8000/expressbeas/demo/
 
-                    ticket = Ticket.objects.create(
-                        workspace=workspace,
-                        ticket_number=ticket_no,
-                        **ticket_defaults
-                    )
+[4] VERIFIED DEMO PERSONAS:
+    • Customer A: Vansh Soni  — Mobile: 6367743066  (Jaipur)
+    • Customer B: Riya Sharma — Mobile: 9571538144  (Jaipur)
 
-                resolved_time = (created_time + timedelta(hours=res_hours)) if res_hours else None
-                Ticket.objects.filter(id=ticket.id).update(
-                    created_at=created_time,
-                    resolved_at=resolved_time
-                )
+[5] 6 SAMPLE HACKATHON VERIFICATION QUERIES:
+    1. "What are my orders?"                                [ShopEase / ExpressBeas]
+    2. "Where is order SE-84920?"                           [ShopEase — Delivered, Return Scheduled]
+    3. "Where is my consignment 152785863851740?"           [ExpressBeas — 6-event verified timeline]
+    4. "What is the status of my return and refund?"        [ShopEase — Pickup Scheduled, ₹4,999]
+    5. "Cancel order SE-84922"                              [ShopEase — Auto-Ticket, Real Ticket #]
+    6. "Where is my consignment 152785863851740?" (with phone 9571538144) -> Access Denied (Safe Zero-Leak)
 
-                resolved_time = (created_time + timedelta(hours=res_hours)) if res_hours else None
-                Ticket.objects.filter(id=ticket.id).update(
-                    created_at=created_time,
-                    resolved_at=resolved_time
-                )
-
-                owner_user = User.objects.filter(email=OWNER_EMAILS[0]).first()
-                if owner_user:
-                    TicketAssignment.objects.get_or_create(
-                        ticket=ticket,
-                        assigned_by=owner_user,
-                        defaults={
-                            "new_team": assigned_team,
-                            "new_agent": assigned_agent,
-                            "reason": "AI Auto-Triage & Intent Routing"
-                        }
-                    )
-
-            self.stdout.write(f"    [+] {ws_data['name']} workspace ready")
-            all_outputs.append((ws_data["name"], workspace.slug, str(workspace.public_key)))
-
-        # ── 3. Summary ───────────────────────────────────────────────────────
-        self.stdout.write(self.style.SUCCESS("\n[+] Demo data successfully seeded for both enterprise clients (ExpressBeas & ShopEase)!\n"))
-        self.stdout.write("    Platform Admin   : /admin/  (admin@supporto.ai / Supporto@Admin123)")
-        self.stdout.write(f"    Owner Sign-In    : Sign in with Google as: {OWNER_EMAILS[0]}")
-        self.stdout.write("    " + "-" * 60)
-        for name, slug, pk in all_outputs:
-            self.stdout.write(f"    {name:15s} Portal : /{slug}/")
-            self.stdout.write(f"    {name:15s} Widget : /widget/{pk}/demo/\n")
+========================================================================================
+"""
+        self.stdout.write(summary)

@@ -11,7 +11,7 @@ from services.tickets.ticket_service import ticket_service
 def ticket_list_view(request, company_slug):
     workspace = request.workspace
     tickets = Ticket.objects.filter(workspace=workspace).select_related(
-        "customer", "assigned_team", "assigned_agent"
+        "customer", "assigned_team", "assigned_agent", "related_order", "related_shipment"
     )
 
     # Search query
@@ -22,7 +22,9 @@ def ticket_list_view(request, company_slug):
             Q(subject__icontains=q) |
             Q(description__icontains=q) |
             Q(customer__name__icontains=q) |
-            Q(customer__email__icontains=q)
+            Q(customer__email__icontains=q) |
+            Q(related_order__order_number__icontains=q) |
+            Q(related_shipment__awb__icontains=q)
         )
 
     # Status filter
@@ -64,7 +66,7 @@ def my_tickets_view(request, company_slug):
     tickets = Ticket.objects.filter(
         workspace=workspace,
         assigned_agent=request.user
-    ).select_related("customer", "assigned_team")
+    ).select_related("customer", "assigned_team", "related_order", "related_shipment")
 
     paginator = Paginator(tickets, 15)
     page_obj = paginator.get_page(request.GET.get("page", 1))
@@ -87,7 +89,7 @@ def team_queue_view(request, company_slug):
     tickets = Ticket.objects.filter(
         workspace=workspace,
         assigned_team_id__in=user_team_ids
-    ).select_related("customer", "assigned_team", "assigned_agent")
+    ).select_related("customer", "assigned_team", "assigned_agent", "related_order", "related_shipment")
 
     paginator = Paginator(tickets, 15)
     page_obj = paginator.get_page(request.GET.get("page", 1))
@@ -103,7 +105,7 @@ def team_queue_view(request, company_slug):
 def ticket_detail_view(request, company_slug, ticket_number):
     workspace = request.workspace
     ticket = get_object_or_404(
-        Ticket.objects.select_related("customer", "assigned_team", "assigned_agent", "conversation"),
+        Ticket.objects.select_related("customer", "assigned_team", "assigned_agent", "conversation", "related_order", "related_shipment"),
         workspace=workspace,
         ticket_number=ticket_number
     )

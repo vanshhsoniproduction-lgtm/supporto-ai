@@ -50,6 +50,20 @@ class Ticket(models.Model):
         blank=True,
         related_name="assigned_tickets"
     )
+    related_order = models.ForeignKey(
+        "orders.Order",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="tickets"
+    )
+    related_shipment = models.ForeignKey(
+        "orders.Shipment",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="tickets"
+    )
     escalation_reason = models.TextField(blank=True)
     resolved_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)

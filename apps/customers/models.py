@@ -2,6 +2,7 @@ import uuid
 from django.db import models
 from django.utils import timezone
 from apps.workspaces.models import Workspace
+from apps.orders.utils import normalize_phone
 
 class Customer(models.Model):
     class Source(models.TextChoices):
@@ -20,6 +21,7 @@ class Customer(models.Model):
     email = models.EmailField(blank=True, db_index=True)
     normalized_email = models.EmailField(blank=True, db_index=True)
     phone = models.CharField(max_length=30, blank=True)
+    normalized_phone = models.CharField(max_length=20, blank=True, db_index=True)
     company = models.CharField(max_length=150, blank=True)
     source = models.CharField(max_length=30, choices=Source.choices, default=Source.WIDGET)
     status = models.CharField(max_length=30, choices=Status.choices, default=Status.ACTIVE)
@@ -35,15 +37,28 @@ class Customer(models.Model):
 
     class Meta:
         ordering = ["-created_at"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["workspace", "normalized_phone"],
+                name="unique_workspace_customer_phone",
+                condition=models.Q(normalized_phone__gt="")
+            )
+        ]
 
     def clean(self):
         super().clean()
         if self.email:
             self.normalized_email = self.email.strip().lower()
+        if self.phone:
+            self.normalized_phone = normalize_phone(self.phone)
 
     def save(self, *args, **kwargs):
         if self.email:
             self.normalized_email = self.email.strip().lower()
+            if self.is_anonymous and self.name != "Visitor":
+                self.is_anonymous = False
+        if self.phone:
+            self.normalized_phone = normalize_phone(self.phone)
             if self.is_anonymous and self.name != "Visitor":
                 self.is_anonymous = False
         super().save(*args, **kwargs)

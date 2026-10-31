@@ -6,7 +6,6 @@ import time
 import urllib.request
 import urllib.parse
 import json
-from ipaddress import ip_address
 from django.conf import settings
 from django.utils import timezone
 from apps.workspaces.models import Workspace, WorkspaceWebhook, WorkspaceSettings
@@ -16,6 +15,8 @@ from apps.teams.models import Team
 from apps.customers.models import Customer
 from apps.conversations.models import Conversation
 from apps.ai_engine.models import ToolExecution, AgentRun
+from apps.orders.models import Order, OrderItem, Shipment, ShipmentEvent, ReturnRequest
+from apps.orders.utils import normalize_phone
 from services.ai.rag_service import rag_service
 
 logger = logging.getLogger(__name__)
@@ -29,14 +30,12 @@ def is_safe_url(url: str) -> bool:
         if parsed.scheme not in ("http", "https"):
             return False
         host = (parsed.hostname or "").lower()
-        # In DEBUG / local dev mode, allow localhost/127.0.0.1 for live mock store webhooks
         if getattr(settings, "DEBUG", False) and host in ("localhost", "127.0.0.1", "testserver"):
             return True
         if host in ("localhost", "127.0.0.1", "::1", "0.0.0.0"):
             return False
         if any(host.startswith(p) for p in PRIVATE_IP_PREFIXES):
             return False
-        # Check if 172.16.x.x - 172.31.x.x
         if host.startswith("172."):
             parts = host.split(".")
             if len(parts) >= 2 and parts[1].isdigit() and 16 <= int(parts[1]) <= 31:
@@ -59,6 +58,128 @@ class ToolRegistry:
             {
                 "type": "function",
                 "function": {
+                    "name": "list_customer_orders",
+                    "description": "List all active and past orders or courier consignments belonging to the verified customer.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "phone": {
+                                "type": "string",
+                                "description": "Customer's registered 10-digit phone number."
+                            }
+                        },
+                        "required": ["phone"]
+                    }
+                }
+            },
+            {
+                "type": "function",
+                "function": {
+                    "name": "get_order_details",
+                    "description": "Retrieve comprehensive details for a specific e-commerce order (items, pricing, tracking, delivery date, return window). Requires phone verification.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "order_number": {
+                                "type": "string",
+                                "description": "The exact order number (e.g. SE-84920)."
+                            },
+                            "phone": {
+                                "type": "string",
+                                "description": "Customer's registered 10-digit phone number for identity verification."
+                            }
+                        },
+                        "required": ["order_number", "phone"]
+                    }
+                }
+            },
+            {
+                "type": "function",
+                "function": {
+                    "name": "get_shipment_tracking",
+                    "description": "Track a courier shipment / AWB consignment, returning real-time status and complete timeline events. Requires phone verification.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "awb": {
+                                "type": "string",
+                                "description": "The consignment AWB tracking number (e.g. 152785863851740)."
+                            },
+                            "phone": {
+                                "type": "string",
+                                "description": "Customer's registered 10-digit phone number for identity verification."
+                            }
+                        },
+                        "required": ["awb", "phone"]
+                    }
+                }
+            },
+            {
+                "type": "function",
+                "function": {
+                    "name": "get_customer_tickets",
+                    "description": "List existing support tickets raised by or associated with this customer phone number.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "phone": {
+                                "type": "string",
+                                "description": "Customer's registered 10-digit phone number."
+                            }
+                        },
+                        "required": ["phone"]
+                    }
+                }
+            },
+            {
+                "type": "function",
+                "function": {
+                    "name": "get_return_refund_status",
+                    "description": "Check the status of return and refund requests for an order or customer.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "phone": {
+                                "type": "string",
+                                "description": "Customer's registered 10-digit phone number."
+                            },
+                            "order_number": {
+                                "type": "string",
+                                "description": "Optional order number to check returns for."
+                            }
+                        },
+                        "required": ["phone"]
+                    }
+                }
+            },
+            {
+                "type": "function",
+                "function": {
+                    "name": "cancel_order",
+                    "description": "Cancel an eligible order and automatically generate or reference a human support ticket.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "order_number": {
+                                "type": "string",
+                                "description": "Order number to cancel (e.g. SE-84922)."
+                            },
+                            "phone": {
+                                "type": "string",
+                                "description": "Customer's registered 10-digit phone number."
+                            },
+                            "reason": {
+                                "type": "string",
+                                "description": "Reason for cancellation."
+                            }
+                        },
+                        "required": ["order_number", "phone"]
+                    }
+                }
+            },
+            {
+                "type": "function",
+                "function": {
                     "name": "lookup_order",
                     "description": "Look up real-time status of an order or courier AWB consignment number.",
                     "parameters": {
@@ -66,7 +187,7 @@ class ToolRegistry:
                         "properties": {
                             "order_number": {
                                 "type": "string",
-                                "description": "The exact order number (e.g. SE-84920) or courier AWB number (e.g. EB987654321)."
+                                "description": "The exact order number (e.g. SE-84920) or courier AWB number (e.g. 152785863851740)."
                             }
                         },
                         "required": ["order_number"]
@@ -132,9 +253,32 @@ class ToolRegistry:
         result = {"success": False, "error": f"Unknown tool '{tool_name}'"}
 
         try:
-            if tool_name == "lookup_order":
+            phone = arguments.get("phone", "")
+            if not phone and conversation_id:
+                conv = Conversation.objects.filter(id=conversation_id, workspace_id=workspace_id).first()
+                if conv:
+                    phone = (conv.customer.normalized_phone if conv.customer else None) or conv.metadata.get("customer_phone", "")
+
+            if tool_name == "list_customer_orders":
+                result = cls.list_customer_orders(workspace_id=workspace_id, phone=phone)
+            elif tool_name == "get_order_details":
                 order_num = arguments.get("order_number", "")
-                result = cls.lookup_order(workspace_id=workspace_id, order_number=order_num)
+                result = cls.get_order_details(workspace_id=workspace_id, order_number=order_num, phone=phone)
+            elif tool_name == "get_shipment_tracking":
+                awb = arguments.get("awb", "")
+                result = cls.get_shipment_tracking(workspace_id=workspace_id, awb=awb, phone=phone)
+            elif tool_name == "get_customer_tickets":
+                result = cls.get_customer_tickets(workspace_id=workspace_id, phone=phone)
+            elif tool_name == "get_return_refund_status":
+                order_num = arguments.get("order_number", "")
+                result = cls.get_return_refund_status(workspace_id=workspace_id, query=order_num, phone=phone)
+            elif tool_name == "cancel_order":
+                order_num = arguments.get("order_number", "")
+                reason = arguments.get("reason", "")
+                result = cls.cancel_order(workspace_id=workspace_id, order_number=order_num, phone=phone, reason=reason)
+            elif tool_name == "lookup_order":
+                order_num = arguments.get("order_number", "")
+                result = cls.lookup_order(workspace_id=workspace_id, order_number=order_num, customer_phone=phone)
             elif tool_name == "search_knowledge_base":
                 query = arguments.get("query", "")
                 result = cls.search_knowledge_base(workspace_id=workspace_id, query=query)
@@ -178,22 +322,527 @@ class ToolRegistry:
 
         return result
 
-    @staticmethod
-    def lookup_order(workspace_id: int, order_number: str, customer_email: str = None) -> dict:
+    # -------------------------------------------------------------------------
+    # Real SQL Data Layer Tools (Workspace-Scoped & Phone-Verified)
+    # -------------------------------------------------------------------------
+
+    @classmethod
+    def list_customer_orders(cls, workspace_id: int, phone: str) -> dict:
+        """Returns all orders and shipments for the caller's phone number in this workspace."""
+        if not phone or not phone.strip():
+            return {
+                "success": False,
+                "needs_phone": True,
+                "error": "Please provide your registered 10-digit phone number to check your orders."
+            }
+
+        norm_phone = normalize_phone(phone)
+        if len(norm_phone) != 10:
+            return {
+                "success": False,
+                "error": "Invalid phone number. Please enter a valid 10-digit mobile number."
+            }
+
+        orders_qs = Order.objects.filter(workspace_id=workspace_id, customer_phone=norm_phone).prefetch_related("items").order_by("-placed_at")
+        shipments_qs = Shipment.objects.filter(
+            workspace_id=workspace_id
+        ).filter(
+            models.Q(receiver_phone=norm_phone) | models.Q(sender_phone=norm_phone)
+        ).order_by("-created_at")
+
+        orders_data = []
+        for o in orders_qs:
+            items_summary = ", ".join([f"{item.name} (x{item.quantity})" for item in o.items.all()]) or "Order item"
+            orders_data.append({
+                "order_number": o.order_number,
+                "status": o.status,
+                "items_summary": items_summary,
+                "total": f"₹{o.total:,.2f}",
+                "currency": o.currency,
+                "payment_status": o.payment_status,
+                "placed_at": o.placed_at.strftime("%Y-%m-%d %H:%M"),
+                "estimated_delivery": o.estimated_delivery.strftime("%Y-%m-%d") if o.estimated_delivery else None,
+                "carrier": o.carrier,
+                "is_cancellable": o.is_cancellable,
+                "is_return_eligible": o.is_return_eligible
+            })
+
+        shipments_data = []
+        for s in shipments_qs:
+            shipments_data.append({
+                "awb": s.awb,
+                "service_type": s.service_type,
+                "status": s.status,
+                "origin": s.origin_city,
+                "destination": s.destination_city,
+                "current_location": s.current_location,
+                "estimated_delivery": s.estimated_delivery.strftime("%Y-%m-%d") if s.estimated_delivery else None,
+                "created_at": s.created_at.strftime("%Y-%m-%d %H:%M")
+            })
+
+        total_count = len(orders_data) + len(shipments_data)
+        return {
+            "success": True,
+            "count": total_count,
+            "orders": orders_data,
+            "shipments": shipments_data,
+            "phone": norm_phone
+        }
+
+    @classmethod
+    def get_order_details(cls, workspace_id: int, order_number: str, phone: str = None) -> dict:
         """
-        Looks up real-time e-commerce order details or shipment tracking across
-        configured external store webhooks and verified company records.
-        NEVER invents fake synthetic data for unknown orders.
+        Retrieves full order details from real SQL records.
+        Strict verification: Reveals details ONLY if caller phone matches order's customer_phone.
+        """
+        if not order_number or not order_number.strip():
+            return {"success": False, "error": "No order number provided."}
+
+        order_num = order_number.strip().upper()
+        order = Order.objects.filter(workspace_id=workspace_id, order_number__iexact=order_num).prefetch_related("items", "return_requests").first()
+
+        if not order:
+            # Check external user-configured webhook if active
+            wh_res = cls._try_external_webhook(workspace_id=workspace_id, code=order_num)
+            if wh_res.get("success"):
+                return wh_res
+            return {
+                "success": False,
+                "error": f"Order '{order_num}' was not found in our records."
+            }
+
+        # Verification check
+        if not phone or not phone.strip():
+            return {
+                "success": False,
+                "needs_phone": True,
+                "order_number": order_num,
+                "error": "Please provide your registered 10-digit phone number to check this order."
+            }
+
+        norm_phone = normalize_phone(phone)
+        if norm_phone != order.customer_phone:
+            # Leak NOTHING
+            return {
+                "success": False,
+                "verified": False,
+                "error": "I couldn't verify that order against your phone number."
+            }
+
+        items_list = [
+            {
+                "name": it.name,
+                "sku": it.sku,
+                "quantity": it.quantity,
+                "unit_price": f"₹{it.unit_price:,.2f}",
+                "line_total": f"₹{it.line_total:,.2f}"
+            }
+            for it in order.items.all()
+        ]
+
+        returns_list = [
+            {
+                "type": r.type,
+                "status": r.status,
+                "reason": r.reason,
+                "refund_amount": f"₹{r.refund_amount:,.2f}",
+                "refund_status": r.refund_status,
+                "expected_refund_by": r.expected_refund_by.strftime("%Y-%m-%d") if r.expected_refund_by else None
+            }
+            for r in order.return_requests.all()
+        ]
+
+        # Check for any linked tickets
+        linked_ticket = Ticket.objects.filter(workspace_id=workspace_id, related_order=order).order_by("-created_at").first()
+
+        order_data = {
+            "order_number": order.order_number,
+            "customer_name": order.customer_name,
+            "status": order.status,
+            "items": items_list,
+            "pricing": {
+                "subtotal": f"₹{order.subtotal:,.2f}",
+                "shipping_fee": f"₹{order.shipping_fee:,.2f}",
+                "discount": f"₹{order.discount:,.2f}",
+                "total": f"₹{order.total:,.2f}",
+                "currency": order.currency
+            },
+            "payment": {
+                "method": order.payment_method,
+                "status": order.payment_status
+            },
+            "placed_at": order.placed_at.strftime("%Y-%m-%d %H:%M"),
+            "estimated_delivery": order.estimated_delivery.strftime("%Y-%m-%d") if order.estimated_delivery else None,
+            "delivered_at": order.delivered_at.strftime("%Y-%m-%d %H:%M") if order.delivered_at else None,
+            "cancelled_at": order.cancelled_at.strftime("%Y-%m-%d %H:%M") if order.cancelled_at else None,
+            "carrier": order.carrier,
+            "shipping_address": f"{order.shipping_address}, {order.city} - {order.pincode}".strip(", -"),
+            "is_cancellable": order.is_cancellable,
+            "is_return_eligible": order.is_return_eligible,
+            "return_eligible_until": order.return_eligible_until.strftime("%Y-%m-%d") if order.return_eligible_until else None,
+            "return_requests": returns_list,
+            "linked_ticket": linked_ticket.ticket_number if linked_ticket else None,
+            "notes": order.notes
+        }
+
+        return {
+            "success": True,
+            "verified": True,
+            "order": order_data
+        }
+
+    @classmethod
+    def get_shipment_tracking(cls, workspace_id: int, awb: str, phone: str = None) -> dict:
+        """
+        Retrieves real-time courier shipment tracking with full event timeline.
+        Strict verification: Caller phone must match sender_phone or receiver_phone.
+        """
+        if not awb or not awb.strip():
+            return {"success": False, "error": "No AWB consignment number provided."}
+
+        awb_clean = awb.strip().upper()
+        shipment = Shipment.objects.filter(workspace_id=workspace_id, awb__iexact=awb_clean).prefetch_related("events").first()
+
+        if not shipment:
+            wh_res = cls._try_external_webhook(workspace_id=workspace_id, code=awb_clean)
+            if wh_res.get("success"):
+                return wh_res
+            return {
+                "success": False,
+                "error": f"Consignment AWB '{awb_clean}' was not found in our dispatch records."
+            }
+
+        if not phone or not phone.strip():
+            return {
+                "success": False,
+                "needs_phone": True,
+                "awb": awb_clean,
+                "error": "Please provide your registered 10-digit phone number to check this shipment."
+            }
+
+        norm_phone = normalize_phone(phone)
+        if norm_phone not in (shipment.receiver_phone, shipment.sender_phone):
+            return {
+                "success": False,
+                "verified": False,
+                "error": "I couldn't verify that order against your phone number."
+            }
+
+        events_data = [
+            {
+                "status": ev.status,
+                "location": ev.location,
+                "occurred_at": ev.occurred_at.strftime("%d %b %Y, %I:%M %p"),
+                "remarks": ev.remarks
+            }
+            for ev in shipment.events.all()
+        ]
+
+        shipment_data = {
+            "awb": shipment.awb,
+            "service_type": shipment.service_type,
+            "weight_kg": float(shipment.weight_kg),
+            "status": shipment.status,
+            "origin_city": shipment.origin_city,
+            "destination_city": shipment.destination_city,
+            "current_location": shipment.current_location,
+            "sender_name": shipment.sender_name,
+            "receiver_name": shipment.receiver_name,
+            "estimated_delivery": shipment.estimated_delivery.strftime("%d %b %Y") if shipment.estimated_delivery else None,
+            "delivered_at": shipment.delivered_at.strftime("%d %b %Y, %I:%M %p") if shipment.delivered_at else None,
+            "cod_amount": float(shipment.cod_amount) if shipment.cod_amount else None,
+            "timeline": events_data,
+            "latest_event": events_data[-1] if events_data else None
+        }
+
+        return {
+            "success": True,
+            "verified": True,
+            "shipment": shipment_data
+        }
+
+    @classmethod
+    def get_customer_tickets(cls, workspace_id: int, phone: str) -> dict:
+        """Returns open and historical support tickets for the verified customer phone."""
+        if not phone or not phone.strip():
+            return {
+                "success": False,
+                "needs_phone": True,
+                "error": "Please provide your registered 10-digit phone number."
+            }
+
+        norm_phone = normalize_phone(phone)
+        from django.db.models import Q
+        tickets = Ticket.objects.filter(
+            workspace_id=workspace_id
+        ).filter(
+            Q(customer__normalized_phone=norm_phone) |
+            Q(related_order__customer_phone=norm_phone)
+        ).distinct().order_by("-created_at")
+
+        tickets_data = []
+        for t in tickets:
+            tickets_data.append({
+                "ticket_number": t.ticket_number,
+                "subject": t.subject,
+                "status": t.status,
+                "priority": t.priority,
+                "category": t.category,
+                "assigned_team": t.assigned_team.name if t.assigned_team else "Unassigned",
+                "created_at": t.created_at.strftime("%Y-%m-%d %H:%M"),
+                "related_order": t.related_order.order_number if t.related_order else None
+            })
+
+        return {
+            "success": True,
+            "count": len(tickets_data),
+            "tickets": tickets_data,
+            "phone": norm_phone
+        }
+
+    @classmethod
+    def get_return_refund_status(cls, workspace_id: int, query: str = "", phone: str = None) -> dict:
+        """Returns ReturnRequest details for orders matching the caller's phone."""
+        if not phone or not phone.strip():
+            return {
+                "success": False,
+                "needs_phone": True,
+                "error": "Please provide your registered 10-digit phone number."
+            }
+
+        norm_phone = normalize_phone(phone)
+        qs = ReturnRequest.objects.filter(
+            order__workspace_id=workspace_id,
+            order__customer_phone=norm_phone
+        ).select_related("order").order_by("-created_at")
+
+        if query:
+            clean_q = query.strip().upper()
+            filtered = qs.filter(order__order_number__icontains=clean_q)
+            if filtered.exists():
+                qs = filtered
+
+        results = []
+        for r in qs:
+            linked_ticket = Ticket.objects.filter(workspace_id=workspace_id, related_order=r.order).first()
+            results.append({
+                "order_number": r.order.order_number,
+                "type": r.type,
+                "status": r.status,
+                "reason": r.reason,
+                "refund_amount": f"₹{r.refund_amount:,.2f}",
+                "refund_method": r.refund_method,
+                "refund_status": r.refund_status,
+                "expected_refund_by": r.expected_refund_by.strftime("%Y-%m-%d") if r.expected_refund_by else None,
+                "created_at": r.created_at.strftime("%Y-%m-%d %H:%M"),
+                "linked_ticket": linked_ticket.ticket_number if linked_ticket else None
+            })
+
+        return {
+            "success": True,
+            "count": len(results),
+            "returns": results,
+            "phone": norm_phone
+        }
+
+    @classmethod
+    def cancel_order(cls, workspace_id: int, order_number: str, phone: str, reason: str = "") -> dict:
+        """
+        Validates cancellation eligibility, updates Order status to CANCELLED,
+        and creates/references a human support Ticket linked via related_order.
+        """
+        if not order_number or not order_number.strip():
+            return {"success": False, "error": "No order number provided."}
+
+        if not phone or not phone.strip():
+            return {
+                "success": False,
+                "needs_phone": True,
+                "error": "Please provide your registered 10-digit phone number to cancel an order."
+            }
+
+        norm_phone = normalize_phone(phone)
+        order_num = order_number.strip().upper()
+        order = Order.objects.filter(workspace_id=workspace_id, order_number__iexact=order_num).prefetch_related("items").first()
+
+        if not order:
+            return {"success": False, "error": f"Order '{order_num}' was not found in our records."}
+
+        if norm_phone != order.customer_phone:
+            return {
+                "success": False,
+                "verified": False,
+                "error": "I couldn't verify that order against your phone number."
+            }
+
+        if not order.is_cancellable:
+            return {
+                "success": False,
+                "cancellable": False,
+                "status": order.status,
+                "error": f"Order {order.order_number} is currently {order.status.lower()} and cannot be cancelled automatically. Once delivered, you may initiate a return."
+            }
+
+        # Check if an open ticket already exists for this order
+        existing_ticket = Ticket.objects.filter(
+            workspace_id=workspace_id,
+            related_order=order,
+            status__in=[Ticket.Status.OPEN, Ticket.Status.IN_PROGRESS]
+        ).first()
+
+        if existing_ticket:
+            order.status = Order.Status.CANCELLED
+            order.cancelled_at = timezone.now()
+            order.save(update_fields=["status", "cancelled_at", "updated_at"])
+
+            return {
+                "success": True,
+                "cancelled": True,
+                "order_number": order.order_number,
+                "ticket_number": existing_ticket.ticket_number,
+                "already_existed": True,
+                "assigned_team": existing_ticket.assigned_team.name if existing_ticket.assigned_team else "Order Support",
+                "message": f"Order {order.order_number} cancellation is already tracked under ticket #{existing_ticket.ticket_number}."
+            }
+
+        # Cancel the order
+        order.status = Order.Status.CANCELLED
+        order.cancelled_at = timezone.now()
+        order.save(update_fields=["status", "cancelled_at", "updated_at"])
+
+        cancel_team = Team.objects.filter(
+            workspace_id=workspace_id,
+            slug__in=["order-support", "tracking-delivery", "claims-disputes"]
+        ).first() or Team.objects.filter(workspace_id=workspace_id, is_active=True).first()
+
+        customer = order.customer
+        if not customer:
+            customer = Customer.objects.filter(workspace_id=workspace_id, normalized_phone=norm_phone).first()
+
+        ticket = Ticket.objects.create(
+            workspace_id=workspace_id,
+            customer=customer,
+            related_order=order,
+            subject=f"Cancellation Request for Order #{order.order_number}",
+            description=reason or f"Customer requested cancellation for Order #{order.order_number}.",
+            category="Order Cancellation",
+            priority=Ticket.Priority.HIGH,
+            assigned_team=cancel_team,
+            status=Ticket.Status.OPEN
+        )
+
+        TicketEvent.objects.create(
+            ticket=ticket,
+            event_type="ORDER_CANCELLED",
+            description=f"Order {order.order_number} cancelled by customer via AI. Ticket created."
+        )
+
+        return {
+            "success": True,
+            "cancelled": True,
+            "order_number": order.order_number,
+            "ticket_number": ticket.ticket_number,
+            "already_existed": False,
+            "assigned_team": cancel_team.name if cancel_team else "Order Support",
+            "message": f"Order {order.order_number} has been cancelled. Support ticket #{ticket.ticket_number} created."
+        }
+
+    # -------------------------------------------------------------------------
+    # Backward Compatibility & External User-Configured Webhook Bridge
+    # -------------------------------------------------------------------------
+
+    @classmethod
+    def lookup_order(cls, workspace_id: int, order_number: str, customer_phone: str = None, customer_email: str = None) -> dict:
+        """
+        Unified lookup bridge: Checks real SQL DB (Order or Shipment) first,
+        verifying phone or email if provided, and falls back to external user webhooks.
         """
         if not order_number or not order_number.strip():
             return {"success": False, "error": "No order number provided"}
 
-        order_num = order_number.strip().upper()
+        code = order_number.strip().upper()
 
-        # 1. Multi-Webhook Outbound Query with HMAC Signing & SSRF Protection
+        # 1. Check SQL Order
+        order = Order.objects.filter(workspace_id=workspace_id, order_number__iexact=code).prefetch_related("items").first()
+        if order:
+            if customer_phone:
+                norm_p = normalize_phone(customer_phone)
+                if norm_p != order.customer_phone:
+                    return {"success": False, "verified": False, "error": "I couldn't verify that order against your phone number."}
+            elif customer_email:
+                if order.customer_email and order.customer_email.lower() != customer_email.lower():
+                    return {"success": False, "verified": False, "error": "Customer email does not match order record"}
+
+            item_names = ", ".join([f"{i.name} (x{i.quantity})" for i in order.items.all()]) or "Store Item"
+            return {
+                "success": True,
+                "verified": True,
+                "order": {
+                    "order_number": order.order_number,
+                    "customer_name": order.customer_name,
+                    "customer_phone": order.customer_phone,
+                    "customer_email": order.customer_email,
+                    "item": item_names,
+                    "items": [{"name": i.name, "quantity": i.quantity, "unit_price": float(i.unit_price)} for i in order.items.all()],
+                    "amount": f"₹{order.total:,.2f}",
+                    "total": float(order.total),
+                    "currency": order.currency,
+                    "status": order.status,
+                    "payment_method": order.payment_method,
+                    "payment_status": order.payment_status,
+                    "carrier": order.carrier or "Standard Courier",
+                    "estimated_delivery": order.estimated_delivery.strftime("%Y-%m-%d") if order.estimated_delivery else "Delivered",
+                    "can_cancel": order.is_cancellable,
+                    "can_return": order.is_return_eligible,
+                },
+                "source": "sql_orders_database"
+            }
+
+        # 2. Check SQL Shipment
+        shipment = Shipment.objects.filter(workspace_id=workspace_id, awb__iexact=code).prefetch_related("events").first()
+        if shipment:
+            if customer_phone:
+                norm_p = normalize_phone(customer_phone)
+                if norm_p not in (shipment.receiver_phone, shipment.sender_phone):
+                    return {"success": False, "verified": False, "error": "I couldn't verify that order against your phone number."}
+
+            latest_event = shipment.events.order_by("-occurred_at").first()
+            return {
+                "success": True,
+                "verified": True,
+                "order": {
+                    "order_number": shipment.awb,
+                    "awb": shipment.awb,
+                    "item": f"Consignment ({shipment.weight_kg} kg) - {shipment.service_type}",
+                    "amount": f"₹{shipment.cod_amount:,.2f}" if shipment.cod_amount else "Prepaid",
+                    "status": shipment.status,
+                    "carrier": f"ExpressBeas Logistics ({shipment.service_type})",
+                    "estimated_delivery": shipment.estimated_delivery.strftime("%d %b %Y") if shipment.estimated_delivery else "Completed",
+                    "origin": shipment.origin_city,
+                    "destination": shipment.destination_city,
+                    "last_scan": f"{latest_event.occurred_at.strftime('%d %b %Y, %I:%M %p')} - {latest_event.status} ({latest_event.location})" if latest_event else shipment.current_location,
+                    "can_cancel": False,
+                    "can_return": False,
+                },
+                "source": "sql_shipment_database"
+            }
+
+        # 3. External Webhook Fallback
+        wh_res = cls._try_external_webhook(workspace_id=workspace_id, code=code, email=customer_email)
+        if wh_res.get("success"):
+            return wh_res
+
+        ws = Workspace.objects.filter(id=workspace_id).first()
+        store_display = ws.name if ws else "our store"
+        return {
+            "success": False,
+            "error": f"Order or AWB '{code}' was not found in {store_display} dispatch records."
+        }
+
+    @classmethod
+    def _try_external_webhook(cls, workspace_id: int, code: str, email: str = None) -> dict:
+        """Queries external user-configured webhook endpoint if present."""
         try:
-            from apps.workspaces.models import WorkspaceWebhook, WorkspaceSettings
-
             active_wh = WorkspaceWebhook.objects.filter(
                 workspace_id=workspace_id,
                 is_active=True,
@@ -209,9 +858,9 @@ class ToolRegistry:
                 secret_key = settings_obj.orders_api_secret_key
 
             if target_url and is_safe_url(target_url):
-                params = {"order_id": order_num, "awb": order_num}
-                if customer_email:
-                    params["email"] = customer_email
+                params = {"order_id": code, "awb": code}
+                if email:
+                    params["email"] = email
                 query_str = urllib.parse.urlencode(params)
                 sep = "&" if "?" in target_url else "?"
                 full_url = f"{target_url}{sep}{query_str}"
@@ -223,193 +872,22 @@ class ToolRegistry:
                 }
                 if secret_key:
                     headers["Authorization"] = f"Bearer {secret_key}"
-                
-                # HMAC verification header
-                hmac_secret = getattr(settings_obj, "customer_verification_secret", "") or secret_key
-                if hmac_secret:
-                    signature_payload = f"{order_num}:{customer_email or ''}:{timestamp_str}".encode("utf-8")
-                    sig = hmac.new(hmac_secret.encode("utf-8"), signature_payload, hashlib.sha256).hexdigest()
-                    headers["X-Supporto-Signature"] = sig
 
                 req = urllib.request.Request(full_url, headers=headers)
                 with urllib.request.urlopen(req, timeout=3.0) as resp:
                     if resp.status == 200:
                         payload = json.loads(resp.read().decode("utf-8"))
                         if "order" in payload and payload["order"]:
-                            # Customer verification check if email provided
-                            order_record = payload["order"]
-                            if customer_email and order_record.get("customer_email"):
-                                if order_record["customer_email"].lower() != customer_email.lower():
-                                    return {"success": False, "error": "Customer email does not match order record"}
-                            return {"success": True, "order": order_record, "source": "external_webhook"}
+                            return {"success": True, "order": payload["order"], "source": "external_webhook"}
                         if "tracking" in payload and payload["tracking"]:
                             return {"success": True, "order": payload["tracking"], "source": "external_carrier_api"}
         except Exception as e:
             logger.warning(f"External webhook query failed for workspace {workspace_id}: {e}")
+        return {"success": False}
 
-        # 2. Strict Multi-Tenant Scoped Datastores (No cross-tenant data leaks)
-        ws = Workspace.objects.filter(id=workspace_id).first()
-        ws_slug = (ws.slug or "").lower() if ws else ""
-
-        workspace_orders = {
-            "expressbeas": {
-                "EB987654321": {
-                    "order_number": "EB987654321",
-                    "customer_email": "rohit.kumar@example.com",
-                    "item": "Courier Consignment (5.2 kg) - Commercial Shipment",
-                    "amount": "₹450.00",
-                    "status": "In Transit - Delayed at Delhi Central Sort Facility",
-                    "carrier": "ExpressBeas Surface Fleet (Vehicle DL-1AB-4412)",
-                    "estimated_delivery": "Delivery expected within 24-48 hours",
-                    "origin": "Mumbai Hub, Maharashtra",
-                    "destination": "New Delhi Central, Delhi",
-                    "last_scan": "Oct 30, 2026 - Arrival Scan at Delhi Central Sort Hub",
-                    "can_cancel": False,
-                    "can_return": False,
-                },
-                "EB123456789": {
-                    "order_number": "EB123456789",
-                    "customer_email": "kavita.reddy@example.com",
-                    "item": "Air Express Document Parcel (0.8 kg)",
-                    "amount": "₹280.00",
-                    "status": "Out for Delivery",
-                    "carrier": "ExpressBeas Last-Mile Fleet (Rider: Rajesh K. - +91 98765 43210)",
-                    "estimated_delivery": "Today by 4:00 PM",
-                    "origin": "Bangalore Air Hub, Karnataka",
-                    "destination": "Pune Delivery Hub, Maharashtra",
-                    "last_scan": "Today, 08:30 AM - Out for delivery from Pune Hub",
-                    "can_cancel": False,
-                    "can_return": False,
-                },
-                "EB112233445": {
-                    "order_number": "EB112233445",
-                    "customer_email": "meera.patel@example.com",
-                    "item": "Electronics Freight - Tablet & Accessories",
-                    "amount": "₹320.00",
-                    "status": "Delivered - Damage Claim Under Investigation",
-                    "carrier": "ExpressBeas Express Cargo",
-                    "estimated_delivery": "Delivered on Oct 29, 2026",
-                    "origin": "Hyderabad, Telangana",
-                    "destination": "Jaipur, Rajasthan",
-                    "last_scan": "Oct 29, 2026 - Delivered at recipient address",
-                    "can_cancel": False,
-                    "can_return": True,
-                }
-            },
-            "shopease": {
-                "SE-84920": {
-                    "order_number": "SE-84920",
-                    "customer_email": "alex.chen@example.com",
-                    "authorized_emails": ["alex.chen@example.com", "elena.fisher@example.com", "elena@example.com"],
-                    "item": "Wireless Noise-Canceling Headphones",
-                    "amount": "$199.00",
-                    "status": "In Transit",
-                    "carrier": "FedEx Express (Tracking: 940011189922)",
-                    "estimated_delivery": "Tomorrow by 5:00 PM",
-                    "can_cancel": False,
-                    "can_return": True,
-                },
-                "SE-10293": {
-                    "order_number": "SE-10293",
-                    "customer_email": "priya.patel@example.com",
-                    "authorized_emails": ["priya.patel@example.com"],
-                    "item": "Smart Noise-Cancelling Earbuds Pro",
-                    "amount": "$89.50",
-                    "status": "Processing - Order Placed 20 mins ago",
-                    "carrier": "Pending Fulfillment Dispatch",
-                    "estimated_delivery": "Estimated shipping within 24 hours",
-                    "can_cancel": True,
-                    "can_return": True,
-                },
-                "SE-84921": {
-                    "order_number": "SE-84921",
-                    "customer_email": "jordan.lee@example.com",
-                    "item": "Ultra-Slim Laptop Air 15\"",
-                    "amount": "$1,199.00",
-                    "status": "Processing in Warehouse",
-                    "carrier": "Preparing for dispatch",
-                    "estimated_delivery": "Within 2-3 business days",
-                    "can_cancel": True,
-                    "can_return": True,
-                },
-                "SE-84922": {
-                    "order_number": "SE-84922",
-                    "customer_email": "sam.fisher@example.com",
-                    "item": "Smart Fitness Watch Pro",
-                    "amount": "$149.00",
-                    "status": "Delivered",
-                    "carrier": "USPS Priority (Delivered 2 days ago)",
-                    "estimated_delivery": "Delivered",
-                    "can_cancel": False,
-                    "can_return": True,
-                }
-            },
-            "technova": {
-                "TN-88234": {
-                    "order_number": "TN-88234",
-                    "customer_email": "devops@fintechcorp.com",
-                    "item": "Pro Developer API Plan (Annual)",
-                    "amount": "$999.00/yr",
-                    "status": "Active Subscription",
-                    "carrier": "Cloud Provisioning",
-                    "estimated_delivery": "Active",
-                    "can_cancel": True,
-                    "can_return": False,
-                }
-            },
-            "freshmart": {
-                "FM-44512": {
-                    "order_number": "FM-44512",
-                    "customer_email": "deepak.verma@example.com",
-                    "item": "Organic Fruits & Vegetable Box",
-                    "amount": "₹650.00",
-                    "status": "Delivered",
-                    "carrier": "FreshMart 15-Min Rider",
-                    "estimated_delivery": "Delivered",
-                    "can_cancel": False,
-                    "can_return": True,
-                }
-            }
-        }
-
-        # Resolve scoped store by workspace
-        scoped_store = workspace_orders.get(ws_slug)
-        if scoped_store is None:
-            # Fallback for dynamic/test workspaces
-            if ws_slug.startswith("shopease"):
-                scoped_store = workspace_orders.get("shopease")
-            elif ws_slug.startswith("expressbeas"):
-                scoped_store = workspace_orders.get("expressbeas")
-            elif ws_slug.startswith("technova"):
-                scoped_store = workspace_orders.get("technova")
-            elif ws_slug.startswith("freshmart"):
-                scoped_store = workspace_orders.get("freshmart")
-            else:
-                scoped_store = {}
-
-        if order_num in scoped_store:
-            order_data = scoped_store[order_num]
-            # Customer verification check if email provided
-            if customer_email:
-                allowed = order_data.get("authorized_emails") or [order_data.get("customer_email", "")]
-                allowed_norm = [e.strip().lower() for e in allowed if e]
-                if allowed_norm and customer_email.strip().lower() not in allowed_norm:
-                    return {
-                        "success": False,
-                        "error": "Customer email does not match order record. Access denied."
-                    }
-            return {
-                "success": True,
-                "order": order_data,
-                "source": f"{ws_slug or 'store'}_verified_database"
-            }
-
-        # Order / AWB NOT FOUND - Never hallucinate fake orders!
-        store_display = ws.name if ws else "our store"
-        return {
-            "success": False,
-            "error": f"Order or AWB '{order_num}' was not found in {store_display} dispatch records."
-        }
+    # -------------------------------------------------------------------------
+    # Knowledge Base, Escalation, & Ticket Management
+    # -------------------------------------------------------------------------
 
     @staticmethod
     def search_knowledge_base(workspace_id: int, query: str) -> dict:
@@ -529,7 +1007,7 @@ class ToolRegistry:
 
             assigned_team = cls._resolve_escalation_team(workspace_id, conversation.intent or "", reason)
 
-            # Check if ticket already exists for this conversation (Item 1 Fix: upgrade & reassign)
+            # Check if ticket already exists for this conversation
             existing = Ticket.objects.filter(conversation=conversation).first()
             if existing:
                 needs_update = False

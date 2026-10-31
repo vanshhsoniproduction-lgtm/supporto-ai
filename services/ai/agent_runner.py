@@ -81,38 +81,16 @@ class AgentRunner:
             }
         else:
             history = list(conversation.messages.values("sender_type", "content"))
-            customer_email = conversation.customer.email if conversation.customer else None
-            ai_result = llm_service.generate_response(workspace, customer_text, history, customer_email=customer_email)
+            customer_email = (conversation.customer.email if conversation.customer else None) or conversation.metadata.get("customer_email")
+            customer_phone = (conversation.customer.normalized_phone if conversation.customer else None) or (conversation.customer.phone if conversation.customer else None) or conversation.metadata.get("customer_phone")
+            ai_result = llm_service.generate_response(
+                workspace=workspace,
+                customer_message=customer_text,
+                message_history=history,
+                customer_email=customer_email,
+                customer_phone=customer_phone
+            )
             ai_response_text = ai_result["text"]
-
-            # If customer asked to cancel an order, create a cancellation ticket so human processes it (Item 4 Fix)
-            if "cancel" in customer_text.lower():
-                code = extract_order_code(customer_text)
-                if code:
-                    tool_res = tool_registry.lookup_order(workspace.id, code, customer_email=customer_email)
-                    if tool_res.get("success"):
-                        order_rec = tool_res["order"]
-                        if order_rec.get("can_cancel"):
-                            cancel_team = Team.objects.filter(workspace=workspace, slug__in=["order-support", "tracking-delivery"]).first() or Team.objects.filter(workspace=workspace, is_active=True).first()
-                            canc_ticket = Ticket.objects.filter(conversation=conversation).first()
-                            if not canc_ticket:
-                                canc_ticket = Ticket.objects.create(
-                                    workspace=workspace,
-                                    conversation=conversation,
-                                    customer=conversation.customer,
-                                    subject=f"Cancellation Request for Order #{code}",
-                                    description=customer_text.strip(),
-                                    category="Order Cancellation",
-                                    priority=Ticket.Priority.HIGH,
-                                    assigned_team=cancel_team,
-                                    status=Ticket.Status.OPEN
-                                )
-                            ai_response_text = (
-                                f"I have submitted a formal cancellation request for order {code} ({order_rec['item']}) "
-                                f"to our {cancel_team.name if cancel_team else 'Order Support'} team. "
-                                f"Your support ticket is #{canc_ticket.ticket_number}. An agent will process the cancellation shortly."
-                            )
-                            ai_result["text"] = ai_response_text
 
         # 5. Save AI message
         ai_msg = Message.objects.create(
@@ -135,13 +113,14 @@ class AgentRunner:
             success=True
         )
 
-        # If order lookup was executed, audit in ToolExecution
+        # Audit tools in ToolExecution
         extracted_code = extract_order_code(customer_text)
+        customer_phone = (conversation.customer.normalized_phone if conversation.customer else None) or conversation.metadata.get("customer_phone")
         if extracted_code:
             tool_registry.execute_tool(
                 workspace_id=workspace.id,
                 tool_name="lookup_order",
-                arguments={"order_number": extracted_code},
+                arguments={"order_number": extracted_code, "phone": customer_phone or ""},
                 customer_id=conversation.customer.id if conversation.customer else None,
                 conversation_id=conversation.id,
                 agent_run=run_record

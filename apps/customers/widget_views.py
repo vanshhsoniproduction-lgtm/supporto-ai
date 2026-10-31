@@ -10,6 +10,7 @@ from django.views.decorators.clickjacking import xframe_options_exempt
 from apps.workspaces.models import Workspace, WorkspaceSettings
 from apps.conversations.models import Conversation
 from apps.customers.models import Customer
+from apps.orders.utils import normalize_phone
 from services.conversations.conversation_service import conversation_service
 from services.ai.agent_runner import agent_runner
 from services.ai.stt_service import stt_service
@@ -23,6 +24,7 @@ def widget_view(request, public_key):
     voice_config = getattr(workspace, "voice_config", None)
     customer_name = request.GET.get("name", "").strip()
     customer_email = request.GET.get("email", "").strip()
+    customer_phone = request.GET.get("phone", "").strip() or request.session.get("customer_phone", "").strip()
     initial_query = request.GET.get("q", "").strip()
 
     return render(request, "widget/widget_frame.html", {
@@ -32,6 +34,7 @@ def widget_view(request, public_key):
         "public_key": str(public_key),
         "customer_name": customer_name,
         "customer_email": customer_email,
+        "customer_phone": customer_phone,
         "initial_query": initial_query,
     })
 
@@ -61,6 +64,10 @@ def widget_message_api(request, public_key):
     session_token = data.get("session_token", "").strip() or str(uuid.uuid4())
     customer_name = data.get("customer_name", "Visitor").strip()
     customer_email = data.get("customer_email", "").strip()
+    customer_phone = data.get("customer_phone", "").strip() or request.session.get("customer_phone", "").strip()
+
+    if customer_phone:
+        request.session["customer_phone"] = customer_phone
 
     if not message_text:
         return JsonResponse({"error": "Message text is required."}, status=400)
@@ -69,7 +76,8 @@ def widget_message_api(request, public_key):
         workspace=workspace,
         session_token=session_token,
         name=customer_name,
-        email=customer_email
+        email=customer_email,
+        phone=customer_phone
     )
     conv_id = data.get("conversation_id")
     conversation = None
@@ -81,6 +89,13 @@ def widget_message_api(request, public_key):
             customer=customer,
             channel=Conversation.Channel.WEB_CHAT
         )
+
+    if customer_phone and conversation:
+        if not conversation.metadata:
+            conversation.metadata = {}
+        if conversation.metadata.get("customer_phone") != customer_phone:
+            conversation.metadata["customer_phone"] = customer_phone
+            conversation.save(update_fields=["metadata", "updated_at"])
 
     result = agent_runner.handle_customer_message(conversation, message_text)
     result["session_token"] = session_token
@@ -105,6 +120,12 @@ def widget_voice_api(request, public_key):
 
     audio_file = request.FILES.get("audio")
     session_token = request.POST.get("session_token", "").strip() or str(uuid.uuid4())
+    customer_name = request.POST.get("customer_name", "Visitor").strip()
+    customer_email = request.POST.get("customer_email", "").strip()
+    customer_phone = request.POST.get("customer_phone", "").strip() or request.session.get("customer_phone", "").strip()
+
+    if customer_phone:
+        request.session["customer_phone"] = customer_phone
 
     if not audio_file:
         return JsonResponse({"error": "No audio file received."}, status=400)
@@ -136,13 +157,23 @@ def widget_voice_api(request, public_key):
         # 2. Get customer & conversation
         customer = conversation_service.get_or_create_customer(
             workspace=workspace,
-            session_token=session_token
+            session_token=session_token,
+            name=customer_name,
+            email=customer_email,
+            phone=customer_phone
         )
         conversation = conversation_service.start_conversation(
             workspace=workspace,
             customer=customer,
             channel=Conversation.Channel.BROWSER_VOICE
         )
+
+        if customer_phone and conversation:
+            if not conversation.metadata:
+                conversation.metadata = {}
+            if conversation.metadata.get("customer_phone") != customer_phone:
+                conversation.metadata["customer_phone"] = customer_phone
+                conversation.save(update_fields=["metadata", "updated_at"])
 
         # 3. Handle message with AI
         ai_result = agent_runner.handle_customer_message(conversation, transcribed_text)
@@ -200,4 +231,3 @@ def widget_complete_api(request, public_key):
 
     res = conversation_service.finalize_conversation(active_conv)
     return JsonResponse(res)
-

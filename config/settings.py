@@ -35,6 +35,7 @@ INSTALLED_APPS = [
     "apps.voice_support.apps.VoiceSupportConfig",
     "apps.analytics.apps.AnalyticsConfig",
     "apps.emails.apps.EmailsConfig",
+    "apps.orders.apps.OrdersConfig",
 ]
 
 X_FRAME_OPTIONS = "SAMEORIGIN"

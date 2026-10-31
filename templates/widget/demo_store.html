@@ -46,7 +46,7 @@ ShopEase — Premium Electronics Storefront
             </nav>
 
             <div class="flex items-center gap-3">
-                <button onclick="openCustomerModal('Where is my consignment EB987654321?')" class="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold rounded-xl shadow-xs transition flex items-center gap-2">
+                <button onclick="openCustomerModal('Where is my consignment 152785863851740?')" class="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold rounded-xl shadow-xs transition flex items-center gap-2">
                     <span class="material-symbols-outlined text-base">support_agent</span>
                     Ask AI Helpdesk
                 </button>
@@ -60,13 +60,13 @@ ShopEase — Premium Electronics Storefront
         <section id="tracking" class="bg-gradient-to-br from-charcoal-900 via-charcoal-950 to-amber-950 rounded-3xl p-8 sm:p-12 text-white shadow-xl relative overflow-hidden">
             <div class="max-w-2xl space-y-4 relative z-10">
                 <span class="px-3 py-1 rounded-full text-[11px] font-bold bg-amber-500 text-white inline-block">
-                    Live Carrier Tracking API Connected
+                    Live SQL Carrier Database Connected
                 </span>
                 <h1 class="text-3xl sm:text-5xl font-black tracking-tight leading-tight">
-                    Track Your Shipment in Real-Time.
+                    Track Your Consignment in Real-Time.
                 </h1>
                 <p class="text-xs sm:text-sm text-gray-300 leading-relaxed font-normal">
-                    Enter your 11-digit Air Waybill (AWB) consignment number. Our automated AI agent queries live sort-hub inward scans, rider vehicles, and estimated delivery slots.
+                    Enter your 15-digit AWB consignment number. Supporto AI queries real dispatch event timelines with verified sender &amp; receiver phone authentication.
                 </p>
 
                 <!-- Interactive AWB Tracking Bar -->
@@ -74,7 +74,7 @@ ShopEase — Premium Electronics Storefront
                     <div class="bg-white/10 backdrop-blur-md p-2 rounded-2xl border border-white/20 flex flex-col sm:flex-row gap-2 max-w-xl">
                         <div class="flex-1 flex items-center gap-2 px-3 py-1 bg-white rounded-xl text-charcoal-900">
                             <span class="material-symbols-outlined text-gray-400 text-lg">search</span>
-                            <input type="text" id="awbTrackingInput" placeholder="Enter AWB (e.g. EB987654321)" value="EB987654321" class="w-full text-xs font-mono font-bold outline-none bg-transparent">
+                            <input type="text" id="awbTrackingInput" placeholder="Enter AWB (e.g. 152785863851740)" value="152785863851740" class="w-full text-xs font-mono font-bold outline-none bg-transparent">
                         </div>
                         <button onclick="trackEnteredAWB()" class="px-6 py-3 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold rounded-xl shadow-md transition flex items-center justify-center gap-2">
                             <span class="material-symbols-outlined text-sm">radar</span>
@@ -85,18 +85,18 @@ ShopEase — Premium Electronics Storefront
 
                 <!-- Test Chips -->
                 <div class="pt-2 flex flex-wrap items-center gap-2 text-[11px]">
-                    <span class="text-gray-400 font-semibold">Test Queries:</span>
-                    <button onclick="openCustomerModal('Where is my consignment EB987654321?')" class="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-gray-200 border border-white/10 transition font-mono">
-                        EB987654321 (Delayed at Delhi)
+                    <span class="text-gray-400 font-semibold">Test Consignments:</span>
+                    <button onclick="openCustomerModal('Where is my consignment 152785863851740?')" class="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-gray-200 border border-white/10 transition font-mono">
+                        152785863851740 (Delivered - 6 Events)
                     </button>
-                    <button onclick="openCustomerModal('Where is my parcel EB123456789?')" class="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-gray-200 border border-white/10 transition font-mono">
-                        EB123456789 (Out for Delivery)
+                    <button onclick="openCustomerModal('Where is my shipment 152785863851741?')" class="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-gray-200 border border-white/10 transition font-mono">
+                        152785863851741 (Delayed at Delhi Hub)
                     </button>
-                    <button onclick="openCustomerModal('I want to file a damage claim for parcel EB112233445')" class="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-gray-200 border border-white/10 transition">
-                        Damage Claim (EB112233445)
+                    <button onclick="openCustomerModal('Where is my package 152785863851742?')" class="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-gray-200 border border-white/10 transition font-mono">
+                        152785863851742 (Out for Delivery)
                     </button>
-                    <button onclick="openCustomerModal('find my parcel awb123459876')" class="px-2.5 py-1 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/30 transition font-mono">
-                        Test Invalid AWB (awb123459876)
+                    <button onclick="openCustomerModal('find my parcel 123459876')" class="px-2.5 py-1 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/30 transition font-mono">
+                        Test Invalid AWB (123459876)
                     </button>
                 </div>
             </div>
@@ -107,77 +107,77 @@ ShopEase — Premium Electronics Storefront
             <div class="flex items-center justify-between">
                 <div>
                     <h2 class="text-lg font-black text-charcoal-900 tracking-tight">Active Consignments in Network</h2>
-                    <p class="text-xs text-gray-500">Live test data synced with ExpressBeas carrier database</p>
+                    <p class="text-xs text-gray-500">Live test dataset for Customer A (Vansh Soni — 6367743066)</p>
                 </div>
                 <span class="text-xs font-mono font-semibold text-amber-600 bg-amber-50 px-3 py-1 rounded-full border border-amber-200/60">
-                    3 Active Consignments
+                    Verified SQL Data Layer
                 </span>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <!-- Consignment 1 -->
-                <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-xs space-y-4 hover:shadow-md hover:border-amber-400 transition">
+                <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-xs space-y-4 hover:shadow-md hover:border-emerald-400 transition">
                     <div class="flex items-center justify-between pb-3 border-b border-gray-100">
-                        <span class="font-mono text-xs font-black text-charcoal-900">EB987654321</span>
-                        <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200">
-                            Delayed at Hub
+                        <span class="font-mono text-xs font-black text-charcoal-900">#152785863851740</span>
+                        <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200">
+                            Delivered
                         </span>
                     </div>
                     <div class="space-y-1.5 text-xs">
-                        <p class="font-bold text-charcoal-900">Commercial Consignment (5.2 kg)</p>
-                        <p class="text-[11px] text-gray-500">Fleet Vehicle: DL-1AB-4412</p>
+                        <p class="font-bold text-charcoal-900">Standard Parcel (1.2 kg)</p>
+                        <p class="text-[11px] text-gray-500">Sender: Cloudtail India</p>
                         <div class="p-2.5 rounded-xl bg-gray-50 space-y-1 font-mono text-[11px]">
-                            <div class="flex justify-between text-gray-500"><span>Origin:</span><span class="font-semibold text-gray-800">Mumbai Hub</span></div>
-                            <div class="flex justify-between text-gray-500"><span>Destination:</span><span class="font-semibold text-gray-800">Delhi Central</span></div>
-                            <div class="flex justify-between text-gray-500"><span>Freight:</span><span class="font-bold text-charcoal-900">₹450.00</span></div>
+                            <div class="flex justify-between text-gray-500"><span>Route:</span><span class="font-semibold text-gray-800">Ghaziabad ➔ Jaipur</span></div>
+                            <div class="flex justify-between text-gray-500"><span>Delivered:</span><span class="font-semibold text-emerald-700">22 Sep 2026 (OTP Verified)</span></div>
+                            <div class="flex justify-between text-gray-500"><span>Timeline:</span><span class="font-bold text-charcoal-900">6 Scans Logged</span></div>
                         </div>
                     </div>
-                    <button onclick="openCustomerModal('Where is my consignment EB987654321?')" class="w-full py-2 bg-gray-50 hover:bg-amber-50 text-amber-700 font-bold text-xs rounded-xl border border-gray-200 hover:border-amber-200 transition">
-                        Track via AI Assistant &rarr;
+                    <button onclick="openCustomerModal('Where is my consignment 152785863851740?')" class="w-full py-2 bg-gray-50 hover:bg-amber-50 text-amber-700 font-bold text-xs rounded-xl border border-gray-200 hover:border-amber-200 transition">
+                        View Complete Timeline &rarr;
                     </button>
                 </div>
 
                 <!-- Consignment 2 -->
-                <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-xs space-y-4 hover:shadow-md hover:border-emerald-400 transition">
+                <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-xs space-y-4 hover:shadow-md hover:border-amber-400 transition">
                     <div class="flex items-center justify-between pb-3 border-b border-gray-100">
-                        <span class="font-mono text-xs font-black text-charcoal-900">EB123456789</span>
-                        <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200">
-                            Out for Delivery
+                        <span class="font-mono text-xs font-black text-charcoal-900">#152785863851741</span>
+                        <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200">
+                            Delayed at Delhi Hub
                         </span>
                     </div>
                     <div class="space-y-1.5 text-xs">
-                        <p class="font-bold text-charcoal-900">Air Express Package (0.8 kg)</p>
-                        <p class="text-[11px] text-gray-500">Rider: Rajesh K. (+91 98765 43210)</p>
+                        <p class="font-bold text-charcoal-900">Heavy Cargo (18.5 kg)</p>
+                        <p class="text-[11px] text-gray-500">Sender: Tech Distributors</p>
                         <div class="p-2.5 rounded-xl bg-gray-50 space-y-1 font-mono text-[11px]">
-                            <div class="flex justify-between text-gray-500"><span>Origin:</span><span class="font-semibold text-gray-800">Bangalore Air Hub</span></div>
-                            <div class="flex justify-between text-gray-500"><span>Destination:</span><span class="font-semibold text-gray-800">Pune Delivery Hub</span></div>
-                            <div class="flex justify-between text-gray-500"><span>Freight:</span><span class="font-bold text-charcoal-900">₹280.00</span></div>
+                            <div class="flex justify-between text-gray-500"><span>Route:</span><span class="font-semibold text-gray-800">Delhi ➔ Mumbai</span></div>
+                            <div class="flex justify-between text-gray-500"><span>Current:</span><span class="font-semibold text-amber-700">Delayed (Road Closure)</span></div>
+                            <div class="flex justify-between text-gray-500"><span>ETA:</span><span class="font-bold text-charcoal-900">In 2 days</span></div>
                         </div>
                     </div>
-                    <button onclick="openCustomerModal('Where is my parcel EB123456789?')" class="w-full py-2 bg-gray-50 hover:bg-emerald-50 text-emerald-700 font-bold text-xs rounded-xl border border-gray-200 hover:border-emerald-200 transition">
+                    <button onclick="openCustomerModal('Where is my shipment 152785863851741?')" class="w-full py-2 bg-gray-50 hover:bg-amber-50 text-amber-700 font-bold text-xs rounded-xl border border-gray-200 hover:border-amber-200 transition">
                         Track via AI Assistant &rarr;
                     </button>
                 </div>
 
                 <!-- Consignment 3 -->
-                <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-xs space-y-4 hover:shadow-md hover:border-rose-400 transition">
+                <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-xs space-y-4 hover:shadow-md hover:border-blue-400 transition">
                     <div class="flex items-center justify-between pb-3 border-b border-gray-100">
-                        <span class="font-mono text-xs font-black text-charcoal-900">EB112233445</span>
-                        <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-50 text-rose-800 border border-rose-200">
-                            Damage Claim Open
+                        <span class="font-mono text-xs font-black text-charcoal-900">#152785863851742</span>
+                        <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-800 border border-blue-200">
+                            Out for Delivery
                         </span>
                     </div>
                     <div class="space-y-1.5 text-xs">
-                        <p class="font-bold text-charcoal-900">Electronics Freight Parcel</p>
-                        <p class="text-[11px] text-gray-500">Delivered on Oct 29 &bull; Carton Crushed</p>
+                        <p class="font-bold text-charcoal-900">Air Express Document (0.3 kg)</p>
+                        <p class="text-[11px] text-gray-500">Rider: Rajesh (+91 98765 43210)</p>
                         <div class="p-2.5 rounded-xl bg-gray-50 space-y-1 font-mono text-[11px]">
-                            <div class="flex justify-between text-gray-500"><span>Origin:</span><span class="font-semibold text-gray-800">Hyderabad Hub</span></div>
-                            <div class="flex justify-between text-gray-500"><span>Destination:</span><span class="font-semibold text-gray-800">Jaipur Central</span></div>
-                            <div class="flex justify-between text-gray-500"><span>Claim Status:</span><span class="font-bold text-rose-600">Under Review</span></div>
+                            <div class="flex justify-between text-gray-500"><span>Route:</span><span class="font-semibold text-gray-800">Bangalore ➔ Jaipur</span></div>
+                            <div class="flex justify-between text-gray-500"><span>Status:</span><span class="font-semibold text-blue-700">Out with delivery agent</span></div>
+                            <div class="flex justify-between text-gray-500"><span>ETA:</span><span class="font-bold text-charcoal-900">Today</span></div>
                         </div>
                     </div>
-                    <button onclick="openCustomerModal('I want to file a damage claim for parcel EB112233445')" class="w-full py-2 bg-gray-50 hover:bg-rose-50 text-rose-700 font-bold text-xs rounded-xl border border-gray-200 hover:border-rose-200 transition">
-                        Check Claim Status &rarr;
+                    <button onclick="openCustomerModal('Where is my package 152785863851742?')" class="w-full py-2 bg-gray-50 hover:bg-amber-50 text-amber-700 font-bold text-xs rounded-xl border border-gray-200 hover:border-amber-200 transition">
+                        Track via AI Assistant &rarr;
                     </button>
                 </div>
             </div>
@@ -211,7 +211,7 @@ ShopEase — Premium Electronics Storefront
     <!-- Top Announcement Bar -->
     <div class="bg-charcoal-900 text-white text-[11px] font-semibold py-2 px-6 text-center border-b border-charcoal-800 flex items-center justify-center gap-2">
         <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-        <span>Free 2-Day Express Shipping on orders over $50 &bull; 30-Day Hassle-Free Returns &bull; 2-Year Warranty</span>
+        <span>Free Express Delivery on orders over ₹999 &bull; 30-Day Hassle-Free Returns &bull; 1-Year Brand Warranty</span>
     </div>
 
     <!-- ShopEase Navbar -->
@@ -229,7 +229,7 @@ ShopEase — Premium Electronics Storefront
 
             <nav class="hidden md:flex items-center gap-8 text-xs font-bold text-gray-600">
                 <a href="#orders" class="text-brand-600 font-extrabold hover:text-brand-700 transition">My Orders</a>
-                <a href="#catalog" class="hover:text-charcoal-900 transition">Electronics</a>
+                <a href="#catalog" class="hover:text-charcoal-900 transition">Smart Gadgets</a>
                 <a href="#returns" class="hover:text-charcoal-900 transition">Return Policy</a>
                 <a href="{% url 'workspace_dashboard' company_slug=workspace.slug %}" class="hover:text-charcoal-900 transition flex items-center gap-1">
                     <span class="material-symbols-outlined text-sm">badge</span>
@@ -252,13 +252,13 @@ ShopEase — Premium Electronics Storefront
         <section id="orders" class="bg-gradient-to-br from-charcoal-900 via-charcoal-950 to-indigo-950 rounded-3xl p-8 sm:p-12 text-white shadow-xl relative overflow-hidden">
             <div class="max-w-2xl space-y-4 relative z-10">
                 <span class="px-3 py-1 rounded-full text-[11px] font-bold bg-brand-500 text-white inline-block">
-                    Live Shopify / Custom Webhook Connected
+                    Live SQL Database Connected
                 </span>
                 <h1 class="text-3xl sm:text-5xl font-black tracking-tight leading-tight">
                     Order Tracking &amp; Instant AI Support.
                 </h1>
                 <p class="text-xs sm:text-sm text-gray-300 leading-relaxed font-normal">
-                    Check your live order transit status, cancel orders within the 1-hour window, or report duplicate billing holds.
+                    Check your live order status, request cancellations on processing orders, or check return pickup schedules with verified mobile authentication.
                 </p>
 
                 <!-- Interactive Order Tracking Search -->
@@ -279,16 +279,16 @@ ShopEase — Premium Electronics Storefront
                 <div class="pt-2 flex flex-wrap items-center gap-2 text-[11px]">
                     <span class="text-gray-400 font-semibold">Test Queries:</span>
                     <button onclick="openCustomerModal('Where is my order SE-84920?')" class="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-gray-200 border border-white/10 transition font-mono">
-                        Where is order SE-84920?
+                        SE-84920 (Delivered, Return Scheduled)
                     </button>
-                    <button onclick="openCustomerModal('Can you cancel my order SE-10293?')" class="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-gray-200 border border-white/10 transition font-mono">
-                        Cancel order SE-10293
+                    <button onclick="openCustomerModal('Where is my order SE-84921?')" class="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-gray-200 border border-white/10 transition font-mono">
+                        SE-84921 (In Transit via Delhivery)
+                    </button>
+                    <button onclick="openCustomerModal('Cancel order SE-84922')" class="px-2.5 py-1 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/30 transition font-mono">
+                        Cancel SE-84922 (Processing &bull; Cancellable)
                     </button>
                     <button onclick="openCustomerModal('My credit card was charged twice ($199) for order SE-84920! Refund my money immediately!')" class="px-2.5 py-1 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/30 transition">
                         Double Charge Escalation ($199)
-                    </button>
-                    <button onclick="openCustomerModal('What is your return policy?')" class="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-gray-200 border border-white/10 transition">
-                        Return Policy
                     </button>
                 </div>
             </div>
@@ -298,178 +298,173 @@ ShopEase — Premium Electronics Storefront
         <section class="space-y-4">
             <div class="flex items-center justify-between">
                 <div>
-                    <h2 class="text-lg font-black text-charcoal-900 tracking-tight">Your Recent Store Orders</h2>
-                    <p class="text-xs text-gray-500">Live order database records connected to Supporto AI tool registry</p>
+                    <h2 class="text-lg font-black text-charcoal-900 tracking-tight">Recent Orders for Vansh Soni (6367743066)</h2>
+                    <p class="text-xs text-gray-500">Connected to Supporto AI tool registry via SQL relational tables</p>
                 </div>
                 <span class="text-xs font-mono font-semibold text-brand-600 bg-brand-50 px-3 py-1 rounded-full border border-brand-200/60">
-                    Live Verified Records
+                    4 Orders in Database
                 </span>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <!-- Order 1: In Transit -->
-                <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-xs space-y-4 hover:shadow-md hover:border-brand-400 transition">
-                    <div class="flex items-center justify-between pb-3 border-b border-gray-100">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <!-- Order 1: Delivered + Return Scheduled -->
+                <div class="bg-white p-5 rounded-2xl border border-gray-200 shadow-xs space-y-3 hover:shadow-md hover:border-brand-400 transition">
+                    <div class="flex items-center justify-between pb-2 border-b border-gray-100">
                         <span class="font-mono text-xs font-black text-charcoal-900">#SE-84920</span>
-                        <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-800 border border-blue-200">
-                            In Transit (FedEx)
+                        <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200">
+                            Delivered
                         </span>
                     </div>
-                    <div class="space-y-1.5 text-xs">
-                        <p class="font-bold text-charcoal-900">Ultra-Quiet Mechanical Keyboard</p>
-                        <p class="text-[11px] text-gray-500">RGB Backlit, Brown Switches &bull; $199.00</p>
-                        <div class="p-2.5 rounded-xl bg-gray-50 space-y-1 font-mono text-[11px]">
-                            <div class="flex justify-between text-gray-500"><span>Carrier:</span><span class="font-semibold text-gray-800">FedEx Ground FX-992810</span></div>
-                            <div class="flex justify-between text-gray-500"><span>Est. Delivery:</span><span class="font-semibold text-gray-800">Tomorrow by 4 PM</span></div>
+                    <div class="space-y-1 text-xs">
+                        <p class="font-bold text-charcoal-900">Wireless Noise-Canceling Headphones</p>
+                        <p class="text-[11px] text-gray-500">₹4,999.00 &bull; Paid via Card</p>
+                        <div class="p-2 rounded-xl bg-gray-50 space-y-1 font-mono text-[10px]">
+                            <div class="flex justify-between text-gray-500"><span>Return:</span><span class="font-semibold text-amber-700">Pickup Scheduled</span></div>
+                            <div class="flex justify-between text-gray-500"><span>Refund:</span><span class="font-semibold text-gray-800">₹4,999 (Pending)</span></div>
+                            <div class="flex justify-between text-gray-500"><span>Ticket:</span><span class="font-bold text-brand-600">Linked</span></div>
+                        </div>
+                    </div>
+                    <button onclick="openCustomerModal('What is the status of my return for order SE-84920?')" class="w-full py-1.5 bg-gray-50 hover:bg-brand-50 text-brand-700 font-bold text-xs rounded-xl border border-gray-200 hover:border-brand-200 transition">
+                        Check Return Status &rarr;
+                    </button>
+                </div>
+
+                <!-- Order 2: In Transit -->
+                <div class="bg-white p-5 rounded-2xl border border-gray-200 shadow-xs space-y-3 hover:shadow-md hover:border-blue-400 transition">
+                    <div class="flex items-center justify-between pb-2 border-b border-gray-100">
+                        <span class="font-mono text-xs font-black text-charcoal-900">#SE-84921</span>
+                        <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-800 border border-blue-200">
+                            In Transit
+                        </span>
+                    </div>
+                    <div class="space-y-1 text-xs">
+                        <p class="font-bold text-charcoal-900">Ultra-Slim Laptop Air 15"</p>
+                        <p class="text-[11px] text-gray-500">₹64,999.00 &bull; Paid via Card</p>
+                        <div class="p-2 rounded-xl bg-gray-50 space-y-1 font-mono text-[10px]">
+                            <div class="flex justify-between text-gray-500"><span>Carrier:</span><span class="font-semibold text-gray-800">Delhivery (DEL8492100)</span></div>
+                            <div class="flex justify-between text-gray-500"><span>Est. Delivery:</span><span class="font-semibold text-blue-700">Tomorrow</span></div>
                             <div class="flex justify-between text-gray-500"><span>Cancellable:</span><span class="font-bold text-rose-600">No (In Transit)</span></div>
                         </div>
                     </div>
-                    <button onclick="openCustomerModal('Where is my order SE-84920?')" class="w-full py-2 bg-gray-50 hover:bg-brand-50 text-brand-700 font-bold text-xs rounded-xl border border-gray-200 hover:border-brand-200 transition">
-                        Ask AI About This Order &rarr;
+                    <button onclick="openCustomerModal('Where is my order SE-84921?')" class="w-full py-1.5 bg-gray-50 hover:bg-blue-50 text-blue-700 font-bold text-xs rounded-xl border border-gray-200 hover:border-blue-200 transition">
+                        Track Delivery &rarr;
                     </button>
                 </div>
 
-                <!-- Order 2: Processing / Cancellable -->
-                <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-xs space-y-4 hover:shadow-md hover:border-emerald-400 transition">
-                    <div class="flex items-center justify-between pb-3 border-b border-gray-100">
-                        <span class="font-mono text-xs font-black text-charcoal-900">#SE-10293</span>
+                <!-- Order 3: Processing & Cancellable -->
+                <div class="bg-white p-5 rounded-2xl border border-gray-200 shadow-xs space-y-3 hover:shadow-md hover:border-emerald-400 transition">
+                    <div class="flex items-center justify-between pb-2 border-b border-gray-100">
+                        <span class="font-mono text-xs font-black text-charcoal-900">#SE-84922</span>
                         <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200">
-                            Processing (Cancellable)
+                            Processing
                         </span>
                     </div>
-                    <div class="space-y-1.5 text-xs">
-                        <p class="font-bold text-charcoal-900">Smart Noise-Cancelling Earbuds Pro</p>
-                        <p class="text-[11px] text-gray-500">Active Noise Cancellation &bull; $89.50</p>
-                        <div class="p-2.5 rounded-xl bg-gray-50 space-y-1 font-mono text-[11px]">
-                            <div class="flex justify-between text-gray-500"><span>Placed:</span><span class="font-semibold text-gray-800">20 minutes ago</span></div>
-                            <div class="flex justify-between text-gray-500"><span>Grace Period:</span><span class="font-semibold text-emerald-600">Within 1-Hour Window</span></div>
-                            <div class="flex justify-between text-gray-500"><span>Cancellable:</span><span class="font-bold text-emerald-600">Yes (Instant Action)</span></div>
+                    <div class="space-y-1 text-xs">
+                        <p class="font-bold text-charcoal-900">Smart Fitness Watch Pro</p>
+                        <p class="text-[11px] text-gray-500">₹2,499.00 &bull; Paid via UPI</p>
+                        <div class="p-2 rounded-xl bg-gray-50 space-y-1 font-mono text-[10px]">
+                            <div class="flex justify-between text-gray-500"><span>Warehouse:</span><span class="font-semibold text-gray-800">Jaipur Hub</span></div>
+                            <div class="flex justify-between text-gray-500"><span>Eligible:</span><span class="font-semibold text-emerald-700">Can be cancelled</span></div>
+                            <div class="flex justify-between text-gray-500"><span>Action:</span><span class="font-bold text-emerald-600">Auto-Ticket Trigger</span></div>
                         </div>
                     </div>
-                    <button onclick="openCustomerModal('Can you cancel my order SE-10293?')" class="w-full py-2 bg-gray-50 hover:bg-emerald-50 text-emerald-700 font-bold text-xs rounded-xl border border-gray-200 hover:border-emerald-200 transition">
-                        Request Cancellation via AI &rarr;
+                    <button onclick="openCustomerModal('Cancel order SE-84922')" class="w-full py-1.5 bg-gray-50 hover:bg-emerald-50 text-emerald-700 font-bold text-xs rounded-xl border border-gray-200 hover:border-emerald-200 transition">
+                        Cancel via AI &rarr;
                     </button>
                 </div>
 
-                <!-- Order 3: Preparing Dispatch -->
-                <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-xs space-y-4 hover:shadow-md hover:border-indigo-400 transition">
-                    <div class="flex items-center justify-between pb-3 border-b border-gray-100">
-                        <span class="font-mono text-xs font-black text-charcoal-900">#SE-84921</span>
-                        <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-800 border border-indigo-200">
-                            Warehouse Packing
+                <!-- Order 4: Delivered 40d ago (Return Expired) -->
+                <div class="bg-white p-5 rounded-2xl border border-gray-200 shadow-xs space-y-3 hover:shadow-md hover:border-gray-400 transition">
+                    <div class="flex items-center justify-between pb-2 border-b border-gray-100">
+                        <span class="font-mono text-xs font-black text-charcoal-900">#SE-84923</span>
+                        <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-gray-100 text-gray-700 border border-gray-300">
+                            Delivered (40d ago)
                         </span>
                     </div>
-                    <div class="space-y-1.5 text-xs">
-                        <p class="font-bold text-charcoal-900">Ultra-Slim Laptop Air 15"</p>
-                        <p class="text-[11px] text-gray-500">M3 Pro, 16GB, 512GB &bull; $1,199.00</p>
-                        <div class="p-2.5 rounded-xl bg-gray-50 space-y-1 font-mono text-[11px]">
-                            <div class="flex justify-between text-gray-500"><span>Status:</span><span class="font-semibold text-gray-800">Quality Check Passed</span></div>
-                            <div class="flex justify-between text-gray-500"><span>Est. Dispatch:</span><span class="font-semibold text-gray-800">Within 24 hours</span></div>
-                            <div class="flex justify-between text-gray-500"><span>Warranty:</span><span class="font-bold text-charcoal-900">2-Year Apple Care</span></div>
+                    <div class="space-y-1 text-xs">
+                        <p class="font-bold text-charcoal-900">Case + 65W Fast Charger</p>
+                        <p class="text-[11px] text-gray-500">₹1,298.00 &bull; Paid via UPI</p>
+                        <div class="p-2 rounded-xl bg-gray-50 space-y-1 font-mono text-[10px]">
+                            <div class="flex justify-between text-gray-500"><span>Delivered:</span><span class="font-semibold text-gray-800">40 days ago</span></div>
+                            <div class="flex justify-between text-gray-500"><span>Return Window:</span><span class="font-semibold text-rose-700">Expired (&gt;30d)</span></div>
+                            <div class="flex justify-between text-gray-500"><span>Status:</span><span class="font-bold text-gray-600">Completed</span></div>
                         </div>
                     </div>
-                    <button onclick="openCustomerModal('Where is my order SE-84921?')" class="w-full py-2 bg-gray-50 hover:bg-indigo-50 text-indigo-700 font-bold text-xs rounded-xl border border-gray-200 hover:border-indigo-200 transition">
-                        Check Dispatch Status &rarr;
+                    <button onclick="openCustomerModal('Can I return order SE-84923?')" class="w-full py-1.5 bg-gray-50 hover:bg-gray-100 text-gray-700 font-bold text-xs rounded-xl border border-gray-200 transition">
+                        Check Return Window &rarr;
                     </button>
-                </div>
-            </div>
-        </section>
-
-        <!-- Electronics Product Catalog Showcase -->
-        <section id="catalog" class="space-y-4 pt-6 border-t border-gray-200">
-            <h2 class="text-lg font-black text-charcoal-900 tracking-tight">Featured Smart Gear</h2>
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
-                <div class="bg-white p-5 rounded-2xl border border-gray-200 space-y-3">
-                    <div class="h-36 rounded-xl bg-gray-50 flex items-center justify-center text-brand-500">
-                        <span class="material-symbols-outlined text-5xl">headphones</span>
-                    </div>
-                    <div class="flex justify-between items-center">
-                        <h3 class="font-bold text-xs text-charcoal-900">Studio ANC Headphones</h3>
-                        <span class="font-bold text-xs text-charcoal-900">$199</span>
-                    </div>
-                    <p class="text-[11px] text-gray-500">Lossless spatial audio, 40-hour battery life, active hybrid noise cancelling.</p>
-                </div>
-
-                <div class="bg-white p-5 rounded-2xl border border-gray-200 space-y-3">
-                    <div class="h-36 rounded-xl bg-gray-50 flex items-center justify-center text-indigo-500">
-                        <span class="material-symbols-outlined text-5xl">keyboard</span>
-                    </div>
-                    <div class="flex justify-between items-center">
-                        <h3 class="font-bold text-xs text-charcoal-900">Ultra-Quiet Mechanical Keyboard</h3>
-                        <span class="font-bold text-xs text-charcoal-900">$149</span>
-                    </div>
-                    <p class="text-[11px] text-gray-500">Hot-swappable tactile switches, sound dampening silicone, PBT keycaps.</p>
-                </div>
-
-                <div class="bg-white p-5 rounded-2xl border border-gray-200 space-y-3">
-                    <div class="h-36 rounded-xl bg-gray-50 flex items-center justify-center text-emerald-500">
-                        <span class="material-symbols-outlined text-5xl">watch</span>
-                    </div>
-                    <div class="flex justify-between items-center">
-                        <h3 class="font-bold text-xs text-charcoal-900">Smart Fitness Watch Pro</h3>
-                        <span class="font-bold text-xs text-charcoal-900">$129</span>
-                    </div>
-                    <p class="text-[11px] text-gray-500">Continuous ECG &amp; SpO2 tracking, sapphire crystal glass, 7-day battery.</p>
                 </div>
             </div>
         </section>
     </main>
     {% endif %}
 
-    <!-- Floating Supporto AI Widget Pill Button -->
-    <div class="fixed bottom-6 right-6 z-40">
-        <button onclick="openCustomerModal()" class="flex items-center gap-2.5 bg-charcoal-900 hover:bg-black text-white font-bold py-3 px-5 rounded-full shadow-2xl transition transform hover:scale-105 group border-2 border-white/80">
-            <span class="material-symbols-outlined text-xl {% if workspace.slug == 'expressbeas' %}text-amber-400{% else %}text-brand-400{% endif %} group-hover:rotate-12 transition">support_agent</span>
-            <span class="text-xs tracking-tight">Need Support? Ask AI</span>
-        </button>
-    </div>
-
-    <!-- Customer Details Modal before launching Full-Screen Chat -->
-    <div id="customerModal" class="hidden fixed inset-0 z-50 bg-charcoal-950/70 backdrop-blur-xs flex items-center justify-center p-4">
-        <div class="bg-white rounded-3xl max-w-md w-full p-6 sm:p-8 shadow-2xl border border-gray-100 space-y-5 animate-fade-in">
-            <div class="flex items-center justify-between pb-3 border-b border-gray-100">
-                <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-2xl {% if workspace.slug == 'expressbeas' %}bg-amber-50 text-amber-600{% else %}bg-brand-50 text-brand-600{% endif %} flex items-center justify-center font-bold">
-                        <span class="material-symbols-outlined text-2xl">support_agent</span>
-                    </div>
-                    <div>
-                        <h3 class="font-bold text-sm text-charcoal-900">{{ workspace.name }} Live Support</h3>
-                        <p class="text-[11px] text-emerald-600 font-semibold flex items-center gap-1">
-                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                            AI Assistant &amp; Voice Online
-                        </p>
-                    </div>
+    <!-- ========================================================================= -->
+    <!-- PRE-LAUNCH VERIFICATION MODAL                                             -->
+    <!-- ========================================================================= -->
+    <div id="customerModal" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl border border-gray-200 space-y-4">
+            <div class="flex items-center justify-between pb-2 border-b border-gray-100">
+                <div class="flex items-center gap-2">
+                    <span class="material-symbols-outlined text-brand-500">account_circle</span>
+                    <h3 class="font-bold text-sm text-charcoal-900">Start Support Session</h3>
                 </div>
-                <button onclick="closeCustomerModal()" class="text-gray-400 hover:text-gray-600">
-                    <span class="material-symbols-outlined text-xl">close</span>
+                <button type="button" onclick="closeCustomerModal()" class="text-gray-400 hover:text-gray-600">
+                    <span class="material-symbols-outlined text-lg">close</span>
                 </button>
             </div>
 
-            <p class="text-xs text-gray-600 leading-relaxed">
-                Connect with the autonomous AI assistant. Test real-time order lookups, voice calling, or automatic human escalation:
+            <p class="text-[11px] text-gray-500 leading-relaxed">
+                Enter your name and registered mobile number to verify your identity and view orders.
             </p>
 
-            <form onsubmit="launchFullScreenChat(event)" class="space-y-4">
+            <!-- Quick Demo Personas -->
+            <div class="p-2.5 bg-gray-50 rounded-2xl border border-gray-200 space-y-1.5 text-[11px]">
+                <div class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Demo Personas:</div>
+                <div class="flex flex-col gap-1">
+                    <button type="button" onclick="setDemoPersona('Vansh Soni', '6367743066', 'vansh.soni@example.com')" class="text-left px-2.5 py-1.5 bg-white hover:bg-brand-50 hover:border-brand-300 rounded-lg border border-gray-200 font-semibold text-charcoal-800 transition flex items-center justify-between">
+                        <span>Customer A: Vansh Soni</span>
+                        <span class="font-mono text-[10px] text-gray-500">6367743066</span>
+                    </button>
+                    <button type="button" onclick="setDemoPersona('Riya Sharma', '9571538144', 'riya.sharma@example.com')" class="text-left px-2.5 py-1.5 bg-white hover:bg-brand-50 hover:border-brand-300 rounded-lg border border-gray-200 font-semibold text-charcoal-800 transition flex items-center justify-between">
+                        <span>Customer B: Riya Sharma</span>
+                        <span class="font-mono text-[10px] text-gray-500">9571538144</span>
+                    </button>
+                </div>
+            </div>
+
+            <form onsubmit="launchFullScreenChat(event)" class="space-y-3">
                 <div>
-                    <label class="block text-[11px] font-bold uppercase text-gray-700 tracking-wider mb-1">Your Full Name</label>
-                    <input type="text" id="custNameInput" required value="Vansh Soni" class="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-xs font-semibold focus:ring-2 focus:ring-brand-500 outline-none">
+                    <label class="block text-[10px] font-bold uppercase text-gray-600 mb-1">Your Full Name *</label>
+                    <input type="text" id="custNameInput" required value="Vansh Soni" class="w-full px-3 py-2 text-xs border border-gray-200 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none">
                 </div>
                 <div>
-                    <label class="block text-[11px] font-bold uppercase text-gray-700 tracking-wider mb-1">Your Email Address</label>
-                    <input type="email" id="custEmailInput" value="vanshhsoni.production@gmail.com" class="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-xs font-semibold focus:ring-2 focus:ring-brand-500 outline-none">
+                    <label class="block text-[10px] font-bold uppercase text-gray-600 mb-1">Registered Mobile Number *</label>
+                    <div class="flex items-center gap-1.5 border border-gray-200 rounded-xl px-3 py-2 focus-within:ring-2 focus-within:ring-brand-500">
+                        <span class="text-xs font-semibold text-gray-500">+91</span>
+                        <input type="tel" id="custPhoneInput" required pattern="[6-9][0-9]{9}" maxlength="10" value="6367743066" class="w-full text-xs font-mono font-bold outline-none bg-transparent">
+                    </div>
                 </div>
                 <div>
-                    <label class="block text-[11px] font-bold uppercase text-gray-700 tracking-wider mb-1">Initial Inquiry / Tracking ID</label>
-                    <input type="text" id="custInitialQueryInput" placeholder="e.g. Where is my order?" class="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-xs font-medium focus:ring-2 focus:ring-brand-500 outline-none">
+                    <label class="block text-[10px] font-bold uppercase text-gray-600 mb-1">Email (Optional)</label>
+                    <input type="email" id="custEmailInput" value="vansh.soni@example.com" class="w-full px-3 py-2 text-xs border border-gray-200 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold uppercase text-gray-600 mb-1">Inquiry / Question</label>
+                    <input type="text" id="custInitialQueryInput" placeholder="e.g. What are my orders?" class="w-full px-3 py-2 text-xs border border-gray-200 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none">
                 </div>
 
+                <!--
+                // TODO: Implement SMS OTP verification for production identity
+                -->
+
                 <div class="pt-2 space-y-2">
-                    <button type="submit" class="w-full py-3 {% if workspace.slug == 'expressbeas' %}bg-amber-500 hover:bg-amber-600{% else %}bg-charcoal-900 hover:bg-black{% endif %} text-white font-bold text-xs rounded-xl shadow-md transition flex items-center justify-center gap-2">
-                        <span class="material-symbols-outlined text-base">open_in_new</span>
-                        Launch Full AI Support Session
+                    <button type="submit" class="w-full py-2.5 {% if workspace.slug == 'expressbeas' %}bg-amber-500 hover:bg-amber-600{% else %}bg-charcoal-900 hover:bg-black{% endif %} text-white font-bold text-xs rounded-xl shadow-md transition flex items-center justify-center gap-1.5">
+                        <span class="material-symbols-outlined text-sm">open_in_new</span>
+                        Launch Full Screen Chat
                     </button>
                     <button type="button" onclick="openEmbeddedDrawer()" class="w-full py-2 text-[11px] font-semibold text-gray-500 hover:text-charcoal-900 transition text-center">
-                        or open embedded widget inside this page
+                        or open embedded widget
                     </button>
                 </div>
             </form>
@@ -511,6 +506,12 @@ ShopEase — Premium Electronics Storefront
 <script>
     const widgetEmbedBase = "{% url 'widget_embed' public_key=public_key %}";
 
+    function setDemoPersona(name, phone, email) {
+        document.getElementById("custNameInput").value = name;
+        document.getElementById("custPhoneInput").value = phone;
+        document.getElementById("custEmailInput").value = email;
+    }
+
     function openCustomerModal(prefilledQuery) {
         if (prefilledQuery) {
             document.getElementById("custInitialQueryInput").value = prefilledQuery;
@@ -535,9 +536,16 @@ ShopEase — Premium Electronics Storefront
     function launchFullScreenChat(e) {
         if (e) e.preventDefault();
         const name = document.getElementById("custNameInput").value.trim();
+        const phone = document.getElementById("custPhoneInput").value.trim().replace(/\D/g, '');
         const email = document.getElementById("custEmailInput").value.trim();
         const query = document.getElementById("custInitialQueryInput").value.trim();
-        let targetUrl = `${widgetEmbedBase}?name=${encodeURIComponent(name)}&email=${encodeURIComponent(email)}`;
+
+        if (phone.length !== 10) {
+            alert("Please enter a valid 10-digit Indian mobile number.");
+            return;
+        }
+
+        let targetUrl = `${widgetEmbedBase}?name=${encodeURIComponent(name)}&phone=${encodeURIComponent(phone)}&email=${encodeURIComponent(email)}`;
         if (query) {
             targetUrl += `&q=${encodeURIComponent(query)}`;
         }
@@ -547,11 +555,18 @@ ShopEase — Premium Electronics Storefront
 
     function openEmbeddedDrawer() {
         const name = document.getElementById("custNameInput").value.trim();
+        const phone = document.getElementById("custPhoneInput").value.trim().replace(/\D/g, '');
         const email = document.getElementById("custEmailInput").value.trim();
         const query = document.getElementById("custInitialQueryInput").value.trim();
+
+        if (phone.length !== 10) {
+            alert("Please enter a valid 10-digit Indian mobile number.");
+            return;
+        }
+
         const iframe = document.getElementById("widgetIframe");
         const popout = document.getElementById("drawerPopoutLink");
-        let targetUrl = `${widgetEmbedBase}?name=${encodeURIComponent(name)}&email=${encodeURIComponent(email)}`;
+        let targetUrl = `${widgetEmbedBase}?name=${encodeURIComponent(name)}&phone=${encodeURIComponent(phone)}&email=${encodeURIComponent(email)}`;
         if (query) {
             targetUrl += `&q=${encodeURIComponent(query)}`;
         }

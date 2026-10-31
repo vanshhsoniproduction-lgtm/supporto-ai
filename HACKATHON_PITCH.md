@@ -2,93 +2,92 @@
 
 > **Problem Statement 2.5:** AI Agent for Automated Customer Support and Ticket Triage  
 > **Team:** Supporto AI  
-> **Platform Stack:** Django 5.1, Qwen 8B LLM (GGUF), Whisper Small STT, Kokoro ONNX TTS, Semantic RAG, Tailwind CSS, SQLite
+> **Platform Stack:** Django 5.1, Real SQL Data Layer (`apps/orders`), Local Qwen 8B LLM (GGUF), Whisper Small STT, Kokoro ONNX TTS, Semantic RAG, Tailwind CSS, SQLite
 
 ---
 
 ## 1. The 30-Second Elevator Pitch
 
-> *"Judges, small e-commerce stores and SaaS startups are drowning in repetitive customer support tickets, while hiring 24/7 support agents costs thousands of dollars a month. When urgent issues like double charges or damaged deliveries happen, they get buried under FAQs.*
+> *"Judges, small e-commerce stores and logistics companies are drowning in repetitive customer support tickets, while hiring 24/7 human support teams costs thousands of dollars a month. When urgent issues like double charges, damaged parcels, or delays happen, they get buried under FAQs.
 >
-> *We built **Supporto AI** — a privacy-first, multi-tenant AI customer support and automated ticket triage platform. Supporto AI reads customer inquiries across **live web chats, incoming emails, and real-time browser phone calls**. It classifies intent and urgency, drafts grounded replies from company knowledge bases, and automatically escalates critical financial or defect cases to human teams with SLA tracking.*
+> We built **Supporto AI** — a privacy-first, multi-tenant AI customer support and automated ticket triage platform backed by a **real SQL relational database**. Supporto AI serves customers across **live web chats, incoming emails, and real-time browser phone calls**. It verifies customer identity via 10-digit mobile phone numbers with zero-leak privacy protection, provides granular order and consignment tracking, and automatically escalates critical financial or defect cases to human teams with SLA tracking.
 >
-> *And as a bonus twist, it continuously tracks customer sentiment and generates automated weekly insight reports on recurring complaints."*
+> And as our bonus twist, it continuously tracks customer sentiment and generates automated weekly insight reports on recurring complaints."*
 
 ---
 
-## 2. Problem Statement Alignment Matrix
+## 2. Platform Architecture & Data Layer
 
-| Problem Statement Requirement | Supporto AI Implementation | Live Demo Verification |
-| :--- | :--- | :--- |
-| **Target Users: Startups, E-commerce, SaaS** | Multi-tenant workspaces with isolated configurations, staff, and policies. | `/shopease/` vs Platform Admin at `/admin/` |
-| **Reads incoming emails or chats** | 1. Official Gmail API sync + Centralized 3-panel Email Inbox.<br>2. Real-time web chat widget + Full-screen phone calling screen. | `/shopease/emails/inbox/`<br>`/widget/<public_key>/demo/` |
-| **Classifies intent & urgency** | Identifies 10+ intents (`ORDER_STATUS`, `BILLING`, `REFUND`, etc.) and urgency levels (`CRITICAL`, `HIGH`, `MEDIUM`, `LOW`). | Customer chat auto-tags intent & urgency in real-time. |
-| **Drafts replies from company KB (RAG)** | Grounded RAG retrieval over FAQs, return policies, and product documentation with anti-hallucination prompts. | `/shopease/knowledge-base/` & email proposed replies |
-| **Escalates sensitive cases to a human** | Urgent billing, duplicate charges, or refund requests automatically generate Open Tickets assigned to specialized human teams (`Billing Support`, `Order Support`). | Instant ticket creation on urgent query with SLA timer |
-| **Stack: LLM with Tool Calling, RAG, Ticket Dashboard** | Local Qwen 8B LLM with tool calling (`lookup_order`, `escalate_to_human`, `search_knowledge_base`, `create_ticket`), faster-whisper, Kokoro TTS, Django ticket dashboard. | `/shopease/tickets/` |
-| **Bonus Twist 1: Sentiment Tracking** | Tracks sentiment across every interaction (`ANGRY`, `FRUSTRATED`, `NEUTRAL`, `POSITIVE`). | Sentiment logs in conversation and email audits |
-| **Bonus Twist 2: Weekly Insights Report on Recurring Complaints** | Calculates top recurring complaints, resolution rates, average response time, and provides 1-click CSV download. | `/shopease/analytics/weekly-insights/` |
+Unlike systems with mocked or hardcoded order data, Supporto AI features a production-grade relational database:
+
+- **E-Commerce Data Model (`ShopEase`):** Real relational `Order`, `OrderItem`, and `ReturnRequest` tables tracking items, pricing, payment methods (UPI, Card, COD), delivery estimates, and return windows.
+- **Logistics & Carrier Network (`ExpressBeas`):** Dedicated `Shipment` and `ShipmentEvent` tables tracking 15-digit AWBs across multi-hub sorting scans (Pickup -> Inward -> In Transit -> Out for Delivery -> Delivered with OTP).
+- **Phone-Verified Customer Identity:** Customers are authenticated by name and 10-digit Indian mobile number (`6367743066` / `9571538144`). If a phone number does not match the order or consignment record, the AI enforces a strict zero-leak policy.
+- **Audited Tool Sandbox:** The AI interacts through typed, audited tool executions (`list_customer_orders`, `get_order_details`, `get_shipment_tracking`, `get_return_refund_status`, `cancel_order`, `escalate_to_human`).
 
 ---
 
-## 3. The 3-Minute Live Demo Script (Step-by-Step)
+## 3. Demo Credentials & Portals
 
-### Minute 1: The Customer Experience (Chat & Phone Call)
-1. Open the Customer Widget Demo Store:  
-   `http://127.0.0.1:8000/widget/205efaa9-4d66-4903-b6f6-cccb701c8668/demo/`
-2. Click the floating chat bubble. Enter name: `Vansh` and email: `vansh@example.com`.
-3. Click **"Open Full Experience"**.
-4. In the full chat tab, click **"Call Support AI"** in the header.
-   - Show the judges the **mobile-style calling interface**: live ticking timer (`00:05`...), animated sound waves, and live transcript.
-   - Say: *"Where is my order SE-84920?"*
-   - Show how the AI executes the **`lookup_order` tool**, fetches the live tracking data, and speaks back naturally: *"Your order SE-84920 for Wireless Headphones is in transit via FedEx, estimated delivery tomorrow by 5 PM."*
+| Portal / Role | URL | Email / Phone | Password |
+| :--- | :--- | :--- | :--- |
+| **Platform Superuser** | `http://127.0.0.1:8000/admin/` | `admin@admin.com` | `admin` |
+| **ShopEase Owner** | `http://127.0.0.1:8000/shopease/dashboard/` | `owner@shopease.com` | `ShopEase@123` |
+| **ShopEase Agent** | `http://127.0.0.1:8000/shopease/dashboard/` | `agent@shopease.com` | `Agent@123` |
+| **ExpressBeas Owner** | `http://127.0.0.1:8000/expressbeas/dashboard/` | `owner@expressbeas.in` | `ExpressBeas@123` |
+| **ExpressBeas Agent** | `http://127.0.0.1:8000/expressbeas/dashboard/` | `agent@expressbeas.in` | `Agent@123` |
+| **ShopEase Demo Store** | `http://127.0.0.1:8000/shopease/demo/` | Pre-filled: Vansh (`6367743066`) | — |
+| **ExpressBeas Tracking** | `http://127.0.0.1:8000/expressbeas/demo/` | Pre-filled: Vansh (`6367743066`) | — |
 
-### Minute 2: Action Boundaries & Sensitive Case Escalation
-1. Now type or speak a sensitive complaint:  
+---
+
+## 4. The 3-Minute Live Demo Script (Step-by-Step)
+
+### Minute 1: The Customer Experience & Phone Identity (ShopEase)
+1. Open the **ShopEase Demo Store**: `http://127.0.0.1:8000/shopease/demo/`
+2. Click the floating chat bubble. Choose quick-fill **Customer A (Vansh Soni — 6367743066)**.
+3. Test Query 1: *"What are my orders?"*  
+   -> AI lists real SQL orders (`SE-84920`, `SE-84922`) with items, prices, and status.
+4. Test Query 2: *"Where is order SE-84920?"*  
+   -> AI details: Delivered 3 days ago, FedEx Express (FX-94001118), return window open.
+5. Test Query 3: *"What is the status of my return?"*  
+   -> AI reveals: Pickup scheduled for Wireless Headphones, refund of ₹4,999.00 to original card ending 4242.
+6. Test Query 4: *"Cancel order SE-84922"*  
+   -> Order is PLACED. AI cancels it in the database and automatically creates a high-priority ticket (#TK-xxxx) for Order Support!
+
+### Minute 2: Carrier Network & Multi-Tenant Security (ExpressBeas)
+1. Open **ExpressBeas Tracking Demo**: `http://127.0.0.1:8000/expressbeas/demo/`
+2. Test Query: *"Where is my consignment 152785863851740?"*  
+   -> AI returns the real 6-event timeline: Booked at Ghaziabad Hub -> Delhi Main Sort Hub -> Delhi Highway Dispatch -> Jaipur Mother Hub -> Delivered with OTP.
+3. **Show Zero-Leak Privacy to Judges:**  
+   Ask for Riya's parcel (`152785863852001`) while logged in as Vansh (`6367743066`).  
+   -> AI securely rejects: *"I couldn't verify that order against your phone number."* Zero data leaked.
+4. **Show Cross-Tenant Isolation:**  
+   Ask ExpressBeas for ShopEase order `SE-84920`.  
+   -> AI immediately reports order not found. Complete multi-tenant database separation.
+
+### Minute 3: Sensitive Case Escalation & Bonus Weekly Insights
+1. In chat, send:  
    *"My credit card was charged twice ($199) for order SE-84920! Cancel it and refund my money immediately!"*
-2. Point out to judges:
-   - AI detects: **Intent: BILLING**, **Urgency: CRITICAL**, **Sentiment: ANGRY**.
-   - AI does **NOT** hallucinate or blindly execute a refund on the company's bank account.
-   - Instead, AI immediately responds: *"I understand this is urgent. I have created a Critical Priority Ticket (#TICK-...) and escalated your case directly to our Billing Support team."*
-3. Switch to the Staff Portal at `http://127.0.0.1:8000/shopease/tickets/`:
-   - Show the newly generated ticket with **CRITICAL** badge, assigned to **Billing Support**, with a strict **15-Minute SLA timer**!
-
-### Minute 3: Email Triage & Weekly Insights (The Bonus Twist)
-1. Navigate to **Email Review Queue** (`/shopease/emails/review/`):
-   - Show how inbound customer emails are automatically triaged by the AI.
-   - The AI drafts a grounded response using the Knowledge Base.
-   - The human staff reviews, edits if needed, selects the assigned team, and clicks **"Approve & Dispatch"**.
-2. Navigate to **Weekly Insights** (`/shopease/analytics/weekly-insights/`):
-   - Show the automated recurring complaint breakdown:  
-     *42% Shipping Delays, 28% Screen Damage, 15% Billing Disputes*.
-   - Click **"Download CSV Report"** to show instant export for company management.
-
----
-
-## 4. Key Technical Differentiators (Why We Stand Out)
-
-1. **Enterprise Federated Webhook Architecture (Safe Private Data):**  
-   We do **not** couple the AI directly to client SQL databases. Supporto AI uses an authenticated Tool-Calling Webhook pattern. The store (Shopify, Meesho, SaaS) provides an authenticated endpoint. Supporto AI queries live customer order status over HTTPS and grounds the LLM response.
-2. **Zero-Latency Think Tag Bypass:**  
-   Reasoning models (like Qwen 2.5/3 or DeepSeek) waste 15-20 seconds computing internal chain-of-thought `<think>` tags on CPU. We inject a pre-closed `<think></think>` prefix into the prompt, forcing the model into instant generation mode (< 1.5s latency).
-3. **Dual Voice Architecture:**  
-   Browser WebSpeech STT + Web SpeechSynthesis provides zero-latency client feedback, backed by local Whisper Small STT and Kokoro ONNX TTS for offline, high-fidelity speech synthesis.
-4. **Human-in-the-Loop Safeguards:**  
-   Financial writes and refunds are strictly gated. AI handles high-volume read queries autonomously, and routes write/refund queries into the staff triage queue with SLA tracking.
+2. AI detects **Intent: BILLING**, **Urgency: CRITICAL**, **Sentiment: ANGRY**, and responds authoritatively:  
+   *"I have marked this as urgent and immediately routed it to our Billing Support team. Your support ticket is #TK-xxxx. A dedicated human specialist will review your case and respond within 15 minutes."*
+3. Switch to Staff Portal (`/shopease/tickets/`):  
+   Show the new ticket with **CRITICAL** badge, linked directly to `related_order=SE-84920` with a 15-minute SLA timer.
+4. Switch to **Weekly Insights** (`/shopease/analytics/weekly-insights/`):  
+   Show recurring customer complaint analytics, percentage breakdowns summing to 100%, and 1-click CSV report export.
 
 ---
 
 ## 5. Judge Q&A Cheat Sheet (Defense Answers)
 
-### Q1: "How does the AI access private customer data across 3 different websites (A, B, C) with different databases?"
-> *"Judges, connecting an external AI directly to a company's internal SQL database is an anti-pattern and a major violation of PCI-DSS and GDPR. In Supporto AI, each client store configures an authenticated Store API / Webhook endpoint in their workspace settings. When a verified customer asks 'Where is my order?', the LLM executes the registered `lookup_order` tool, queries the store's endpoint in real time over HTTPS, and speaks the live status back. The client store retains full ownership and security of their database."*
+### Q1: "Where does the order and tracking data come from?"
+> *"Our platform uses a real SQL relational database layer (`apps/orders`) with foreign key workspace scoping. ShopEase manages Orders, OrderItems, and ReturnRequests. ExpressBeas manages Shipments with granular ShipmentEvents. In addition, workspace owners can optionally configure an external authenticated webhook if they want to integrate a live external Shopify or custom ERP store."*
 
-### Q2: "Can the AI hallucinate or refund customer money by mistake?"
-> *"No. We enforce strict Action Boundaries. The AI is only authorized for read-only lookups (order status, shipping carrier, return policy eligibility). Transactional and financial mutations—such as order cancellations or charge refunds—trigger automated ticket triage. The AI classifies urgency as CRITICAL, tags sentiment, and creates a prioritized ticket on the human agent dashboard with an SLA countdown."*
+### Q2: "How do you protect customer data and privacy?"
+> *"We enforce phone number verification on all order and consignment queries. When a customer enters their 10-digit mobile number, the AI normalizes it (`+91`, `0`, dashes, spaces) and verifies it against the order's `customer_phone` or shipment's `receiver_phone`/`sender_phone`. If there is a mismatch, the system reveals zero order details and advises the user to contact verified support."*
 
-### Q3: "What if local AI models are not available or running on low-resource machines?"
-> *"Supporto AI is architected with graceful degradation. If local model runtimes are unavailable, our intelligent RAG fallback engine activates in < 15ms. In addition, our voice layer supports browser-native WebSpeech recognition and speech synthesis so users experience zero downtime."*
+### Q3: "Can the AI hallucinate or issue false refunds?"
+> *"No. The AI's tool registry has strict operational boundaries. The AI can read order status, tracking timelines, and return status, but financial actions like issuing refunds are gated. For cancellations, the AI updates the order status in the database and automatically creates a linked support ticket for human agents to process the payment gateway reversal."*
 
 ### Q4: "How does the bonus twist (Weekly Insights) work?"
 > *"Our analytics engine continuously monitors conversations, email triage outcomes, and ticket resolutions over a rolling 7-day window. It aggregates recurring complaint categories, computes SLA compliance rates, and tracks sentiment shifts from ANGRY to POSITIVE. Workspace managers can review this on their dashboard or export a formal CSV report with a single click."*
-

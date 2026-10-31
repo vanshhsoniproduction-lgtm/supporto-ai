@@ -17,6 +17,15 @@
                 <span class="px-2.5 py-0.5 rounded-full text-xs font-bold {% if ticket.priority == 'CRITICAL' %}bg-red-50 text-red-600 border border-red-200{% elif ticket.priority == 'HIGH' %}bg-orange-50 text-orange-600 border border-orange-200{% else %}bg-amber-50 text-amber-600{% endif %}">
                     {{ ticket.priority }}
                 </span>
+                {% if ticket.related_order %}
+                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-brand-50 text-brand-700 border border-brand-200">
+                    Order #{{ ticket.related_order.order_number }}
+                </span>
+                {% elif ticket.related_shipment %}
+                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                    AWB {{ ticket.related_shipment.awb }}
+                </span>
+                {% endif %}
             </div>
             <h3 class="text-xl font-bold text-charcoal-900">{{ ticket.subject }}</h3>
         </div>
@@ -75,7 +84,7 @@
 
             <!-- Comments & Staff Notes Stream -->
             <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm space-y-4">
-                <h4 class="text-sm font-bold text-charcoal-900 border-b border-gray-100 pb-3">Staff Activity & Notes</h4>
+                <h4 class="text-sm font-bold text-charcoal-900 border-b border-gray-100 pb-3">Staff Activity &amp; Notes</h4>
                 <div class="space-y-4">
                     {% for c in comments %}
                     <div class="p-4 rounded-xl border {% if c.is_internal %}bg-amber-50/50 border-amber-200/60{% else %}bg-blue-50/40 border-blue-100{% endif %}">
@@ -112,6 +121,51 @@
 
         <!-- Sidebar Details (1 col) -->
         <div class="space-y-6">
+            <!-- Linked Order Card (if exists) -->
+            {% if ticket.related_order %}
+            <div class="bg-white p-6 rounded-2xl border border-brand-200 bg-brand-50/10 shadow-sm space-y-3">
+                <div class="flex items-center justify-between border-b border-gray-100 pb-2">
+                    <h4 class="text-xs font-bold uppercase tracking-wider text-brand-600 flex items-center gap-1.5">
+                        <span class="material-symbols-outlined text-sm">shopping_bag</span>
+                        Linked Store Order
+                    </h4>
+                    <span class="px-2 py-0.5 rounded text-[10px] font-bold {% if ticket.related_order.status == 'Delivered' %}bg-emerald-50 text-emerald-700{% elif ticket.related_order.status == 'Cancelled' %}bg-rose-50 text-rose-700{% else %}bg-amber-50 text-amber-700{% endif %}">
+                        {{ ticket.related_order.status }}
+                    </span>
+                </div>
+                <div class="text-xs space-y-1.5">
+                    <div class="flex justify-between"><span class="text-gray-500">Order:</span> <span class="font-mono font-bold text-charcoal-900">#{{ ticket.related_order.order_number }}</span></div>
+                    <div class="flex justify-between"><span class="text-gray-500">Amount:</span> <span class="font-bold text-charcoal-900">₹{{ ticket.related_order.total|floatformat:2 }}</span></div>
+                    <div class="flex justify-between"><span class="text-gray-500">Payment:</span> <span class="text-gray-800">{{ ticket.related_order.payment_method }} ({{ ticket.related_order.payment_status }})</span></div>
+                    <div class="flex justify-between"><span class="text-gray-500">Placed:</span> <span class="text-gray-600">{{ ticket.related_order.placed_at|date:"M d, Y H:i" }}</span></div>
+                    {% if ticket.related_order.carrier %}
+                    <div class="flex justify-between"><span class="text-gray-500">Carrier:</span> <span class="text-gray-700">{{ ticket.related_order.carrier }}</span></div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Linked Shipment Card (if exists) -->
+            {% if ticket.related_shipment %}
+            <div class="bg-white p-6 rounded-2xl border border-blue-200 bg-blue-50/10 shadow-sm space-y-3">
+                <div class="flex items-center justify-between border-b border-gray-100 pb-2">
+                    <h4 class="text-xs font-bold uppercase tracking-wider text-blue-600 flex items-center gap-1.5">
+                        <span class="material-symbols-outlined text-sm">local_shipping</span>
+                        Linked Consignment
+                    </h4>
+                    <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-50 text-blue-700">
+                        {{ ticket.related_shipment.status }}
+                    </span>
+                </div>
+                <div class="text-xs space-y-1.5">
+                    <div class="flex justify-between"><span class="text-gray-500">AWB:</span> <span class="font-mono font-bold text-charcoal-900">{{ ticket.related_shipment.awb }}</span></div>
+                    <div class="flex justify-between"><span class="text-gray-500">Route:</span> <span class="font-semibold text-gray-800">{{ ticket.related_shipment.origin_city }} ➔ {{ ticket.related_shipment.destination_city }}</span></div>
+                    <div class="flex justify-between"><span class="text-gray-500">Service:</span> <span class="text-gray-700">{{ ticket.related_shipment.service_type }} ({{ ticket.related_shipment.weight_kg }} kg)</span></div>
+                    <div class="flex justify-between"><span class="text-gray-500">Receiver:</span> <span class="text-gray-700">{{ ticket.related_shipment.receiver_name }}</span></div>
+                </div>
+            </div>
+            {% endif %}
+
             <!-- Assignment Card -->
             <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm space-y-4">
                 <h4 class="text-xs font-bold uppercase tracking-wider text-gray-400 border-b border-gray-100 pb-2">Ticket Assignment</h4>
@@ -147,6 +201,7 @@
                 <h4 class="text-xs font-bold uppercase tracking-wider text-gray-400 border-b border-gray-100 pb-2">Customer Profile</h4>
                 <div class="text-xs space-y-2">
                     <div class="flex justify-between"><span class="text-gray-500">Name:</span> <span class="font-bold text-charcoal-900">{{ ticket.customer.name }}</span></div>
+                    <div class="flex justify-between"><span class="text-gray-500">Phone:</span> <span class="font-mono text-gray-800">{{ ticket.customer.phone|default:"No phone" }}</span></div>
                     <div class="flex justify-between"><span class="text-gray-500">Email:</span> <span class="font-mono text-gray-800">{{ ticket.customer.email|default:"Anonymous Visitor" }}</span></div>
                     <div class="flex justify-between"><span class="text-gray-500">Created:</span> <span class="text-gray-600">{{ ticket.customer.created_at|date:"M d, Y" }}</span></div>
                 </div>
@@ -171,4 +226,3 @@
     </div>
 </div>
 {% endblock %}
-

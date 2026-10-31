@@ -1,10 +1,12 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.core.paginator import Paginator
+from django.db.models import Q
 from apps.customers.models import Customer
 from apps.tickets.models import Ticket
 from apps.conversations.models import Conversation
 from apps.emails.models import InboundEmail
+from apps.orders.models import Order, Shipment
 from services.workspaces.access_control import require_workspace_roles
 
 @require_workspace_roles("OWNER", "ADMIN", "MANAGER", "AGENT")
@@ -56,6 +58,7 @@ def customer_detail_view(request, company_slug, customer_id):
     - Email history
     - Chat & voice conversations
     - Open and resolved tickets
+    - Linked SQL Orders & Shipments
     - Sentiment history
     - Internal staff notes
     """
@@ -81,8 +84,20 @@ def customer_detail_view(request, company_slug, customer_id):
     resolved_tickets = [t for t in tickets if t.status in (Ticket.Status.RESOLVED, Ticket.Status.CLOSED)]
 
     conversations = Conversation.objects.filter(workspace=workspace, customer=customer).order_by("-created_at")
-
     emails = InboundEmail.objects.filter(workspace=workspace, linked_customer=customer).order_by("-received_at")
+
+    # Linked Orders (via customer FK or matching normalized_phone)
+    orders_q = Q(customer=customer)
+    if customer.normalized_phone:
+        orders_q |= Q(customer_phone=customer.normalized_phone)
+    orders = Order.objects.filter(workspace=workspace).filter(orders_q).prefetch_related("items", "return_requests").distinct().order_by("-placed_at")
+
+    # Linked Shipments (via receiver or sender phone)
+    shipments = Shipment.objects.none()
+    if customer.normalized_phone:
+        shipments = Shipment.objects.filter(workspace=workspace).filter(
+            Q(receiver_phone=customer.normalized_phone) | Q(sender_phone=customer.normalized_phone)
+        ).prefetch_related("events").distinct().order_by("-created_at")
 
     # Sentiment distribution
     sentiment_history = [
@@ -98,6 +113,8 @@ def customer_detail_view(request, company_slug, customer_id):
         "resolved_tickets": resolved_tickets,
         "conversations": conversations,
         "emails": emails,
+        "orders": orders,
+        "shipments": shipments,
         "sentiment_history": sentiment_history,
         "active_nav": "customers"
     })
