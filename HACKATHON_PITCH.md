@@ -27,7 +27,7 @@
 | **Escalates sensitive cases to a human** | Urgent billing, duplicate charges, or refund requests automatically generate Open Tickets assigned to specialized human teams (`Billing Support`, `Order Support`). | Instant ticket creation on urgent query with SLA timer |
 | **Stack: LLM with Tool Calling, RAG, Ticket Dashboard** | Local Qwen 8B LLM with tool calling (`lookup_order`, `escalate_to_human`, `search_knowledge_base`, `create_ticket`), faster-whisper, Kokoro TTS, Django ticket dashboard. | `/shopease/tickets/` |
 | **Bonus Twist 1: Sentiment Tracking** | Tracks sentiment across every interaction (`ANGRY`, `FRUSTRATED`, `NEUTRAL`, `POSITIVE`). | Sentiment logs in conversation and email audits |
-| **Bonus Twist 2: Weekly Insights Report on Recurring Complaints** | Calculates top recurring complaints, resolution rates, average response time, and provides 1-click CSV download. | `/shopease/analytics/weekly/` |
+| **Bonus Twist 2: Weekly Insights Report on Recurring Complaints** | Calculates top recurring complaints, resolution rates, average response time, and provides 1-click CSV download. | `/shopease/analytics/weekly-insights/` |
 
 ---
 
@@ -58,7 +58,7 @@
    - Show how inbound customer emails are automatically triaged by the AI.
    - The AI drafts a grounded response using the Knowledge Base.
    - The human staff reviews, edits if needed, selects the assigned team, and clicks **"Approve & Dispatch"**.
-2. Navigate to **Weekly Insights** (`/shopease/analytics/weekly/`):
+2. Navigate to **Weekly Insights** (`/shopease/analytics/weekly-insights/`):
    - Show the automated recurring complaint breakdown:  
      *42% Shipping Delays, 28% Screen Damage, 15% Billing Disputes*.
    - Click **"Download CSV Report"** to show instant export for company management.

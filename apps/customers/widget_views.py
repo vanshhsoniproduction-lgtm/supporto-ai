@@ -23,6 +23,7 @@ def widget_view(request, public_key):
     voice_config = getattr(workspace, "voice_config", None)
     customer_name = request.GET.get("name", "").strip()
     customer_email = request.GET.get("email", "").strip()
+    initial_query = request.GET.get("q", "").strip()
 
     return render(request, "widget/widget_frame.html", {
         "workspace": workspace,
@@ -31,6 +32,7 @@ def widget_view(request, public_key):
         "public_key": str(public_key),
         "customer_name": customer_name,
         "customer_email": customer_email,
+        "initial_query": initial_query,
     })
 
 

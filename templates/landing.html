@@ -1,178 +1,271 @@
 {% extends "base.html" %}
 
-{% block title %}Supporto AI - Intelligent Customer Support Platform{% endblock %}
+{% block title %}Supporto AI — Enterprise AI Support & Intelligent Ticket Triage{% endblock %}
 
 {% block content %}
-<div class="min-h-full flex flex-col bg-[#F7F8FA]">
-    <!-- Navbar -->
-    <header class="bg-white/80 backdrop-blur-md sticky top-0 z-30 border-b border-gray-200">
-        <div class="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+<div class="min-h-full flex flex-col bg-[#FBFBFD] text-charcoal-900 selection:bg-brand-500 selection:text-white">
+    <!-- Top Minimal Navigation Bar -->
+    <header class="bg-white/80 backdrop-blur-md sticky top-0 z-40 border-b border-gray-200/80">
+        <div class="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
             <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-xl bg-brand-50 text-brand-500 flex items-center justify-center font-bold shadow-xs">
-                    <span class="material-symbols-outlined text-2xl">support_agent</span>
+                <div class="w-9 h-9 rounded-xl bg-charcoal-900 text-white flex items-center justify-center font-black shadow-sm">
+                    <span class="material-symbols-outlined text-xl">smart_toy</span>
                 </div>
                 <div>
-                    <span class="font-extrabold text-lg text-charcoal-900 tracking-tight">Supporto AI</span>
-                    <span class="hidden sm:inline-block text-[10px] uppercase font-bold text-brand-500 tracking-wider ml-1.5 px-2 py-0.5 rounded-full bg-brand-50">Platform</span>
+                    <span class="font-extrabold text-base tracking-tight text-charcoal-900">Supporto<span class="text-brand-500">.ai</span></span>
+                    <span class="hidden sm:inline-block text-[10px] uppercase font-bold text-gray-500 tracking-wider ml-2 px-2 py-0.5 rounded-full bg-gray-100 border border-gray-200/60">Core 2.5</span>
                 </div>
             </div>
 
-            <nav class="hidden md:flex items-center gap-6 text-xs font-semibold text-gray-600">
-                <a href="#features" class="hover:text-brand-500 transition">Features</a>
-                <a href="#clients" class="hover:text-brand-500 transition">Our Clients</a>
+            <nav class="hidden md:flex items-center gap-8 text-xs font-semibold text-gray-600">
+                <a href="#workspaces" class="hover:text-charcoal-900 transition">Live Workspaces</a>
+                <a href="#capabilities" class="hover:text-charcoal-900 transition">Architecture</a>
+                <a href="/select-workspace/" class="hover:text-charcoal-900 transition">Switch Company</a>
+                <a href="/admin/" class="hover:text-charcoal-900 transition">Platform Admin</a>
             </nav>
 
             <div class="flex items-center gap-3">
-                <a href="{% url 'google_login' %}" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold text-white bg-brand-500 hover:bg-brand-600 transition shadow-sm">
-                    <svg class="w-4 h-4" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 12.955 4 4 12.955 4 24s8.955 20 20 20 20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z"/><path fill="#FF3D00" d="M6.306 14.691l6.571 4.819C14.655 15.108 18.961 12 24 12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 16.318 4 9.656 8.337 6.306 14.691z"/><path fill="#4CAF50" d="M24 44c5.166 0 9.86-1.977 13.409-5.192l-6.19-5.238A11.91 11.91 0 0 1 24 36c-5.202 0-9.619-3.317-11.283-7.946l-6.522 5.025C9.505 39.556 16.227 44 24 44z"/><path fill="#1976D2" d="M43.611 20.083H42V20H24v8h11.303a12.04 12.04 0 0 1-4.087 5.571l.003-.002 6.19 5.238C36.971 39.205 44 34 44 24c0-1.341-.138-2.65-.389-3.917z"/></svg>
-                    Sign in with Google
+                <a href="{% url 'google_login' %}" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold text-white bg-charcoal-900 hover:bg-black transition shadow-sm">
+                    <svg class="w-4 h-4" viewBox="0 0 24 24">
+                        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+                        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+                    </svg>
+                    Continue with Google
                 </a>
             </div>
         </div>
     </header>
 
     <!-- Hero Section -->
-    <section class="py-16 sm:py-24 px-6 max-w-7xl mx-auto w-full text-center space-y-6">
-        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold bg-brand-50 text-brand-600 border border-brand-100 shadow-xs">
-            <span class="w-2 h-2 rounded-full bg-brand-500 animate-pulse"></span>
-            AI Customer Support &amp; Ticket Triage Platform
+    <section class="pt-20 pb-16 px-6 max-w-5xl mx-auto w-full text-center space-y-6">
+        <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold bg-white border border-gray-200 shadow-xs">
+            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span class="text-gray-700">Enterprise AI Support &amp; Autonomous Ticket Triage</span>
+            <span class="text-gray-400">&bull;</span>
+            <span class="text-brand-600 font-bold">Hackathon 2.5</span>
         </div>
 
-        <h1 class="text-4xl sm:text-6xl font-extrabold text-charcoal-900 tracking-tight max-w-4xl mx-auto leading-tight">
-            Stop Drowning in<br/>
-            <span class="text-brand-500">Support Queries.</span>
+        <h1 class="text-4xl sm:text-6xl font-black text-charcoal-900 tracking-tight leading-[1.1] max-w-4xl mx-auto">
+            Autonomous Customer Support.<br/>
+            <span class="text-transparent bg-clip-text bg-gradient-to-r from-brand-500 via-indigo-600 to-violet-600">Zero Hallucinations. Guaranteed SLAs.</span>
         </h1>
 
-        <p class="text-base sm:text-lg text-gray-600 max-w-2xl mx-auto leading-relaxed">
-            Supporto AI automatically classifies, triages, and resolves your customer queries — escalating only what truly needs a human. One platform, every business.
+        <p class="text-base sm:text-lg text-gray-600 max-w-2xl mx-auto leading-relaxed font-normal">
+            Supporto AI reads customer conversations across live web chat, voice calling, and Gmail. It executes secure tool-calls against your real store backend and routes high-risk billing and defect claims straight to human specialists.
         </p>
 
-        <!-- Single CTA -->
-        <div class="pt-4 flex flex-wrap items-center justify-center gap-4">
-            <a href="{% url 'google_login' %}" class="px-8 py-4 rounded-xl text-sm font-bold text-white bg-brand-500 hover:bg-brand-600 shadow-md transition flex items-center gap-3">
-                <svg class="w-5 h-5" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 12.955 4 4 12.955 4 24s8.955 20 20 20 20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z"/><path fill="#FF3D00" d="M6.306 14.691l6.571 4.819C14.655 15.108 18.961 12 24 12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 16.318 4 9.656 8.337 6.306 14.691z"/><path fill="#4CAF50" d="M24 44c5.166 0 9.86-1.977 13.409-5.192l-6.19-5.238A11.91 11.91 0 0 1 24 36c-5.202 0-9.619-3.317-11.283-7.946l-6.522 5.025C9.505 39.556 16.227 44 24 44z"/><path fill="#1976D2" d="M43.611 20.083H42V20H24v8h11.303a12.04 12.04 0 0 1-4.087 5.571l.003-.002 6.19 5.238C36.971 39.205 44 34 44 24c0-1.341-.138-2.65-.389-3.917z"/></svg>
-                Sign in with Google
-                <span class="material-symbols-outlined text-base">arrow_forward</span>
+        <!-- CTA Buttons -->
+        <div class="pt-4 flex flex-wrap items-center justify-center gap-3">
+            <a href="/select-workspace/" class="px-6 py-3.5 rounded-xl text-sm font-bold text-white bg-charcoal-900 hover:bg-black shadow-md transition flex items-center gap-2.5">
+                <span class="material-symbols-outlined text-lg">swap_horiz</span>
+                Select Company Workspace
+            </a>
+            <a href="{% url 'google_login' %}" class="px-6 py-3.5 rounded-xl text-sm font-bold text-charcoal-900 bg-white hover:bg-gray-50 border border-gray-200 shadow-xs transition flex items-center gap-2">
+                Sign in with Google &rarr;
             </a>
         </div>
-        <p class="text-xs text-gray-400">Sign in with your company Google account — we'll take you right to your dashboard.</p>
+        <p class="text-[12px] text-gray-400">Master Owner Account: <span class="font-mono text-gray-600 font-semibold">vanshhsoni.production@gmail.com</span></p>
     </section>
 
-    <!-- Clients Section -->
-    <section id="clients" class="py-12 px-6 max-w-7xl mx-auto w-full">
-        <div class="text-center space-y-2 mb-8">
-            <h3 class="text-2xl font-extrabold text-charcoal-900">Trusted by Leading Businesses</h3>
-            <p class="text-sm text-gray-500">Click any client below to test their live AI customer helpdesk &amp; order tracking</p>
+    <!-- Two Flagship Enterprise Workspaces -->
+    <section id="workspaces" class="py-12 px-6 max-w-6xl mx-auto w-full space-y-6">
+        <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-gray-200 pb-5">
+            <div>
+                <p class="text-[11px] uppercase font-bold tracking-wider text-brand-600">Live Enterprise Deployments</p>
+                <h2 class="text-2xl font-black text-charcoal-900 tracking-tight">Select an Active Company Helpdesk</h2>
+            </div>
+            <p class="text-xs text-gray-500 max-w-md">
+                Each company operates with isolated knowledge documents, team routing logic, dedicated staff, and private backend store webhooks.
+            </p>
         </div>
 
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
-            {% for w in workspaces %}
-            <a href="/widget/{{ w.public_key }}/demo/" target="_blank"
-               class="group p-6 bg-white rounded-2xl border border-gray-200 hover:border-charcoal-800 hover:shadow-xl transition-all duration-200 flex flex-col items-center gap-3 cursor-pointer">
-                <!-- Grayscale Monochromatic Client Logo -->
-                <div class="w-16 h-16 rounded-2xl bg-gray-50 group-hover:bg-charcoal-900 flex items-center justify-center transition-colors duration-200 border border-gray-100">
-                    {% if w.slug == 'expressbeas' %}
-                    <span class="material-symbols-outlined text-3xl text-gray-700 group-hover:text-white transition-colors">local_shipping</span>
-                    {% elif w.slug == 'shopease' %}
-                    <span class="material-symbols-outlined text-3xl text-gray-700 group-hover:text-white transition-colors">shopping_bag</span>
-                    {% elif w.slug == 'technova' %}
-                    <span class="material-symbols-outlined text-3xl text-gray-700 group-hover:text-white transition-colors">cloud_sync</span>
-                    {% elif w.slug == 'freshmart' %}
-                    <span class="material-symbols-outlined text-3xl text-gray-700 group-hover:text-white transition-colors">storefront</span>
-                    {% else %}
-                    <span class="text-xl font-black text-gray-600 group-hover:text-white transition-colors">{{ w.name|slice:":2"|upper }}</span>
-                    {% endif %}
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 pt-2">
+            <!-- 1. ExpressBeas Logistics Network -->
+            <div class="bg-white rounded-3xl border border-gray-200/90 shadow-sm hover:shadow-xl hover:border-amber-400 transition-all duration-300 p-8 flex flex-col justify-between space-y-6 relative overflow-hidden group">
+                <div class="absolute -top-12 -right-12 w-36 h-36 rounded-full bg-amber-500/5 blur-2xl group-hover:bg-amber-500/10 transition"></div>
+
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <div class="w-12 h-12 rounded-2xl bg-amber-500 text-white flex items-center justify-center font-black shadow-md">
+                                <span class="material-symbols-outlined text-2xl">local_shipping</span>
+                            </div>
+                            <div>
+                                <h3 class="text-xl font-black text-charcoal-900 tracking-tight">ExpressBeas</h3>
+                                <p class="text-xs font-mono text-gray-500">expressbeas.in &bull; Logistics &amp; Supply Chain</p>
+                            </div>
+                        </div>
+                        <span class="text-[11px] font-bold px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200/60 flex items-center gap-1.5">
+                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                            Live Webhook Active
+                        </span>
+                    </div>
+
+                    <p class="text-xs text-gray-600 leading-relaxed">
+                        Fast and reliable nationwide courier network. Real-time Air Waybill (AWB) consignment tracking, doorstep dispatch scheduling, and automated damage claim routing.
+                    </p>
+
+                    <!-- Real Data Highlights -->
+                    <div class="p-4 rounded-2xl bg-gray-50/80 border border-gray-100 space-y-2 text-xs">
+                        <div class="flex items-center justify-between font-mono">
+                            <span class="text-gray-500">Live Test AWB:</span>
+                            <span class="font-bold text-charcoal-900 bg-white px-2 py-0.5 rounded border border-gray-200">EB987654321</span>
+                        </div>
+                        <div class="flex items-center justify-between font-mono">
+                            <span class="text-gray-500">Consignment:</span>
+                            <span class="text-charcoal-800 font-medium">Commercial Shipment (5.2 kg)</span>
+                        </div>
+                        <div class="flex items-center justify-between font-mono">
+                            <span class="text-gray-500">External Webhook:</span>
+                            <span class="text-amber-700 font-medium">/api/v1/mock-store/lookup/</span>
+                        </div>
+                    </div>
                 </div>
 
-                <div class="text-center space-y-0.5">
-                    <p class="text-sm font-black text-charcoal-900 group-hover:text-brand-500 transition tracking-tight uppercase">{{ w.name }}</p>
-                    <p class="text-[11px] text-gray-400 line-clamp-2 leading-relaxed">{{ w.description|truncatechars:48 }}</p>
+                <div class="space-y-2.5 pt-2">
+                    <a href="/widget/4ecc8df2-e72a-49e5-bb37-bb0211a39a05/demo/" target="_blank"
+                       class="w-full py-3 px-4 rounded-xl text-xs font-bold text-white bg-amber-500 hover:bg-amber-600 transition flex items-center justify-center gap-2 shadow-xs">
+                        <span class="material-symbols-outlined text-base">open_in_new</span>
+                        Launch ExpressBeas Customer Tracking Site &rarr;
+                    </a>
+                    <a href="/expressbeas/"
+                       class="w-full py-2.5 px-4 rounded-xl text-xs font-semibold text-charcoal-900 bg-gray-100 hover:bg-gray-200 transition flex items-center justify-center gap-2">
+                        <span class="material-symbols-outlined text-base text-gray-600">badge</span>
+                        Open ExpressBeas Staff Portal (/expressbeas/)
+                    </a>
+                </div>
+            </div>
+
+            <!-- 2. ShopEase Modern E-Commerce -->
+            <div class="bg-white rounded-3xl border border-gray-200/90 shadow-sm hover:shadow-xl hover:border-brand-500 transition-all duration-300 p-8 flex flex-col justify-between space-y-6 relative overflow-hidden group">
+                <div class="absolute -top-12 -right-12 w-36 h-36 rounded-full bg-brand-500/5 blur-2xl group-hover:bg-brand-500/10 transition"></div>
+
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <div class="w-12 h-12 rounded-2xl bg-brand-500 text-white flex items-center justify-center font-black shadow-md">
+                                <span class="material-symbols-outlined text-2xl">shopping_bag</span>
+                            </div>
+                            <div>
+                                <h3 class="text-xl font-black text-charcoal-900 tracking-tight">ShopEase</h3>
+                                <p class="text-xs font-mono text-gray-500">shopease.example.com &bull; Smart Electronics</p>
+                            </div>
+                        </div>
+                        <span class="text-[11px] font-bold px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200/60 flex items-center gap-1.5">
+                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                            Live Webhook Active
+                        </span>
+                    </div>
+
+                    <p class="text-xs text-gray-600 leading-relaxed">
+                        Modern consumer storefront for mechanical keyboards, smart earbuds, and audio gear. Supports real-time FedEx order lookups, 30-day return policy grounding, and instant duplicate billing escalation.
+                    </p>
+
+                    <!-- Real Data Highlights -->
+                    <div class="p-4 rounded-2xl bg-gray-50/80 border border-gray-100 space-y-2 text-xs">
+                        <div class="flex items-center justify-between font-mono">
+                            <span class="text-gray-500">Live Test Orders:</span>
+                            <div class="flex gap-1.5">
+                                <span class="font-bold text-charcoal-900 bg-white px-2 py-0.5 rounded border border-gray-200">SE-84920</span>
+                                <span class="font-bold text-charcoal-900 bg-white px-2 py-0.5 rounded border border-gray-200">SE-10293</span>
+                            </div>
+                        </div>
+                        <div class="flex items-center justify-between font-mono">
+                            <span class="text-gray-500">Catalog Item:</span>
+                            <span class="text-charcoal-800 font-medium">Mechanical Keyboard ($199.00)</span>
+                        </div>
+                        <div class="flex items-center justify-between font-mono">
+                            <span class="text-gray-500">External Webhook:</span>
+                            <span class="text-brand-700 font-medium">/api/v1/mock-store/lookup/</span>
+                        </div>
+                    </div>
                 </div>
 
-                <span class="mt-1 text-[10px] font-bold text-gray-600 group-hover:text-white group-hover:bg-charcoal-900 bg-gray-100 px-3 py-1 rounded-full flex items-center gap-1.5 transition">
-                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                    Open Demo Site &rarr;
-                </span>
-            </a>
-            {% empty %}
-            <div class="col-span-4 text-center py-8 text-gray-400 text-sm">No workspaces configured yet.</div>
-            {% endfor %}
+                <div class="space-y-2.5 pt-2">
+                    <a href="/widget/205efaa9-4d66-4903-b6f6-cccb701c8668/demo/" target="_blank"
+                       class="w-full py-3 px-4 rounded-xl text-xs font-bold text-white bg-brand-500 hover:bg-brand-600 transition flex items-center justify-center gap-2 shadow-xs">
+                        <span class="material-symbols-outlined text-base">open_in_new</span>
+                        Launch ShopEase Storefront Demo &rarr;
+                    </a>
+                    <a href="/shopease/"
+                       class="w-full py-2.5 px-4 rounded-xl text-xs font-semibold text-charcoal-900 bg-gray-100 hover:bg-gray-200 transition flex items-center justify-center gap-2">
+                        <span class="material-symbols-outlined text-base text-gray-600">badge</span>
+                        Open ShopEase Staff Portal (/shopease/)
+                    </a>
+                </div>
+            </div>
         </div>
     </section>
 
-    <!-- Key Features Grid -->
-    <section id="features" class="py-12 px-6 max-w-7xl mx-auto w-full space-y-6">
+    <!-- Capabilities Matrix -->
+    <section id="capabilities" class="py-16 px-6 max-w-6xl mx-auto w-full space-y-8">
         <div class="text-center space-y-2">
-            <h3 class="text-3xl font-extrabold text-charcoal-900">Everything Your Support Team Needs</h3>
-            <p class="text-sm text-gray-500">Built for startups, e-commerce stores, and SaaS teams that move fast</p>
+            <p class="text-[11px] uppercase font-bold tracking-wider text-brand-600">Architectural Guarantees</p>
+            <h3 class="text-3xl font-black text-charcoal-900 tracking-tight">Engineered for Safe Autonomous Operations</h3>
+            <p class="text-sm text-gray-500 max-w-xl mx-auto">
+                No black-box hallucinated orders. No unvetted financial mutations. Pure deterministic tool calling backed by human-in-the-loop review.
+            </p>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 pt-6">
-            <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm space-y-3">
-                <div class="w-10 h-10 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center">
-                    <span class="material-symbols-outlined">psychology</span>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 pt-4">
+            <div class="bg-white p-6 rounded-2xl border border-gray-200/80 shadow-xs space-y-3">
+                <div class="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
+                    <span class="material-symbols-outlined">database</span>
                 </div>
-                <h4 class="font-bold text-base text-charcoal-900">AI-Powered Auto-Triage</h4>
+                <h4 class="font-bold text-sm text-charcoal-900">Zero Hallucination Tool-Calls</h4>
                 <p class="text-xs text-gray-600 leading-relaxed">
-                    Every incoming message is instantly classified by intent and urgency. Urgent issues get escalated before a human even sees the queue.
+                    AI strictly calls registered tools (<code class="text-[11px] bg-gray-100 px-1 py-0.5 rounded">lookup_order</code>) and verified store webhooks. Invalid AWBs are cleanly reported as not found.
                 </p>
             </div>
 
-            <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm space-y-3">
-                <div class="w-10 h-10 rounded-xl bg-brand-50 text-brand-500 flex items-center justify-center">
-                    <span class="material-symbols-outlined">bolt</span>
-                </div>
-                <h4 class="font-bold text-base text-charcoal-900">Live Order &amp; Shipment Lookup</h4>
-                <p class="text-xs text-gray-600 leading-relaxed">
-                    Customers ask "Where is my order?" and the AI fetches live data from your store or courier system in real-time via tool calling.
-                </p>
-            </div>
-
-            <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm space-y-3">
-                <div class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+            <div class="bg-white p-6 rounded-2xl border border-gray-200/80 shadow-xs space-y-3">
+                <div class="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center">
                     <span class="material-symbols-outlined">shield</span>
                 </div>
-                <h4 class="font-bold text-base text-charcoal-900">Multi-Tenant Isolation</h4>
+                <h4 class="font-bold text-sm text-charcoal-900">Safe Action Boundaries</h4>
                 <p class="text-xs text-gray-600 leading-relaxed">
-                    Each company's tickets, knowledge base, and customer data is completely isolated. One platform, infinite businesses — zero data leakage.
+                    Read-only tracking queries resolve immediately. High-risk actions (cancellations, double charges, refunds) immediately open prioritized human support tickets.
                 </p>
             </div>
 
-            <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm space-y-3">
-                <div class="w-10 h-10 rounded-xl bg-orange-50 text-orange-500 flex items-center justify-center">
+            <div class="bg-white p-6 rounded-2xl border border-gray-200/80 shadow-xs space-y-3">
+                <div class="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
                     <span class="material-symbols-outlined">mail</span>
                 </div>
-                <h4 class="font-bold text-base text-charcoal-900">Email Inbox with AI Drafts</h4>
+                <h4 class="font-bold text-sm text-charcoal-900">Email Triage &amp; Human Approval</h4>
                 <p class="text-xs text-gray-600 leading-relaxed">
-                    Inbound support emails are read, classified, and replied to with AI-drafted responses — reviewed and sent by your team with one click.
+                    Inbound Gmail emails are automatically triaged by intent and sentiment. AI drafts grounded replies using the Knowledge Base for 1-click staff approval.
                 </p>
             </div>
 
-            <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm space-y-3">
-                <div class="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-500 flex items-center justify-center">
+            <div class="bg-white p-6 rounded-2xl border border-gray-200/80 shadow-xs space-y-3">
+                <div class="w-10 h-10 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center">
                     <span class="material-symbols-outlined">record_voice_over</span>
                 </div>
-                <h4 class="font-bold text-base text-charcoal-900">Voice AI Support</h4>
+                <h4 class="font-bold text-sm text-charcoal-900">Live Phone Call Screen</h4>
                 <p class="text-xs text-gray-600 leading-relaxed">
-                    Customers switch to a live voice call with the AI agent. Full speech-to-text and voice responses — no hold music, no waiting.
-                </p>
-            </div>
-
-            <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm space-y-3">
-                <div class="w-10 h-10 rounded-xl bg-rose-50 text-rose-500 flex items-center justify-center">
-                    <span class="material-symbols-outlined">insights</span>
-                </div>
-                <h4 class="font-bold text-base text-charcoal-900">Weekly Insights Reports</h4>
-                <p class="text-xs text-gray-600 leading-relaxed">
-                    Automatic weekly summaries of top complaints, resolution rates, sentiment trends, and team performance — so you never miss a pattern.
+                    Dedicated mobile-style phone call screen with ticking timer, live audio waveform, browser WebSpeech recognition, Whisper STT, and Kokoro ONNX TTS.
                 </p>
             </div>
         </div>
     </section>
 
     <!-- Footer -->
-    <footer class="mt-auto border-t border-gray-200 bg-white py-8 px-6 text-center text-xs text-gray-400">
-        <p>&copy; 2026 Supporto AI Platform &mdash; Automated Support, Faster Resolutions.</p>
+    <footer class="mt-auto border-t border-gray-200 bg-white py-10 px-6">
+        <div class="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-gray-400">
+            <div class="flex items-center gap-2">
+                <span class="font-bold text-charcoal-900">Supporto AI</span>
+                <span>&bull;</span>
+                <span>Automated Customer Support &amp; Ticket Triage Platform</span>
+            </div>
+            <div class="flex items-center gap-4">
+                <a href="/select-workspace/" class="hover:text-charcoal-900 transition">Switch Company</a>
+                <a href="/admin/" class="hover:text-charcoal-900 transition">Platform Admin</a>
+                <a href="/shopease/analytics/weekly/" class="hover:text-charcoal-900 transition">Weekly Insights</a>
+            </div>
+        </div>
     </footer>
 </div>
 {% endblock %}

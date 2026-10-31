@@ -1,43 +1,59 @@
 {% extends "base.html" %}
 
-{% block title %}{{ workspace.name }} - Support Portal & Sign In{% endblock %}
+{% block title %}{{ workspace.name }} — Enterprise Support Portal &amp; Staff Sign In{% endblock %}
 
 {% block content %}
-<div class="min-h-full flex flex-col bg-[#F7F8FA]">
+<div class="min-h-full flex flex-col bg-[#FBFBFD] text-charcoal-900 selection:bg-brand-500 selection:text-white">
     <!-- Company Portal Top Header -->
-    <header class="bg-white border-b border-gray-200 px-6 py-4">
-        <div class="max-w-7xl mx-auto flex items-center justify-between">
+    <header class="bg-white/80 backdrop-blur-md border-b border-gray-200/80 px-6 py-4 sticky top-0 z-30">
+        <div class="max-w-6xl mx-auto flex items-center justify-between">
             <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-xl bg-brand-500 text-white font-black flex items-center justify-center text-lg shadow-sm">
-                    {{ workspace.name|slice:":1"|upper }}
+                <div class="w-10 h-10 rounded-2xl {% if workspace.slug == 'expressbeas' %}bg-amber-500{% else %}bg-brand-500{% endif %} text-white font-black flex items-center justify-center text-lg shadow-sm">
+                    {% if workspace.slug == 'expressbeas' %}
+                    <span class="material-symbols-outlined text-2xl">local_shipping</span>
+                    {% else %}
+                    <span class="material-symbols-outlined text-2xl">shopping_bag</span>
+                    {% endif %}
                 </div>
                 <div>
-                    <h1 class="font-extrabold text-base text-charcoal-900 leading-tight">{{ workspace.name }}</h1>
-                    <p class="text-[11px] text-gray-500 font-mono">supporto.ai/{{ workspace.slug }}/</p>
+                    <h1 class="font-black text-base text-charcoal-900 leading-tight">{{ workspace.name }}</h1>
+                    <p class="text-[11px] text-gray-400 font-mono">supporto.ai/{{ workspace.slug }}/</p>
                 </div>
             </div>
 
             <div class="flex items-center gap-3 text-xs">
-                <a href="{% url 'widget_demo' public_key=workspace.public_key %}" target="_blank" class="font-semibold text-brand-500 hover:text-brand-600 flex items-center gap-1.5 bg-brand-50 hover:bg-brand-100 px-3 py-1.5 rounded-lg border border-brand-200 transition">
-                    <span class="material-symbols-outlined text-sm">smart_toy</span>
-                    Customer Chat Demo
+                <a href="{% url 'widget_demo' public_key=workspace.public_key %}" target="_blank"
+                   class="font-bold {% if workspace.slug == 'expressbeas' %}text-amber-700 bg-amber-50 hover:bg-amber-100 border-amber-200{% else %}text-brand-600 bg-brand-50 hover:bg-brand-100 border-brand-200{% endif %} flex items-center gap-1.5 px-3 py-1.5 rounded-xl border transition shadow-xs">
+                    <span class="material-symbols-outlined text-sm">open_in_new</span>
+                    Customer Demo Site
                 </a>
-                <a href="/" class="text-gray-500 hover:text-charcoal-900 transition">&larr; Platform Home</a>
+                <a href="/select-workspace/" class="text-gray-500 hover:text-charcoal-900 transition flex items-center gap-1">
+                    <span class="material-symbols-outlined text-sm">swap_horiz</span>
+                    Switch Company
+                </a>
+                <a href="/" class="text-gray-500 hover:text-charcoal-900 transition">&larr; Home</a>
             </div>
         </div>
     </header>
 
     <!-- Company Portal Authentication Entry -->
     <main class="flex-1 flex items-center justify-center py-16 px-4 sm:px-6">
-        <div class="max-w-md w-full bg-white p-8 sm:p-10 rounded-3xl shadow-xl border border-gray-100 space-y-8 text-center">
+        <div class="max-w-md w-full bg-white p-8 sm:p-10 rounded-3xl shadow-xl border border-gray-200/90 space-y-7 text-center relative overflow-hidden">
+            <!-- Subtle accent glow -->
+            <div class="absolute -top-16 -right-16 w-32 h-32 rounded-full {% if workspace.slug == 'expressbeas' %}bg-amber-500/10{% else %}bg-brand-500/10{% endif %} blur-2xl"></div>
+
             <!-- Company Logo / Branding -->
-            <div class="space-y-3">
-                <div class="w-16 h-16 rounded-2xl bg-brand-50 text-brand-500 font-black mx-auto flex items-center justify-center text-2xl shadow-inner border border-brand-100">
-                    {{ workspace.name|slice:":1"|upper }}
+            <div class="space-y-3 relative z-10">
+                <div class="w-16 h-16 rounded-2xl {% if workspace.slug == 'expressbeas' %}bg-amber-50 text-amber-600 border-amber-100{% else %}bg-brand-50 text-brand-600 border-brand-100{% endif %} font-black mx-auto flex items-center justify-center text-3xl shadow-inner border">
+                    {% if workspace.slug == 'expressbeas' %}
+                    <span class="material-symbols-outlined text-3xl">local_shipping</span>
+                    {% else %}
+                    <span class="material-symbols-outlined text-3xl">shopping_bag</span>
+                    {% endif %}
                 </div>
-                <h2 class="text-2xl font-black text-charcoal-900">{{ workspace.name }}</h2>
-                <p class="text-sm text-gray-600 font-medium leading-relaxed">
-                    {{ welcome_message|default:"Welcome to the AI-powered customer support and ticket triage platform." }}
+                <h2 class="text-2xl font-black text-charcoal-900 tracking-tight">{{ workspace.name }} Portal</h2>
+                <p class="text-xs text-gray-500 leading-relaxed font-normal max-w-sm mx-auto">
+                    {{ welcome_message|default:"Authorized team access for Supporto AI customer conversations, ticket queues, and AI-assisted email triage." }}
                 </p>
             </div>
 
@@ -53,8 +69,8 @@
             {% endif %}
 
             <!-- Single Authorized Google Sign-In Action -->
-            <div class="space-y-4 pt-2">
-                <a href="{{ google_login_url|default:'#' }}" class="w-full py-3.5 px-6 rounded-2xl text-sm font-bold text-charcoal-900 bg-white hover:bg-gray-50 border-2 border-gray-200 hover:border-gray-300 shadow-sm transition flex items-center justify-center gap-3">
+            <div class="space-y-4 pt-1 relative z-10">
+                <a href="{{ google_login_url|default:'#' }}" class="w-full py-3.5 px-6 rounded-2xl text-xs font-bold text-charcoal-900 bg-white hover:bg-gray-50 border-2 border-gray-200 hover:border-gray-300 shadow-sm transition flex items-center justify-center gap-3">
                     <!-- Google G Logo SVG -->
                     <svg class="w-5 h-5" viewBox="0 0 24 24">
                         <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -65,14 +81,18 @@
                     Continue with Google
                 </a>
 
-                <p class="text-[11px] text-gray-400 font-medium leading-normal">
-                    Workspace access is restricted to Google email addresses explicitly authorized by your Supporto AI Platform Administrator.
-                </p>
+                <div class="p-3 rounded-xl bg-gray-50 border border-gray-100 text-[11px] text-gray-500 leading-normal text-left space-y-1">
+                    <p class="font-bold text-gray-700 flex items-center gap-1">
+                        <span class="material-symbols-outlined text-xs text-brand-600">verified_user</span>
+                        Authorized Owner Access:
+                    </p>
+                    <p class="font-mono text-gray-800">vanshhsoni.production@gmail.com</p>
+                </div>
             </div>
 
             <!-- Footer isolation badge -->
-            <div class="pt-6 border-t border-gray-100 text-xs text-gray-400 flex items-center justify-between">
-                <span class="flex items-center gap-1 font-mono text-[11px]">
+            <div class="pt-5 border-t border-gray-100 text-xs text-gray-400 flex items-center justify-between">
+                <span class="flex items-center gap-1.5 font-mono text-[11px]">
                     <span class="w-2 h-2 rounded-full bg-emerald-500 inline-block"></span>
                     Tenant: {{ workspace.slug }}
                 </span>

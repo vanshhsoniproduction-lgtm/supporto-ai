@@ -532,5 +532,17 @@
         div.textContent = text;
         return div.innerHTML;
     }
+
+    {% if initial_query %}
+    document.addEventListener("DOMContentLoaded", function() {
+        const input = document.getElementById("chatInput");
+        if (input) {
+            input.value = "{{ initial_query|escapejs }}";
+            setTimeout(function() {
+                sendMessage();
+            }, 350);
+        }
+    });
+    {% endif %}
 </script>
 {% endblock %}
