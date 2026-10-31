@@ -16,26 +16,6 @@ ShopEase Store — Premium Electronics & Audio Accessories
     <!-- REAL COURIER & LOGISTICS WEBSITE: EXPRESSBEAS                      -->
     <!-- ================================================================= -->
 
-    <!-- Top Utility Bar -->
-    <div class="bg-[#18181B] text-[#A1A1AA] text-[11px] py-2 px-6 border-b border-[#27272A]">
-        <div class="max-w-[1200px] mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
-            <div class="flex items-center gap-4">
-                <span>&bull; Nationwide Logistics &amp; 3PL Supply Chain</span>
-                <span>&bull; Toll Free: 1800-209-6666</span>
-                <span class="hidden md:inline">&bull; ISO 9001:2015 Certified</span>
-            </div>
-            <div class="flex items-center gap-4 text-xs font-medium">
-                <a href="/" class="text-[#F97316] hover:underline flex items-center gap-1" style="text-decoration: none;">
-                    &larr; Supporto AI Platform
-                </a>
-                <span class="text-[#3F3F46]">|</span>
-                <a href="{% url 'workspace_dashboard' company_slug=workspace.slug %}" class="hover:text-white" style="text-decoration: none;">
-                    Staff Portal
-                </a>
-            </div>
-        </div>
-    </div>
-
     <!-- Main Navigation Bar -->
     <header class="border-b border-[#E0E0E0] bg-white sticky top-0 z-30 shadow-xs">
         <div class="max-w-[1200px] mx-auto px-6 h-18 flex items-center justify-between">
@@ -52,7 +32,7 @@ ShopEase Store — Premium Electronics & Audio Accessories
                 </a>
 
                 <!-- Desktop Navigation Links -->
-                <nav class="hidden lg:flex items-center gap-6 text-xs font-semibold text-[#52525B]">
+                <nav class="hidden md:flex items-center gap-7 text-xs font-semibold text-[#52525B]">
                     <a href="#services" class="hover:text-[#F97316] transition-colors" style="text-decoration: none;">Services</a>
                     <a href="#tracking" class="hover:text-[#F97316] transition-colors" style="text-decoration: none;">Track Shipment</a>
                     <a href="#network" class="hover:text-[#F97316] transition-colors" style="text-decoration: none;">Network Coverage</a>
@@ -61,14 +41,10 @@ ShopEase Store — Premium Electronics & Audio Accessories
                 </nav>
             </div>
 
-            <div class="flex items-center gap-3">
-                <button type="button" onclick="openEmbeddedDrawerWithQuery('Where is my consignment?')" class="btn-primary py-2 px-4 text-xs font-semibold shadow-xs flex items-center gap-1.5" style="text-decoration: none;">
-                    <span class="material-symbols-outlined text-base">search</span>
-                    <span>Track AWB</span>
-                </button>
-                <button type="button" onclick="toggleDrawer()" class="hidden sm:inline-flex btn-secondary py-2 px-3 text-xs font-medium" style="text-decoration: none;">
-                    Support Chat
-                </button>
+            <!-- Header Right: Clean Helpline Info (No redundant chat buttons) -->
+            <div class="hidden sm:flex items-center gap-2 text-xs text-[#52525B]">
+                <span class="material-symbols-outlined text-base text-[#F97316]">call</span>
+                <span class="font-semibold">Toll Free: 1800-209-6666</span>
             </div>
         </div>
     </header>
@@ -108,57 +84,38 @@ ShopEase Store — Premium Electronics & Audio Accessories
                             <a href="#tracking" class="btn-primary py-3 px-6 text-sm font-semibold shadow-md" style="text-decoration: none;">
                                 Track Consignment &rarr;
                             </a>
-                            <button type="button" onclick="openEmbeddedDrawerWithQuery('I need assistance with a delivery')" class="bg-white/10 hover:bg-white/20 text-white border border-white/20 px-5 py-3 rounded-lg text-sm font-medium transition-colors">
-                                Talk to Virtual Agent
-                            </button>
+                            <a href="#services" class="bg-white/10 hover:bg-white/20 text-white border border-white/20 px-5 py-3 rounded-lg text-sm font-medium transition-colors" style="text-decoration: none;">
+                                Our Solutions
+                            </a>
                         </div>
                     </div>
 
-                    <!-- Right: Quick Consignment Tracking Card -->
+                    <!-- Right: Clean Official Consignment Tracking Card -->
                     <div id="tracking" class="lg:col-span-5">
                         <div class="bg-white text-[#212121] rounded-2xl p-6 sm:p-8 shadow-2xl border border-[#E0E0E0] space-y-5">
                             <div class="flex items-center justify-between pb-3 border-b border-[#EEEEEE]">
                                 <span class="text-xs font-bold uppercase tracking-wider text-[#F97316] flex items-center gap-1.5">
                                     <span class="material-symbols-outlined text-base">pin_drop</span>
-                                    Real-Time Track &amp; Trace
+                                    Consignment Tracking
                                 </span>
                                 <span class="text-[11px] bg-[#E8F5E9] text-[#2E7D32] px-2 py-0.5 rounded font-semibold">Live Fleet</span>
                             </div>
 
                             <p class="text-xs text-[#616161]">
-                                Enter your 15-digit Air Waybill (AWB) number to view dispatch status, transit hub scans, and estimated arrival.
+                                Enter your Air Waybill (AWB) number to check current dispatch status, transit hub events, and estimated delivery.
                             </p>
 
                             <!-- Tracking Input -->
                             <div class="space-y-3">
                                 <div>
                                     <label class="block text-xs font-semibold text-[#212121] mb-1">Air Waybill (AWB) Number</label>
-                                    <input type="text" id="expressAwbInput" placeholder="Enter 15-digit AWB (e.g. 152785863851740)" class="input-text text-xs font-mono font-medium py-3">
+                                    <input type="text" id="expressAwbInput" placeholder="Enter AWB Number" class="input-text text-xs font-mono font-medium py-3" onkeydown="if(event.key==='Enter'){event.preventDefault();trackFromHeroInput();}">
                                 </div>
 
                                 <button type="button" onclick="trackFromHeroInput()" class="btn-primary w-full text-xs font-semibold py-3 shadow-sm flex items-center justify-center gap-2">
                                     <span class="material-symbols-outlined text-base">search</span>
-                                    <span>Track Shipment via AI</span>
+                                    <span>Track Shipment</span>
                                 </button>
-                            </div>
-
-                            <!-- Sample Testing Pills -->
-                            <div class="pt-3 border-t border-[#EEEEEE] space-y-2">
-                                <span class="text-[10px] font-semibold text-[#71717A] uppercase tracking-wider block">Sample Test Consignments (Click to track):</span>
-                                <div class="flex flex-col gap-1.5 text-xs">
-                                    <button type="button" onclick="openEmbeddedDrawerWithQuery('Where is my consignment 152785863851740?')" class="text-left p-2 rounded bg-[#F8FAFC] hover:bg-[#FFF7ED] border border-[#E2E8F0] hover:border-[#F97316] text-xs font-medium text-[#18181B] transition-colors flex items-center justify-between">
-                                        <span class="font-mono">152785863851740</span>
-                                        <span class="text-[10px] text-[#2E7D32] font-semibold bg-[#E8F5E9] px-2 py-0.5 rounded">Delivered</span>
-                                    </button>
-                                    <button type="button" onclick="openEmbeddedDrawerWithQuery('Where is my shipment 152785863851741?')" class="text-left p-2 rounded bg-[#F8FAFC] hover:bg-[#FFF7ED] border border-[#E2E8F0] hover:border-[#F97316] text-xs font-medium text-[#18181B] transition-colors flex items-center justify-between">
-                                        <span class="font-mono">152785863851741</span>
-                                        <span class="text-[10px] text-[#F57F17] font-semibold bg-[#FFF8E1] px-2 py-0.5 rounded">Delayed at Delhi Hub</span>
-                                    </button>
-                                    <button type="button" onclick="openEmbeddedDrawerWithQuery('Where is parcel 152785863851742?')" class="text-left p-2 rounded bg-[#F8FAFC] hover:bg-[#FFF7ED] border border-[#E2E8F0] hover:border-[#F97316] text-xs font-medium text-[#18181B] transition-colors flex items-center justify-between">
-                                        <span class="font-mono">152785863851742</span>
-                                        <span class="text-[10px] text-[#0D47A1] font-semibold bg-[#E3F2FD] px-2 py-0.5 rounded">Out for Delivery</span>
-                                    </button>
-                                </div>
                             </div>
                         </div>
                     </div>
@@ -201,7 +158,6 @@ ShopEase Store — Premium Electronics & Audio Accessories
                 </div>
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                    <!-- Service 1 -->
                     <div class="bg-white rounded-xl border border-[#E0E0E0] overflow-hidden shadow-xs hover:shadow-md transition-shadow">
                         <img src="https://images.unsplash.com/photo-1566576912321-d58ddd7a6088?auto=format&fit=crop&w=600&q=80" alt="B2C E-Commerce Express Delivery" class="w-full h-40 object-cover">
                         <div class="p-5 space-y-2">
@@ -212,7 +168,6 @@ ShopEase Store — Premium Electronics & Audio Accessories
                         </div>
                     </div>
 
-                    <!-- Service 2 -->
                     <div class="bg-white rounded-xl border border-[#E0E0E0] overflow-hidden shadow-xs hover:shadow-md transition-shadow">
                         <img src="https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?auto=format&fit=crop&w=600&q=80" alt="B2B Heavy Cargo & Freight" class="w-full h-40 object-cover">
                         <div class="p-5 space-y-2">
@@ -223,7 +178,6 @@ ShopEase Store — Premium Electronics & Audio Accessories
                         </div>
                     </div>
 
-                    <!-- Service 3 -->
                     <div class="bg-white rounded-xl border border-[#E0E0E0] overflow-hidden shadow-xs hover:shadow-md transition-shadow">
                         <img src="https://images.unsplash.com/photo-1587293852726-70cdb56c2866?auto=format&fit=crop&w=600&q=80" alt="3PL Smart Fulfillment Centers" class="w-full h-40 object-cover">
                         <div class="p-5 space-y-2">
@@ -234,7 +188,6 @@ ShopEase Store — Premium Electronics & Audio Accessories
                         </div>
                     </div>
 
-                    <!-- Service 4 -->
                     <div class="bg-white rounded-xl border border-[#E0E0E0] overflow-hidden shadow-xs hover:shadow-md transition-shadow">
                         <img src="https://images.unsplash.com/photo-1578575437130-527eed3abbec?auto=format&fit=crop&w=600&q=80" alt="Cross-Border Global Express" class="w-full h-40 object-cover">
                         <div class="p-5 space-y-2">
@@ -244,24 +197,6 @@ ShopEase Store — Premium Electronics & Audio Accessories
                             </p>
                         </div>
                     </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- Technology & Support Banner -->
-        <section id="solutions" class="py-14 bg-white border-y border-[#E0E0E0]">
-            <div class="max-w-[1200px] mx-auto px-6">
-                <div class="bg-[#FFF7ED] border border-[#FFEDD5] rounded-2xl p-8 flex flex-col md:flex-row items-center justify-between gap-6">
-                    <div class="space-y-2 max-w-xl">
-                        <span class="text-xs font-bold text-[#EA580C] uppercase tracking-wider">AI Customer Support Embedded</span>
-                        <h3 class="text-xl font-bold text-[#18181B]">Need assistance with an ongoing dispatch or delivery?</h3>
-                        <p class="text-xs text-[#71717A] leading-relaxed">
-                            ExpressBeas is integrated with Supporto AI. Ask questions about your AWB number, reschedule a delivery, or report dispatch delays directly through our live assistant.
-                        </p>
-                    </div>
-                    <button type="button" onclick="toggleDrawer()" class="btn-primary py-3 px-6 text-xs font-semibold shadow-sm whitespace-nowrap">
-                        Open Support Assistant &rarr;
-                    </button>
                 </div>
             </div>
         </section>
@@ -292,24 +227,23 @@ ShopEase Store — Premium Electronics & Audio Accessories
                 </ul>
             </div>
             <div>
-                <h4 class="font-bold text-white mb-3 uppercase tracking-wider text-[11px]">Customer Support</h4>
+                <h4 class="font-bold text-white mb-3 uppercase tracking-wider text-[11px]">Quick Links</h4>
                 <ul class="space-y-2 text-[#71717A]">
-                    <li><button type="button" onclick="openEmbeddedDrawerWithQuery('Where is my consignment?')" class="hover:text-white">Track AWB</button></li>
-                    <li><button type="button" onclick="toggleDrawer()" class="hover:text-white">Live AI Assistant</button></li>
-                    <li><a href="#tracking" class="hover:text-white">Delivery SLA Terms</a></li>
-                    <li><a href="#company" class="hover:text-white">Claims &amp; Disputes</a></li>
+                    <li><a href="#tracking" class="hover:text-white">Track Consignment</a></li>
+                    <li><a href="#network" class="hover:text-white">Network Coverage</a></li>
+                    <li><a href="#services" class="hover:text-white">Commercial Fleet</a></li>
+                    <li><a href="#company" class="hover:text-white">Careers</a></li>
                 </ul>
             </div>
             <div>
-                <h4 class="font-bold text-white mb-3 uppercase tracking-wider text-[11px]">Security &amp; Compliance</h4>
+                <h4 class="font-bold text-white mb-3 uppercase tracking-wider text-[11px]">Compliance</h4>
                 <p class="text-[#71717A] leading-relaxed">
-                    ISO 9001:2015 &bull; IATA Cargo Certified &bull; 256-Bit Data Encryption on all tracking endpoints.
+                    ISO 9001:2015 &bull; IATA Cargo Certified &bull; 256-Bit SSL Encryption across enterprise API endpoints.
                 </p>
             </div>
         </div>
         <div class="max-w-[1200px] mx-auto px-6 pt-10 mt-10 border-t border-[#27272A] flex flex-col sm:flex-row items-center justify-between gap-4 text-[#71717A]">
             <p>&copy; 2026 ExpressBeas Logistics Network Limited. All rights reserved.</p>
-            <p>Customer Support powered by <a href="/" class="text-[#F97316] hover:underline">Supporto AI</a></p>
         </div>
     </footer>
 
@@ -318,19 +252,6 @@ ShopEase Store — Premium Electronics & Audio Accessories
     <!-- ================================================================= -->
     <!-- REAL E-COMMERCE STORE WEBSITE: SHOPEASE                           -->
     <!-- ================================================================= -->
-
-    <!-- Top Announcement Bar -->
-    <div class="bg-[#F97316] text-white text-[11px] font-semibold py-2 px-6 text-center">
-        <div class="max-w-[1200px] mx-auto flex items-center justify-between">
-            <span class="hidden sm:inline">⚡ Summer Tech Carnival</span>
-            <span>Get 15% Instant Discount with UPI &bull; Free Next-Day Delivery on all orders above &#8377;999</span>
-            <div class="flex items-center gap-3">
-                <a href="/" class="text-white hover:underline text-[11px]">&larr; Supporto AI</a>
-                <span>&bull;</span>
-                <a href="{% url 'workspace_dashboard' company_slug=workspace.slug %}" class="text-white hover:underline text-[11px]">Staff Portal</a>
-            </div>
-        </div>
-    </div>
 
     <!-- Main E-Commerce Header -->
     <header class="border-b border-[#E0E0E0] bg-white sticky top-0 z-30 shadow-xs">
@@ -352,20 +273,16 @@ ShopEase Store — Premium Electronics & Audio Accessories
                 <input type="text" placeholder="Search wireless headphones, 65W GaN chargers, earbuds..." class="input-text pl-10 text-xs py-2.5 bg-[#F8FAFC]">
             </div>
 
-            <!-- Customer Actions -->
-            <div class="flex items-center gap-4 text-xs font-semibold">
-                <button type="button" onclick="openEmbeddedDrawerWithQuery('What are my orders?')" class="flex items-center gap-1.5 text-[#52525B] hover:text-[#F97316] transition-colors">
-                    <span class="material-symbols-outlined text-xl">inventory</span>
-                    <span class="hidden sm:inline">My Orders</span>
-                </button>
-                <div class="relative cursor-pointer flex items-center gap-1 text-[#52525B]">
+            <!-- Customer Actions (No redundant support buttons in nav) -->
+            <div class="flex items-center gap-5 text-xs font-semibold text-[#52525B]">
+                <div class="flex items-center gap-1.5 cursor-pointer hover:text-[#F97316]">
+                    <span class="material-symbols-outlined text-xl">favorite_border</span>
+                    <span class="hidden sm:inline">Wishlist</span>
+                </div>
+                <div class="relative cursor-pointer flex items-center gap-1 hover:text-[#F97316]">
                     <span class="material-symbols-outlined text-xl">shopping_cart</span>
                     <span class="bg-[#F97316] text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center font-bold -ml-1">1</span>
                 </div>
-                <button type="button" onclick="toggleDrawer()" class="btn-primary py-2 px-3.5 text-xs font-semibold shadow-xs flex items-center gap-1.5">
-                    <span class="material-symbols-outlined text-base">support_agent</span>
-                    <span>Support</span>
-                </button>
             </div>
         </div>
 
@@ -407,12 +324,12 @@ ShopEase Store — Premium Electronics & Audio Accessories
                     </div>
 
                     <div class="flex flex-wrap items-center gap-4 pt-2">
-                        <button type="button" onclick="openEmbeddedDrawerWithQuery('Where is order SE-84920?')" class="btn-primary py-3 px-6 text-sm font-semibold shadow-md">
-                            Track Order #SE-84920 &rarr;
-                        </button>
-                        <button type="button" onclick="openEmbeddedDrawerWithQuery('What is your return policy?')" class="bg-white/10 hover:bg-white/20 text-white border border-white/20 px-5 py-3 rounded-lg text-sm font-medium transition-colors">
-                            Return Policy &bull; 7 Days
-                        </button>
+                        <a href="#catalog" class="btn-primary py-3 px-6 text-sm font-semibold shadow-md" style="text-decoration: none;">
+                            Shop Now &rarr;
+                        </a>
+                        <a href="#catalog" class="bg-white/10 hover:bg-white/20 text-white border border-white/20 px-5 py-3 rounded-lg text-sm font-medium transition-colors" style="text-decoration: none;">
+                            Explore Collection
+                        </a>
                     </div>
                 </div>
 
@@ -421,13 +338,6 @@ ShopEase Store — Premium Electronics & Audio Accessories
                         <img src="https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=800&q=80" 
                              alt="StudioSound Pro ANC Wireless Headphones" 
                              class="w-full h-80 object-cover">
-                        <div class="absolute bottom-3 left-3 right-3 bg-black/60 backdrop-blur-md p-3 rounded-lg text-xs flex items-center justify-between">
-                            <div>
-                                <p class="font-bold text-white">StudioSound Pro ANC</p>
-                                <p class="text-[11px] text-[#A1A1AA]">Order #SE-84920 on file</p>
-                            </div>
-                            <span class="badge badge-success text-[10px]">Delivered</span>
-                        </div>
                     </div>
                 </div>
             </div>
@@ -458,10 +368,10 @@ ShopEase Store — Premium Electronics & Audio Accessories
                     </div>
                 </div>
                 <div class="flex items-center gap-3">
-                    <span class="material-symbols-outlined text-2xl text-[#F97316]">support_agent</span>
+                    <span class="material-symbols-outlined text-2xl text-[#F97316]">security</span>
                     <div>
-                        <p class="font-bold text-[#18181B]">24/7 AI Support</p>
-                        <p class="text-[#64748B] text-[11px]">Live order resolution</p>
+                        <p class="font-bold text-[#18181B]">100% Genuine</p>
+                        <p class="text-[#64748B] text-[11px]">Direct factory warranty</p>
                     </div>
                 </div>
             </div>
@@ -472,20 +382,17 @@ ShopEase Store — Premium Electronics & Audio Accessories
             <div class="flex items-center justify-between border-b border-[#E0E0E0] pb-4">
                 <div>
                     <h2 class="text-xl sm:text-2xl font-extrabold text-[#18181B] tracking-tight">Trending Electronics &amp; Accessories</h2>
-                    <p class="text-xs text-[#64748B] mt-0.5">Verified products connected to the ShopEase SQL database</p>
+                    <p class="text-xs text-[#64748B] mt-0.5">High-performance audio, charging essentials, and wearables</p>
                 </div>
-                <span class="text-xs font-semibold text-[#F97316]">View All 24 Items &rarr;</span>
+                <span class="text-xs font-semibold text-[#F97316]">View All Items &rarr;</span>
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 
-                <!-- Product 1: SE-84920 Item -->
+                <!-- Product 1 -->
                 <div class="bg-white border border-[#E2E8F0] rounded-xl overflow-hidden shadow-xs hover:shadow-md transition-all flex flex-col justify-between">
                     <div>
-                        <div class="relative">
-                            <img src="https://images.unsplash.com/photo-1546435770-a3e426bf472b?auto=format&fit=crop&w=600&q=80" alt="Wireless Noise-Canceling Headphones" class="w-full h-48 object-cover">
-                            <span class="absolute top-2 left-2 bg-[#18181B] text-white text-[10px] font-bold px-2 py-0.5 rounded">Order #SE-84920</span>
-                        </div>
+                        <img src="https://images.unsplash.com/photo-1546435770-a3e426bf472b?auto=format&fit=crop&w=600&q=80" alt="Wireless Noise-Canceling Headphones" class="w-full h-48 object-cover">
                         <div class="p-4 space-y-2">
                             <div class="flex items-center justify-between text-xs text-[#64748B]">
                                 <span>Audio &bull; Over-Ear</span>
@@ -496,23 +403,17 @@ ShopEase Store — Premium Electronics & Audio Accessories
                             <div class="text-sm font-extrabold text-[#18181B] pt-1">&#8377;4,999.00</div>
                         </div>
                     </div>
-                    <div class="p-4 pt-0 flex items-center gap-2">
-                        <button type="button" onclick="openEmbeddedDrawerWithQuery('Where is order SE-84920?')" class="btn-primary w-full text-xs font-semibold py-2">
-                            Track Order
-                        </button>
-                        <button type="button" onclick="openEmbeddedDrawerWithQuery('What is the return status for order SE-84920?')" class="btn-secondary w-full text-xs font-medium py-2">
-                            Return Status
+                    <div class="p-4 pt-0">
+                        <button type="button" class="btn-primary w-full text-xs font-semibold py-2">
+                            Add to Cart
                         </button>
                     </div>
                 </div>
 
-                <!-- Product 2: SE-84922 Item -->
+                <!-- Product 2 -->
                 <div class="bg-white border border-[#E2E8F0] rounded-xl overflow-hidden shadow-xs hover:shadow-md transition-all flex flex-col justify-between">
                     <div>
-                        <div class="relative">
-                            <img src="https://images.unsplash.com/photo-1622445268046-6f81ef697e88?auto=format&fit=crop&w=600&q=80" alt="Magnetic Wireless Charging Pad" class="w-full h-48 object-cover">
-                            <span class="absolute top-2 left-2 bg-[#EA580C] text-white text-[10px] font-bold px-2 py-0.5 rounded">Order #SE-84922</span>
-                        </div>
+                        <img src="https://images.unsplash.com/photo-1622445268046-6f81ef697e88?auto=format&fit=crop&w=600&q=80" alt="Magnetic Wireless Charging Pad" class="w-full h-48 object-cover">
                         <div class="p-4 space-y-2">
                             <div class="flex items-center justify-between text-xs text-[#64748B]">
                                 <span>Charging &bull; Qi2 Certified</span>
@@ -524,8 +425,8 @@ ShopEase Store — Premium Electronics & Audio Accessories
                         </div>
                     </div>
                     <div class="p-4 pt-0">
-                        <button type="button" onclick="openEmbeddedDrawerWithQuery('Cancel order SE-84922')" class="btn-secondary w-full text-xs font-medium py-2 text-[#C2410C]">
-                            Cancel Order via AI &rarr;
+                        <button type="button" class="btn-primary w-full text-xs font-semibold py-2">
+                            Add to Cart
                         </button>
                     </div>
                 </div>
@@ -545,8 +446,8 @@ ShopEase Store — Premium Electronics & Audio Accessories
                         </div>
                     </div>
                     <div class="p-4 pt-0">
-                        <button type="button" onclick="openEmbeddedDrawerWithQuery('Do you have stock for 65W GaN Charger?')" class="btn-secondary w-full text-xs font-medium py-2">
-                            Check Stock via Support
+                        <button type="button" class="btn-primary w-full text-xs font-semibold py-2">
+                            Add to Cart
                         </button>
                     </div>
                 </div>
@@ -566,8 +467,8 @@ ShopEase Store — Premium Electronics & Audio Accessories
                         </div>
                     </div>
                     <div class="p-4 pt-0">
-                        <button type="button" onclick="openEmbeddedDrawerWithQuery('What are my orders?')" class="btn-secondary w-full text-xs font-medium py-2">
-                            View Order Status
+                        <button type="button" class="btn-primary w-full text-xs font-semibold py-2">
+                            Add to Cart
                         </button>
                     </div>
                 </div>
@@ -587,8 +488,8 @@ ShopEase Store — Premium Electronics & Audio Accessories
                         </div>
                     </div>
                     <div class="p-4 pt-0">
-                        <button type="button" onclick="openEmbeddedDrawerWithQuery('What are my orders?')" class="btn-secondary w-full text-xs font-medium py-2">
-                            View Order Status
+                        <button type="button" class="btn-primary w-full text-xs font-semibold py-2">
+                            Add to Cart
                         </button>
                     </div>
                 </div>
@@ -608,36 +509,12 @@ ShopEase Store — Premium Electronics & Audio Accessories
                         </div>
                     </div>
                     <div class="p-4 pt-0">
-                        <button type="button" onclick="openEmbeddedDrawerWithQuery('What are my orders?')" class="btn-secondary w-full text-xs font-medium py-2">
-                            View Order Status
+                        <button type="button" class="btn-primary w-full text-xs font-semibold py-2">
+                            Add to Cart
                         </button>
                     </div>
                 </div>
 
-            </div>
-        </section>
-
-        <!-- Quick Help Chips Bar -->
-        <section class="max-w-[1200px] mx-auto px-6">
-            <div class="p-6 rounded-xl bg-[#FFF7ED] border border-[#FFEDD5] space-y-3">
-                <span class="text-xs font-bold text-[#EA580C] uppercase tracking-wider block">Customer Helpdesk &bull; Click to ask live AI assistant:</span>
-                <div class="flex flex-wrap gap-2 text-xs">
-                    <button type="button" onclick="openEmbeddedDrawerWithQuery('What are my orders?')" class="chip text-xs bg-white">
-                        What are my orders?
-                    </button>
-                    <button type="button" onclick="openEmbeddedDrawerWithQuery('Where is order SE-84920?')" class="chip text-xs bg-white">
-                        Where is order SE-84920?
-                    </button>
-                    <button type="button" onclick="openEmbeddedDrawerWithQuery('What is the status of my return and refund?')" class="chip text-xs bg-white">
-                        What is the status of my return and refund?
-                    </button>
-                    <button type="button" onclick="openEmbeddedDrawerWithQuery('Cancel order SE-84922')" class="chip text-xs bg-white">
-                        Cancel order SE-84922
-                    </button>
-                    <button type="button" onclick="openEmbeddedDrawerWithQuery('I want to speak with a human agent.')" class="chip text-xs bg-white">
-                        Talk to a human agent
-                    </button>
-                </div>
             </div>
         </section>
 
@@ -667,12 +544,12 @@ ShopEase Store — Premium Electronics & Audio Accessories
                 </ul>
             </div>
             <div>
-                <h4 class="font-bold text-white mb-3 uppercase tracking-wider text-[11px]">Customer Support</h4>
+                <h4 class="font-bold text-white mb-3 uppercase tracking-wider text-[11px]">Help &amp; Orders</h4>
                 <ul class="space-y-2 text-[#71717A]">
-                    <li><button type="button" onclick="openEmbeddedDrawerWithQuery('Where is my order?')" class="hover:text-white">Track Order</button></li>
-                    <li><button type="button" onclick="openEmbeddedDrawerWithQuery('How do I return a product?')" class="hover:text-white">Return Policy (7 Days)</button></li>
-                    <li><button type="button" onclick="toggleDrawer()" class="hover:text-white">Chat with AI Support</button></li>
-                    <li><a href="mailto:support@shopease.com" class="hover:text-white">Email Support</a></li>
+                    <li><a href="#catalog" class="hover:text-white">Shipping Policy</a></li>
+                    <li><a href="#catalog" class="hover:text-white">Return Policy (7 Days)</a></li>
+                    <li><a href="#catalog" class="hover:text-white">Warranty Registration</a></li>
+                    <li><a href="mailto:support@shopease.com" class="hover:text-white">Email Us</a></li>
                 </ul>
             </div>
             <div>
@@ -684,7 +561,6 @@ ShopEase Store — Premium Electronics & Audio Accessories
         </div>
         <div class="max-w-[1200px] mx-auto px-6 pt-10 mt-10 border-t border-[#27272A] flex flex-col sm:flex-row items-center justify-between gap-4 text-[#71717A]">
             <p>&copy; 2026 ShopEase Technologies Pvt. Ltd. All rights reserved.</p>
-            <p>Customer Support powered by <a href="/" class="text-[#F97316] hover:underline">Supporto AI</a></p>
         </div>
     </footer>
 
@@ -692,7 +568,7 @@ ShopEase Store — Premium Electronics & Audio Accessories
 
 
     <!-- ================================================================= -->
-    <!-- FLOATING SUPPORTO AI CHAT DRAWER & CORNER LAUNCHER                -->
+    <!-- ONLY ONE FLOATING CHAT BUTTON & EMBEDDED DRAWER (BOTTOM RIGHT)    -->
     <!-- ================================================================= -->
 
     <!-- Floating Drawer Window (Right side slide-over) -->
@@ -701,8 +577,7 @@ ShopEase Store — Premium Electronics & Audio Accessories
         <div class="h-12 bg-[#18181B] text-white px-4 flex items-center justify-between text-xs border-b border-[#27272A]">
             <div class="flex items-center gap-2">
                 <span class="w-2 h-2 rounded-full bg-[#F97316] animate-pulse"></span>
-                <span class="font-bold tracking-tight">{{ workspace.name }} AI Assistant</span>
-                <span class="text-[10px] bg-[#27272A] text-[#A1A1AA] px-1.5 py-0.5 rounded">Online</span>
+                <span class="font-bold tracking-tight">{{ workspace.name }} Support</span>
             </div>
             <div class="flex items-center gap-3">
                 <a id="drawerPopoutLink" href="{% url 'widget_embed' public_key=public_key %}" target="_blank" title="Open full screen" class="text-[#A1A1AA] hover:text-white transition-colors">
@@ -717,19 +592,10 @@ ShopEase Store — Premium Electronics & Audio Accessories
         <iframe id="widgetIframe" src="{% url 'widget_embed' public_key=public_key %}" class="flex-1 w-full border-none bg-white"></iframe>
     </div>
 
-    <!-- Bottom-Right Floating Chat Button Launcher -->
-    <div class="fixed bottom-6 right-6 z-40 flex items-center gap-3">
-        <!-- Floating Prompt Tooltip Pill -->
-        <div onclick="toggleDrawer()" class="cursor-pointer hidden sm:flex items-center gap-2 bg-[#18181B] text-white text-xs font-semibold py-2 px-3.5 rounded-full shadow-lg border border-[#27272A] hover:bg-[#27272A] transition-all hover:scale-102">
-            <span class="w-2 h-2 rounded-full bg-[#F97316]"></span>
-            <span>Need help? Chat with AI</span>
-        </div>
-
-        <!-- Round Action Launcher Button -->
-        <button type="button" onclick="toggleDrawer()" title="Open Support Assistant" class="w-14 h-14 rounded-full bg-[#F97316] hover:bg-[#EA580C] text-white shadow-[0_8px_25px_rgba(249,115,22,0.4)] flex items-center justify-center transition-all duration-200 hover:scale-108 focus:outline-none">
-            <span class="material-symbols-outlined text-2xl">chat</span>
-        </button>
-    </div>
+    <!-- ONLY ONE Floating Chat Launcher (Bottom Right) -->
+    <button type="button" onclick="toggleDrawer()" title="Chat with support" class="fixed bottom-6 right-6 z-40 w-14 h-14 rounded-full bg-[#F97316] hover:bg-[#EA580C] text-white shadow-[0_8px_25px_rgba(249,115,22,0.4)] flex items-center justify-center transition-all duration-200 hover:scale-108 focus:outline-none">
+        <span class="material-symbols-outlined text-2xl">chat</span>
+    </button>
 
 </div>
 

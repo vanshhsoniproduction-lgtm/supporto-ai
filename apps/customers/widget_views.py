@@ -229,3 +229,111 @@ def widget_complete_api(request, public_key):
 
     res = conversation_service.finalize_conversation(active_conv)
     return JsonResponse(res)
+
+
+@csrf_exempt
+@require_POST
+def widget_customer_check_api(request, public_key):
+    try:
+        workspace = Workspace.objects.get(public_key=public_key, status=Workspace.Status.ACTIVE)
+    except Workspace.DoesNotExist:
+        return JsonResponse({"error": "Invalid workspace key."}, status=404)
+
+    try:
+        data = json.loads(request.body.decode("utf-8"))
+    except Exception:
+        data = request.POST
+
+    raw_phone = data.get("phone", "").strip()
+    norm_phone = normalize_phone(raw_phone)
+    if not norm_phone or len(norm_phone) != 10 or norm_phone[0] not in "6789":
+        return JsonResponse({"error": "Please enter a valid 10-digit Indian mobile number."}, status=400)
+
+    # 1. Check existing Customer
+    customer = Customer.objects.filter(workspace=workspace, normalized_phone=norm_phone).first()
+    found_name = customer.name if customer and customer.name else ""
+
+    # 2. Check Orders on file
+    if not found_name:
+        from apps.orders.models import Order
+        order = Order.objects.filter(workspace=workspace, customer_phone=norm_phone).exclude(customer_name="").first()
+        if order and order.customer_name:
+            found_name = order.customer_name
+
+    # 3. Check Shipments on file
+    if not found_name:
+        from apps.orders.models import Shipment
+        shipment = Shipment.objects.filter(workspace=workspace, receiver_phone=norm_phone).exclude(receiver_name="").first()
+        if shipment and shipment.receiver_name:
+            found_name = shipment.receiver_name
+
+    if found_name:
+        if not customer:
+            customer = Customer.objects.create(
+                workspace=workspace,
+                name=found_name,
+                phone=norm_phone,
+                normalized_phone=norm_phone
+            )
+        request.session["customer_phone"] = norm_phone
+        request.session["customer_name"] = found_name
+        return JsonResponse({
+            "exists": True,
+            "name": found_name,
+            "phone": norm_phone
+        })
+
+    return JsonResponse({
+        "exists": False,
+        "phone": norm_phone
+    })
+
+
+@csrf_exempt
+@require_POST
+def widget_customer_register_api(request, public_key):
+    try:
+        workspace = Workspace.objects.get(public_key=public_key, status=Workspace.Status.ACTIVE)
+    except Workspace.DoesNotExist:
+        return JsonResponse({"error": "Invalid workspace key."}, status=404)
+
+    try:
+        data = json.loads(request.body.decode("utf-8"))
+    except Exception:
+        data = request.POST
+
+    raw_phone = data.get("phone", "").strip()
+    norm_phone = normalize_phone(raw_phone)
+    if not norm_phone or len(norm_phone) != 10 or norm_phone[0] not in "6789":
+        return JsonResponse({"error": "Please enter a valid 10-digit Indian mobile number."}, status=400)
+
+    name = data.get("name", "").strip() or "Valued Customer"
+
+    customer = Customer.objects.filter(workspace=workspace, normalized_phone=norm_phone).first()
+    if customer:
+        customer.name = name
+        customer.phone = norm_phone
+        customer.save(update_fields=["name", "phone", "updated_at"])
+    else:
+        customer = Customer.objects.create(
+            workspace=workspace,
+            name=name,
+            phone=norm_phone,
+            normalized_phone=norm_phone
+        )
+
+    request.session["customer_phone"] = norm_phone
+    request.session["customer_name"] = name
+    return JsonResponse({
+        "success": True,
+        "name": customer.name,
+        "phone": norm_phone
+    })
+
+
+@csrf_exempt
+@require_POST
+def widget_customer_logout_api(request, public_key):
+    request.session.pop("customer_phone", None)
+    request.session.pop("customer_name", None)
+    return JsonResponse({"success": True})

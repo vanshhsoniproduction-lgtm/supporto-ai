@@ -69,3 +69,53 @@ class AIAndWidgetTests(TestCase):
         self.assertEqual(ticket.priority, Ticket.Priority.CRITICAL)
         self.assertEqual(ticket.assigned_team, self.billing_team)
 
+
+
+    def test_customer_check_existing_and_new_flow(self):
+        # Create an existing customer with normalized phone
+        Customer.objects.create(workspace=self.workspace, name="Priya Sharma", normalized_phone="9876543210")
+
+        # 1. Existing customer check
+        resp = self.client.post(
+            f"/widget/{self.workspace.public_key}/check-customer/",
+            data='{"phone": "9876543210"}',
+            content_type="application/json"
+        )
+        self.assertEqual(resp.status_code, 200)
+        data = resp.json()
+        self.assertTrue(data["exists"])
+        self.assertEqual(data["name"], "Priya Sharma")
+        self.assertEqual(data["phone"], "9876543210")
+
+        # 2. Unknown customer check
+        resp_unknown = self.client.post(
+            f"/widget/{self.workspace.public_key}/check-customer/",
+            data='{"phone": "9123456789"}',
+            content_type="application/json"
+        )
+        self.assertEqual(resp_unknown.status_code, 200)
+        data_unknown = resp_unknown.json()
+        self.assertFalse(data_unknown["exists"])
+        self.assertEqual(data_unknown["phone"], "9123456789")
+
+        # 3. Register new customer
+        resp_reg = self.client.post(
+            f"/widget/{self.workspace.public_key}/register-customer/",
+            data='{"phone": "9123456789", "name": "Vikram Patel"}',
+            content_type="application/json"
+        )
+        self.assertEqual(resp_reg.status_code, 200)
+        data_reg = resp_reg.json()
+        self.assertTrue(data_reg["success"])
+        self.assertEqual(data_reg["name"], "Vikram Patel")
+
+        # Verify created in DB
+        self.assertTrue(Customer.objects.filter(workspace=self.workspace, normalized_phone="9123456789", name="Vikram Patel").exists())
+
+        # 4. Customer logout
+        resp_logout = self.client.post(
+            f"/widget/{self.workspace.public_key}/logout/",
+            content_type="application/json"
+        )
+        self.assertEqual(resp_logout.status_code, 200)
+        self.assertTrue(resp_logout.json()["success"])

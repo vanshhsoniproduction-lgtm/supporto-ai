@@ -8,42 +8,39 @@
     <!-- Widget Header -->
     <header class="bg-white border-b border-[#E0E0E0] px-4 py-3 flex items-center justify-between flex-shrink-0">
         <div class="flex items-center gap-3">
-            <div class="w-9 h-9 rounded bg-[#FFF7ED] text-[#F97316] flex items-center justify-center font-bold">
+            <div class="w-9 h-9 rounded-lg bg-[#FFF7ED] text-[#F97316] flex items-center justify-center font-bold">
                 <span class="material-symbols-outlined text-xl">support_agent</span>
             </div>
             <div>
                 <div class="flex items-center gap-2">
-                    <h1 class="font-semibold text-sm text-[#212121] leading-tight">{{ workspace.name }} Support</h1>
-                    <span class="inline-flex items-center gap-1 text-[11px] font-medium text-[#2E7D32] bg-[#E8F5E9] px-2 py-0.5 rounded">
+                    <h1 class="font-bold text-sm text-[#212121] leading-tight">{{ workspace.name }} Support</h1>
+                    <span class="inline-flex items-center gap-1 text-[10px] font-semibold text-[#2E7D32] bg-[#E8F5E9] px-2 py-0.5 rounded-full">
                         <span class="w-1.5 h-1.5 rounded-full bg-[#2E7D32]"></span>
                         Online
                     </span>
                 </div>
                 <p class="text-xs text-[#616161]" id="headerCustomerSub">
-                    {% if customer_name %}
-                    {{ customer_name }}{% if customer_phone %} &bull; <span class="font-mono">{{ customer_phone }}</span>{% endif %}
-                    {% else %}
-                    Verified Customer Support
-                    {% endif %}
+                    Please identify with your mobile number
                 </p>
             </div>
         </div>
 
         <div class="flex items-center gap-2">
-            <!-- Edit Identity / Phone Button -->
-            <button type="button" onclick="openPreChatModal()" title="Switch Customer Identity" class="p-2 rounded border border-[#E0E0E0] bg-white hover:bg-[#F5F7FA] text-[#616161] hover:text-[#212121] transition-colors">
-                <span class="material-symbols-outlined text-base">person</span>
+            <!-- Logout Button (Only shown when logged in, NO profile button) -->
+            <button type="button" id="headerLogoutBtn" onclick="logoutCustomer()" class="hidden text-xs text-[#71717A] hover:text-[#DC2626] font-medium flex items-center gap-1 px-2.5 py-1.5 rounded hover:bg-[#FEE2E2] transition-colors" title="Log out">
+                <span class="material-symbols-outlined text-base">logout</span>
+                <span class="hidden sm:inline">Log out</span>
             </button>
             <!-- Voice Call Button -->
-            <button type="button" onclick="handleVoiceCallClicked()" class="btn-primary text-xs py-2 px-3 gap-1.5" style="text-decoration: none;">
+            <button type="button" id="headerVoiceBtn" onclick="handleVoiceCallClicked()" class="btn-primary text-xs py-2 px-3 gap-1.5 shadow-xs" style="text-decoration: none;">
                 <span class="material-symbols-outlined text-base">call</span>
-                Voice Call
+                <span>Voice Call</span>
             </button>
         </div>
     </header>
 
     <!-- Ticket Escalation Banner (Hidden until created) -->
-    <div id="ticketBanner" class="hidden px-4 py-2.5 bg-[#FFF7ED] border-b border-[#FFEDD5] flex items-center justify-between text-xs text-[#C2410C]">
+    <div id="ticketBanner" class="hidden px-4 py-2 bg-[#FFF7ED] border-b border-[#FFEDD5] flex items-center justify-between text-xs text-[#C2410C]">
         <div class="flex items-center gap-2">
             <span class="font-semibold flex items-center gap-1">
                 <span class="material-symbols-outlined text-base text-[#F97316]">confirmation_number</span>
@@ -65,49 +62,14 @@
 
     <!-- Chat Stream Area -->
     <div id="chatStream" class="flex-1 p-4 overflow-y-auto space-y-4 text-sm bg-white">
-        <!-- Welcome Greeting -->
-        <div class="flex flex-col items-start space-y-1">
-            <div class="flex items-center gap-1.5 text-xs text-[#757575] px-1">
-                <span>Supporto AI</span>
-                <span class="text-[10px]">&bull;</span>
-                <span id="welcomeTime" class="text-[11px] text-[#757575]"></span>
-            </div>
-            <div class="max-w-[85%] rounded-lg bg-[#F5F7FA] p-4 border border-[#E0E0E0] text-[#212121] leading-relaxed space-y-3">
-                <p id="welcomeGreetingText" class="text-sm">
-                    {% if customer_name %}
-                    Welcome, {{ customer_name }}. How can we assist you with your order, returns, or billing today?
-                    {% else %}
-                    {{ settings.welcome_message|default:"Welcome to support. How can we assist you with your order, returns, or billing today?" }}
-                    {% endif %}
-                </p>
-
-                <!-- Plain Text Quick-Reply Chips (No Emojis) -->
-                <div class="space-y-1.5 pt-1">
-                    <p class="text-[11px] font-medium text-[#757575] uppercase tracking-wider">Common requests:</p>
-                    <div class="flex flex-wrap gap-2">
-                        <button type="button" onclick="quickAsk('Track my order')" class="chip text-xs">
-                            Track my order
-                        </button>
-                        <button type="button" onclick="quickAsk('Return or refund')" class="chip text-xs">
-                            Return or refund
-                        </button>
-                        <button type="button" onclick="quickAsk('Billing issue')" class="chip text-xs">
-                            Billing issue
-                        </button>
-                        <button type="button" onclick="quickAsk('Talk to a human')" class="chip text-xs">
-                            Talk to a human
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
+        <!-- Auth Card or Welcome Greeting will be dynamically inserted here -->
     </div>
 
     <!-- Input Box & Action Controls -->
     <div class="p-3 bg-white border-t border-[#E0E0E0] flex-shrink-0 space-y-2">
         <form id="chatForm" onsubmit="sendChatMessage(event)" class="flex items-center gap-2">
-            <input type="text" id="chatInput" placeholder="Type your message, order ID, or AWB..." autocomplete="off" class="input-text flex-1">
-            <button type="submit" id="sendBtn" class="btn-primary py-2.5 px-4" title="Send message">
+            <input type="text" id="chatInput" placeholder="Type your message, order ID, or ask about your tickets..." autocomplete="off" class="input-text flex-1">
+            <button type="submit" id="sendBtn" class="btn-primary py-2.5 px-4 shadow-xs" title="Send message">
                 <span class="material-symbols-outlined text-lg">send</span>
             </button>
         </form>
@@ -127,60 +89,10 @@
         </div>
     </div>
 
-    <!-- Pre-Chat Identity Modal -->
-    <div id="preChatModal" class="hidden fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
-        <div class="bg-white rounded-xl max-w-sm w-full p-6 shadow-[0_12px_40px_rgba(0,0,0,0.12)] border border-[#E0E0E0] space-y-4">
-            <div class="flex items-center justify-between pb-2 border-b border-[#E0E0E0]">
-                <div class="flex items-center gap-2">
-                    <div class="w-6 h-6 rounded bg-[#FFF7ED] text-[#EA580C] flex items-center justify-center font-bold">
-                        <span class="material-symbols-outlined text-sm">support_agent</span>
-                    </div>
-                    <h2 class="font-bold text-sm text-[#212121]">Customer Details</h2>
-                </div>
-                <button type="button" onclick="closePreChatModal()" class="text-[#757575] hover:text-[#212121]">
-                    <span class="material-symbols-outlined text-lg">close</span>
-                </button>
-            </div>
-
-            <p class="text-xs text-[#616161] leading-relaxed">
-                Provide your name and 10-digit mobile number to verify your account and view order history.
-            </p>
-
-            <form id="preChatForm" onsubmit="saveCustomerIdentity(event)" class="space-y-3">
-                <div>
-                    <label for="modalNameInput" class="block text-xs font-semibold text-[#212121] mb-1">Full Name *</label>
-                    <input type="text" id="modalNameInput" required placeholder="e.g. Rahul Sharma" class="input-text">
-                </div>
-
-                <div>
-                    <label for="modalPhoneInput" class="block text-xs font-semibold text-[#212121] mb-1">Mobile Phone Number *</label>
-                    <div class="flex items-center gap-1.5 border border-[#E0E0E0] rounded-lg px-3 py-2 bg-white focus-within:border-[#F97316] focus-within:ring-1 focus-within:ring-[#F97316]">
-                        <span class="text-xs font-medium text-[#757575]">+91</span>
-                        <input type="tel" id="modalPhoneInput" required maxlength="10" placeholder="10-digit mobile number" class="w-full text-xs font-mono font-medium outline-none bg-transparent text-[#212121]">
-                    </div>
-                    <div id="modalPhoneError" class="input-error-msg hidden">Please enter a valid 10-digit Indian mobile number (starts with 6, 7, 8, or 9).</div>
-                </div>
-
-                <div>
-                    <label for="modalEmailInput" class="block text-xs font-semibold text-[#212121] mb-1">Email (Optional)</label>
-                    <input type="email" id="modalEmailInput" placeholder="name@example.com" class="input-text">
-                </div>
-
-                <!-- // TODO: Implement SMS OTP verification for production identity -->
-
-                <div class="pt-2">
-                    <button type="submit" class="btn-primary w-full text-xs font-semibold py-2.5">
-                        Start support session
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-
     <!-- Restrained Voice Call Screen Overlay -->
-    <div id="phoneCallModal" class="hidden fixed inset-0 z-50 bg-[#212121] flex flex-col justify-between p-6 sm:p-10 text-white">
+    <div id="phoneCallModal" class="hidden fixed inset-0 z-50 bg-[#18181B] flex flex-col justify-between p-6 sm:p-10 text-white">
         <!-- Call Header -->
-        <div class="flex items-center justify-between text-xs text-[#E0E0E0] border-b border-[#424242] pb-4">
+        <div class="flex items-center justify-between text-xs text-[#E0E0E0] border-b border-[#3F3F46] pb-4">
             <div class="flex items-center gap-2">
                 <span class="w-2 h-2 rounded-full bg-[#4CAF50]"></span>
                 <span class="font-medium text-white">Voice Call</span>
@@ -190,30 +102,30 @@
 
         <!-- Center Status -->
         <div class="flex flex-col items-center justify-center space-y-6 my-auto text-center max-w-md mx-auto">
-            <div class="w-20 h-20 rounded-full bg-[#424242] border border-[#616161] flex items-center justify-center text-white">
-                <span class="material-symbols-outlined text-4xl">support_agent</span>
+            <div class="w-20 h-20 rounded-full bg-[#27272A] border border-[#3F3F46] flex items-center justify-center text-white">
+                <span class="material-symbols-outlined text-4xl text-[#F97316]">support_agent</span>
             </div>
 
             <div class="space-y-1">
                 <h2 class="text-xl font-bold text-white">{{ workspace.name }} Voice Assistant</h2>
-                <p id="callStatusText" class="text-xs text-[#BDBDBD]">Call Connected &bull; Tap Speak to talk</p>
+                <p id="callStatusText" class="text-xs text-[#A1A1AA]">Call Connected &bull; Tap Speak to talk</p>
             </div>
 
             <!-- Live Speech Transcript Box -->
-            <div class="w-full bg-[#303030] p-4 rounded border border-[#424242] text-xs text-[#E0E0E0] min-h-[70px] flex items-center justify-center leading-relaxed">
+            <div class="w-full bg-[#27272A] p-4 rounded-xl border border-[#3F3F46] text-xs text-[#E0E0E0] min-h-[70px] flex items-center justify-center leading-relaxed">
                 <p id="callTranscriptLive">
-                    "Hello. Ask me any question about your order, tracking, or returns."
+                    "Hello. Ask me any question about your orders, shipments, or tickets."
                 </p>
             </div>
         </div>
 
         <!-- Call Controls -->
-        <div class="flex items-center justify-center gap-6 pt-4 border-t border-[#424242]">
-            <button type="button" id="callMicBtn" onclick="toggleCallSpeaking()" class="px-6 py-3 rounded bg-[#F97316] hover:bg-[#EA580C] text-white text-xs font-semibold flex items-center gap-2 transition-colors">
+        <div class="flex items-center justify-center gap-6 pt-4 border-t border-[#3F3F46]">
+            <button type="button" id="callMicBtn" onclick="toggleCallSpeaking()" class="px-6 py-3 rounded-lg bg-[#F97316] hover:bg-[#EA580C] text-white text-xs font-semibold flex items-center gap-2 transition-colors shadow-md">
                 <span id="callMicIcon" class="material-symbols-outlined text-lg">mic</span>
                 <span id="callMicText">Speak</span>
             </button>
-            <button type="button" onclick="endVoiceCall()" class="px-6 py-3 rounded bg-[#D32F2F] hover:bg-[#C62828] text-white text-xs font-semibold flex items-center gap-2 transition-colors">
+            <button type="button" onclick="endVoiceCall()" class="px-6 py-3 rounded-lg bg-[#DC2626] hover:bg-[#B91C1C] text-white text-xs font-semibold flex items-center gap-2 transition-colors shadow-md">
                 <span class="material-symbols-outlined text-lg">call_end</span>
                 <span>End call</span>
             </button>
@@ -225,10 +137,11 @@
 <script>
     const publicKey = "{{ public_key }}";
     let activeName = "{{ customer_name|default:'' }}" || localStorage.getItem(`supporto_name_${publicKey}`) || "";
-    let activeEmail = "{{ customer_email|default:'' }}" || localStorage.getItem(`supporto_email_${publicKey}`) || "";
     let activePhone = "{{ customer_phone|default:'' }}" || localStorage.getItem(`supporto_phone_${publicKey}`) || "";
+    let activeEmail = "{{ customer_email|default:'' }}" || localStorage.getItem(`supporto_email_${publicKey}`) || "";
     let sessionToken = localStorage.getItem(`supporto_session_${publicKey}`) || "";
 
+    let pendingAuthPhone = "";
     let mediaRecorder = null;
     let audioChunks = [];
     let isRecording = false;
@@ -240,96 +153,236 @@
     let callSeconds = 0;
     let isCallActive = false;
 
-    // Set Welcome Time
     document.addEventListener("DOMContentLoaded", function() {
-        const wt = document.getElementById("welcomeTime");
-        if (wt) {
-            const now = new Date();
-            wt.textContent = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        if (activePhone && activeName) {
+            setupAuthenticatedState(activeName, activePhone);
+        } else if (activePhone) {
+            // Check existing customer on server
+            checkCustomerPhone(activePhone);
+        } else {
+            renderPhoneAuthCard();
         }
     });
 
-    function openPreChatModal() {
-        document.getElementById("modalNameInput").value = activeName || "";
-        document.getElementById("modalPhoneInput").value = activePhone || "";
-        document.getElementById("modalEmailInput").value = activeEmail || "";
-        document.getElementById("modalPhoneError").classList.add("hidden");
-        document.getElementById("preChatModal").classList.remove("hidden");
+    function renderPhoneAuthCard() {
+        const stream = document.getElementById("chatStream");
+        stream.innerHTML = `
+            <div id="phoneAuthContainer" class="my-auto py-6 max-w-sm mx-auto w-full space-y-4">
+                <div class="bg-[#F8FAFC] border border-[#E2E8F0] rounded-2xl p-6 shadow-sm space-y-4 text-center">
+                    <div class="w-12 h-12 rounded-xl bg-[#FFF7ED] text-[#F97316] flex items-center justify-center font-bold mx-auto">
+                        <span class="material-symbols-outlined text-2xl">account_circle</span>
+                    </div>
+                    <div class="space-y-1">
+                        <h3 class="font-bold text-base text-[#18181B]">Welcome to {{ workspace.name }}</h3>
+                        <p class="text-xs text-[#64748B] leading-relaxed">
+                            Please enter your 10-digit mobile number to access your account, orders, and support tickets.
+                        </p>
+                    </div>
+
+                    <!-- Step 1: Phone -->
+                    <div id="phoneAuthStep" class="space-y-3 pt-2 text-left">
+                        <label for="authPhoneInput" class="block text-xs font-semibold text-[#18181B]">Mobile Phone Number</label>
+                        <div class="flex items-center gap-2 border border-[#CBD5E1] rounded-xl px-3 py-2.5 bg-white focus-within:border-[#F97316] focus-within:ring-1 focus-within:ring-[#F97316]">
+                            <span class="text-xs font-bold text-[#64748B]">+91</span>
+                            <input type="tel" id="authPhoneInput" maxlength="10" placeholder="10-digit mobile number" 
+                                   class="w-full text-xs font-mono font-medium outline-none bg-transparent text-[#18181B]"
+                                   onkeydown="if(event.key==='Enter'){event.preventDefault();submitPhoneAuth();}">
+                        </div>
+                        <p id="phoneAuthError" class="text-xs text-[#DC2626] hidden"></p>
+                        <button type="button" onclick="submitPhoneAuth()" id="phoneAuthBtn" class="btn-primary w-full text-xs font-semibold py-2.5 shadow-xs">
+                            Continue &rarr;
+                        </button>
+                    </div>
+
+                    <!-- Step 2: Name (if new number) -->
+                    <div id="nameAuthStep" class="space-y-3 pt-2 text-left hidden">
+                        <div class="p-2.5 bg-[#FFF7ED] border border-[#FFEDD5] rounded-lg text-xs text-[#C2410C]">
+                            New customer on file. Please enter your name to register:
+                        </div>
+                        <div>
+                            <label for="authNameInput" class="block text-xs font-semibold text-[#18181B] mb-1">Full Name</label>
+                            <input type="text" id="authNameInput" placeholder="e.g. Rahul Sharma" 
+                                   class="input-text text-xs py-2.5"
+                                   onkeydown="if(event.key==='Enter'){event.preventDefault();submitNameAuth();}">
+                        </div>
+                        <p id="nameAuthError" class="text-xs text-[#DC2626] hidden"></p>
+                        <button type="button" onclick="submitNameAuth()" id="nameAuthBtn" class="btn-primary w-full text-xs font-semibold py-2.5 shadow-xs">
+                            Start Support Session &rarr;
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+        document.getElementById("chatInput").disabled = true;
+        document.getElementById("chatInput").placeholder = "Please enter your mobile number above to begin...";
+        document.getElementById("sendBtn").disabled = true;
+        document.getElementById("headerCustomerSub").textContent = "Please identify with your mobile number";
+        document.getElementById("headerLogoutBtn").classList.add("hidden");
     }
 
-    function closePreChatModal() {
-        document.getElementById("preChatModal").classList.add("hidden");
-    }
+    async function submitPhoneAuth() {
+        const input = document.getElementById("authPhoneInput");
+        const errEl = document.getElementById("phoneAuthError");
+        const btn = document.getElementById("phoneAuthBtn");
+        const rawPhone = (input ? input.value : "").trim().replace(/\D/g, '');
 
-    function saveCustomerIdentity(e) {
-        if (e) e.preventDefault();
-        const name = document.getElementById("modalNameInput").value.trim();
-        const rawPhone = document.getElementById("modalPhoneInput").value.trim().replace(/\D/g, '');
-        const email = document.getElementById("modalEmailInput").value.trim();
-        const errEl = document.getElementById("modalPhoneError");
-
-        // 10-digit Indian mobile validation
         if (rawPhone.length !== 10 || !['6','7','8','9'].includes(rawPhone[0])) {
+            errEl.textContent = "Please enter a valid 10-digit Indian mobile number (starts with 6, 7, 8, or 9).";
             errEl.classList.remove("hidden");
             return;
         }
         errEl.classList.add("hidden");
+        btn.disabled = true;
+        btn.textContent = "Checking...";
 
+        try {
+            const resp = await fetch(`/widget/${publicKey}/check-customer/`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ phone: rawPhone })
+            });
+            const data = await resp.json();
+            btn.disabled = false;
+            btn.textContent = "Continue →";
+
+            if (!resp.ok) {
+                errEl.textContent = data.error || "Could not verify phone number.";
+                errEl.classList.remove("hidden");
+                return;
+            }
+
+            if (data.exists && data.name) {
+                setupAuthenticatedState(data.name, data.phone);
+            } else {
+                // New customer: ask for name
+                pendingAuthPhone = data.phone;
+                document.getElementById("phoneAuthStep").classList.add("hidden");
+                document.getElementById("nameAuthStep").classList.remove("hidden");
+                const nameInp = document.getElementById("authNameInput");
+                if (nameInp) nameInp.focus();
+            }
+        } catch (e) {
+            btn.disabled = false;
+            btn.textContent = "Continue →";
+            errEl.textContent = "Network error. Please try again.";
+            errEl.classList.remove("hidden");
+        }
+    }
+
+    async function submitNameAuth() {
+        const input = document.getElementById("authNameInput");
+        const errEl = document.getElementById("nameAuthError");
+        const btn = document.getElementById("nameAuthBtn");
+        const name = (input ? input.value : "").trim();
+
+        if (!name) {
+            errEl.textContent = "Please enter your full name.";
+            errEl.classList.remove("hidden");
+            return;
+        }
+        errEl.classList.add("hidden");
+        btn.disabled = true;
+        btn.textContent = "Registering...";
+
+        try {
+            const resp = await fetch(`/widget/${publicKey}/register-customer/`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ phone: pendingAuthPhone, name: name })
+            });
+            const data = await resp.json();
+            btn.disabled = false;
+            btn.textContent = "Start Support Session →";
+
+            if (!resp.ok) {
+                errEl.textContent = data.error || "Could not register customer.";
+                errEl.classList.remove("hidden");
+                return;
+            }
+
+            setupAuthenticatedState(data.name, data.phone);
+        } catch (e) {
+            btn.disabled = false;
+            btn.textContent = "Start Support Session →";
+            errEl.textContent = "Network error. Please try again.";
+            errEl.classList.remove("hidden");
+        }
+    }
+
+    function setupAuthenticatedState(name, phone) {
         activeName = name;
-        activePhone = rawPhone;
-        activeEmail = email;
-
+        activePhone = phone;
         localStorage.setItem(`supporto_name_${publicKey}`, activeName);
         localStorage.setItem(`supporto_phone_${publicKey}`, activePhone);
-        if (activeEmail) localStorage.setItem(`supporto_email_${publicKey}`, activeEmail);
 
-        const headerSub = document.getElementById("headerCustomerSub");
-        if (headerSub) {
-            headerSub.innerHTML = `${activeName} &bull; <span class="font-mono">${activePhone}</span>`;
-        }
-        const greeting = document.getElementById("welcomeGreetingText");
-        if (greeting) {
-            greeting.textContent = `Welcome, ${activeName}. How can we assist you with your order, returns, or billing today?`;
-        }
+        // Header updates
+        document.getElementById("headerCustomerSub").innerHTML = `Hello, <strong>${escapeHtml(activeName)}</strong> &bull; <span class="font-mono">${escapeHtml(activePhone)}</span>`;
+        document.getElementById("headerLogoutBtn").classList.remove("hidden");
 
-        closePreChatModal();
+        // Enable chat inputs
+        const chatInput = document.getElementById("chatInput");
+        chatInput.disabled = false;
+        chatInput.placeholder = "Ask about your orders, shipments, or tickets...";
+        document.getElementById("sendBtn").disabled = false;
 
-        if (window._pendingVoiceCall) {
-            window._pendingVoiceCall = false;
-            startVoiceCall();
-        }
+        // Render Welcome Greeting
+        const stream = document.getElementById("chatStream");
+        stream.innerHTML = `
+            <div class="flex flex-col items-start space-y-1">
+                <div class="flex items-center gap-1.5 text-xs text-[#757575] px-1">
+                    <span>Supporto AI</span>
+                    <span class="text-[10px]">&bull;</span>
+                    <span class="text-[11px]">${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                </div>
+                <div class="max-w-[85%] rounded-2xl bg-[#F8FAFC] p-4 border border-[#E2E8F0] text-[#18181B] leading-relaxed space-y-3 shadow-xs">
+                    <p class="text-sm">
+                        Hello <strong>${escapeHtml(activeName)}</strong>! Welcome to <strong>{{ workspace.name }}</strong> support. How can I assist you with your orders, consignments, or support tickets today?
+                    </p>
+
+                    <div class="space-y-1.5 pt-1">
+                        <p class="text-[11px] font-semibold text-[#64748B] uppercase tracking-wider">Quick requests:</p>
+                        <div class="flex flex-wrap gap-2">
+                            <button type="button" onclick="quickAsk('What are my orders?')" class="chip text-xs bg-white">
+                                What are my orders?
+                            </button>
+                            <button type="button" onclick="quickAsk('Where is my parcel?')" class="chip text-xs bg-white">
+                                Where is my parcel?
+                            </button>
+                            <button type="button" onclick="quickAsk('Show my support tickets')" class="chip text-xs bg-white">
+                                Show my tickets
+                            </button>
+                            <button type="button" onclick="quickAsk('I want to speak with a human agent')" class="chip text-xs bg-white">
+                                Talk to human
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        chatInput.focus();
+
+        {% if initial_query %}
+        setTimeout(() => {
+            chatInput.value = "{{ initial_query|escapejs }}";
+            sendChatMessage();
+        }, 300);
+        {% endif %}
     }
 
-    function handleVoiceCallClicked() {
-        if (!activePhone) {
-            window._pendingVoiceCall = true;
-            openPreChatModal();
-        } else {
-            startVoiceCall();
-        }
-    }
+    async function logoutCustomer() {
+        try {
+            await fetch(`/widget/${publicKey}/logout/`, { method: "POST" });
+        } catch (e) {}
 
-    // SpeechRecognition initialization
-    if ("webkitSpeechRecognition" in window || "SpeechRecognition" in window) {
-        const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
-        recognition = new SpeechRec();
-        recognition.continuous = true;
-        recognition.interimResults = true;
-        recognition.lang = "en-US";
-        recognition.onresult = (e) => {
-            let interim = "";
-            for (let i = e.resultIndex; i < e.results.length; ++i) {
-                interim += e.results[i][0].transcript;
-            }
-            if (interim) {
-                liveBrowserTranscript = interim.trim();
-                const callLive = document.getElementById("callTranscriptLive");
-                if (callLive && isCallActive) {
-                    callLive.textContent = `You: "${liveBrowserTranscript}"`;
-                }
-            }
-        };
-        recognition.onerror = () => {};
+        localStorage.removeItem(`supporto_name_${publicKey}`);
+        localStorage.removeItem(`supporto_phone_${publicKey}`);
+        localStorage.removeItem(`supporto_session_${publicKey}`);
+        activeName = "";
+        activePhone = "";
+        sessionToken = "";
+        pendingAuthPhone = "";
+
+        renderPhoneAuthCard();
     }
 
     function quickAsk(text) {
@@ -356,7 +409,7 @@
                 body: JSON.stringify({
                     message: text,
                     session_token: sessionToken,
-                    customer_name: activeName || "Visitor",
+                    customer_name: activeName || "Customer",
                     customer_email: activeEmail,
                     customer_phone: activePhone
                 })
@@ -376,71 +429,63 @@
             }
         } catch (err) {
             removeTypingIndicator(typingId);
-            appendMessage("AI", "An error occurred communicating with the support assistant.");
+            appendMessage("AI", "I am having trouble connecting to the support server right now. Please try again.");
         }
     }
 
     async function submitAndRaiseTicket() {
-        if (conversationEnded) return;
-        if (!sessionToken) {
-            alert("Please send a message before submitting a ticket.");
+        if (!activePhone) {
+            alert("Please verify your mobile number first.");
             return;
         }
-
-        const btn = document.getElementById("submitTicketBtn");
-        btn.textContent = "Submitting...";
-
+        appendMessage("CUSTOMER", "Please submit this inquiry as a support ticket for a human agent.");
+        const typingId = appendTypingIndicator();
         try {
-            const resp = await fetch(`/widget/${publicKey}/complete/`, {
+            const resp = await fetch(`/widget/${publicKey}/message/`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ session_token: sessionToken })
+                body: JSON.stringify({
+                    message: "I want to escalate this and create a human support ticket.",
+                    session_token: sessionToken,
+                    customer_name: activeName || "Customer",
+                    customer_phone: activePhone
+                })
             });
             const data = await resp.json();
-            conversationEnded = true;
-
-            if (data.ticket_number) {
-                showTicketBanner(data.ticket_number);
-                appendMessage("AI", `Ticket #${data.ticket_number} has been submitted to our support team.`, data.ticket_number);
-            } else {
-                appendMessage("AI", data.message || "Your inquiry has been submitted.");
+            removeTypingIndicator(typingId);
+            appendMessage("AI", data.ai_message, data.escalation_ticket || null);
+            if (data.escalation_ticket) {
+                showTicketBanner(data.escalation_ticket);
             }
-            disableInput(true);
         } catch (err) {
-            btn.textContent = "Submit as ticket";
-            appendMessage("AI", "Could not submit ticket. Please try again.");
+            removeTypingIndicator(typingId);
+            appendMessage("AI", "Could not submit ticket right now. Please try again.");
         }
     }
 
     async function endConversationOnly() {
-        if (conversationEnded) return;
         conversationEnded = true;
-        appendMessage("AI", "The conversation has ended. Refresh the page to start a new chat.");
-        disableInput(false);
-        if (sessionToken) {
-            try {
-                await fetch(`/widget/${publicKey}/complete/`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ session_token: sessionToken })
-                });
-            } catch (e) {}
-        }
+        try {
+            await fetch(`/widget/${publicKey}/complete/`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ session_token: sessionToken })
+            });
+        } catch (e) {}
+        appendMessage("AI", "Conversation concluded. Thank you for contacting support.");
+        document.getElementById("chatInput").disabled = true;
+        document.getElementById("chatInput").placeholder = "Conversation ended.";
+        document.getElementById("sendBtn").disabled = true;
     }
 
-    function disableInput(ticketSubmitted) {
-        const input = document.getElementById("chatInput");
-        const sendBtn = document.getElementById("sendBtn");
-        const submitBtn = document.getElementById("submitTicketBtn");
-        const endBtn = document.getElementById("endConvoBtn");
-        if (input) { input.disabled = true; input.placeholder = "Conversation ended."; }
-        if (sendBtn) sendBtn.disabled = true;
-        if (submitBtn) {
-            submitBtn.disabled = true;
-            submitBtn.textContent = ticketSubmitted ? "Ticket Submitted" : "Ended";
+    function handleVoiceCallClicked() {
+        if (!activePhone) {
+            alert("Please enter your mobile phone number first to begin a voice session.");
+            const inp = document.getElementById("authPhoneInput");
+            if (inp) inp.focus();
+            return;
         }
-        if (endBtn) endBtn.disabled = true;
-        localStorage.removeItem(`supporto_session_${publicKey}`);
+        startVoiceCall();
     }
 
     function startVoiceCall() {
@@ -457,7 +502,7 @@
             document.getElementById("callTimer").textContent = `${mins}:${secs}`;
         }, 1000);
 
-        const welcomeSpeech = "Hello. Ask me any question about your order, tracking, or returns.";
+        const welcomeSpeech = `Hello ${activeName}. Ask me any question about your orders, shipments, or tickets.`;
         document.getElementById("callTranscriptLive").textContent = `AI: "${welcomeSpeech}"`;
         playVoiceResponse("", welcomeSpeech);
     }
@@ -479,7 +524,7 @@
                 if (recognition) { try { recognition.start(); } catch(e) {} }
 
                 btn.classList.remove("bg-[#F97316]", "hover:bg-[#EA580C]");
-                btn.classList.add("bg-[#D32F2F]", "hover:bg-[#C62828]");
+                btn.classList.add("bg-[#DC2626]", "hover:bg-[#B91C1C]");
                 text.textContent = "Done";
                 document.getElementById("callStatusText").textContent = "Listening...";
             } catch (err) {
@@ -493,7 +538,7 @@
                 }
                 isRecording = false;
                 if (recognition) { try { recognition.stop(); } catch(e) {} }
-                btn.classList.remove("bg-[#D32F2F]", "hover:bg-[#C62828]");
+                btn.classList.remove("bg-[#DC2626]", "hover:bg-[#B91C1C]");
                 btn.classList.add("bg-[#F97316]", "hover:bg-[#EA580C]");
                 text.textContent = "Speak";
                 document.getElementById("callStatusText").textContent = "Processing audio...";
@@ -504,14 +549,10 @@
     async function uploadCallAudio() {
         const audioBlob = new Blob(audioChunks, { type: "audio/webm" });
         const formData = new FormData();
-        formData.append("audio", audioBlob, "call_recording.webm");
+        formData.append("audio", audioBlob, "voice_call.webm");
         formData.append("session_token", sessionToken);
-        formData.append("customer_name", activeName || "Visitor");
-        formData.append("customer_email", activeEmail);
+        formData.append("customer_name", activeName || "Customer");
         formData.append("customer_phone", activePhone);
-        if (liveBrowserTranscript) {
-            formData.append("browser_transcript", liveBrowserTranscript);
-        }
 
         try {
             const resp = await fetch(`/widget/${publicKey}/voice/`, {
@@ -525,38 +566,33 @@
                 localStorage.setItem(`supporto_session_${publicKey}`, sessionToken);
             }
 
-            if (data.transcription) appendMessage("CUSTOMER", data.transcription);
-            if (data.ai_message) {
-                appendMessage("AI", data.ai_message, data.is_escalated ? data.escalation_ticket : null);
-                document.getElementById("callTranscriptLive").textContent = `AI: "${data.ai_message}"`;
+            if (data.transcription) {
+                document.getElementById("callTranscriptLive").textContent = `You: "${data.transcription}"`;
+                appendMessage("CUSTOMER", data.transcription);
             }
-            document.getElementById("callStatusText").textContent = "Call Connected \u2022 Tap Speak to talk";
-            playVoiceResponse(data.audio_url, data.ai_message);
 
-            if (data.is_escalated && data.escalation_ticket) {
-                showTicketBanner(data.escalation_ticket);
+            if (data.ai_message) {
+                setTimeout(() => {
+                    document.getElementById("callTranscriptLive").textContent = `AI: "${data.ai_message}"`;
+                    appendMessage("AI", data.ai_message, data.is_escalated ? "ESC" : null);
+                    document.getElementById("callStatusText").textContent = "Speaking...";
+                    playVoiceResponse(data.audio_url, data.ai_message);
+                }, 400);
             }
         } catch (err) {
-            document.getElementById("callStatusText").textContent = "Audio error. Tap Speak to retry.";
+            document.getElementById("callStatusText").textContent = "Could not process audio. Try again.";
         }
     }
 
     function endVoiceCall() {
         isCallActive = false;
-        clearInterval(callTimerInterval);
-        callTimerInterval = null;
-
+        if (callTimerInterval) clearInterval(callTimerInterval);
         if (mediaRecorder && isRecording) {
-            try {
-                mediaRecorder.stop();
-                if (mediaRecorder.stream) {
-                    mediaRecorder.stream.getTracks().forEach(t => t.stop());
-                }
-            } catch(e) {}
+            mediaRecorder.stop();
+            if (mediaRecorder.stream) mediaRecorder.stream.getTracks().forEach(t => t.stop());
             isRecording = false;
         }
         if (recognition) { try { recognition.stop(); } catch(e) {} }
-        if ("speechSynthesis" in window) { window.speechSynthesis.cancel(); }
 
         const player = document.getElementById("audioPlayer");
         if (player) { player.pause(); player.src = ""; }
@@ -564,7 +600,7 @@
 
         const btn = document.getElementById("callMicBtn");
         if (btn) {
-            btn.classList.remove("bg-[#D32F2F]", "hover:bg-[#C62828]");
+            btn.classList.remove("bg-[#DC2626]", "hover:bg-[#B91C1C]");
             btn.classList.add("bg-[#F97316]", "hover:bg-[#EA580C]");
         }
         const micText = document.getElementById("callMicText");
@@ -592,16 +628,11 @@
         }
     }
 
-    // Markdown simple renderer (bold, lists, paragraphs)
     function renderMarkdown(raw) {
         let text = escapeHtml(raw);
-        // Bold: **text**
         text = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-        // Unordered lists: - item or * item
         text = text.replace(/(?:^|\n)[-*]\s+(.+)/g, '<li class="ml-4 list-disc">$1</li>');
-        // Numbered lists: 1. item
         text = text.replace(/(?:^|\n)\d+\.\s+(.+)/g, '<li class="ml-4 list-decimal">$1</li>');
-        // Wrap contiguous li items in ul/ol if needed or simply preserve line breaks
         text = text.replace(/\n/g, '<br>');
         return text;
     }
@@ -612,7 +643,7 @@
         div.className = `flex flex-col ${sender === "CUSTOMER" ? "items-end" : "items-start"}`;
 
         const isAi = sender === "AI";
-        const bg = isAi ? "bg-[#F5F7FA] text-[#212121] border border-[#E0E0E0]" : "bg-[#F97316] text-white";
+        const bg = isAi ? "bg-[#F8FAFC] text-[#18181B] border border-[#E2E8F0]" : "bg-[#F97316] text-white";
         const senderLabel = isAi ? "Supporto AI" : (activeName || "You");
         const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
@@ -623,18 +654,18 @@
                     <span class="inline-flex items-center gap-1 font-mono font-semibold bg-white text-[#C2410C] px-2 py-0.5 rounded border border-[#FDBA74]">
                         Ticket #${escapeHtml(ticketNumber)} created
                     </span>
-                    <span class="text-[11px] text-[#616161]">Human SLA assigned</span>
+                    <span class="text-[11px] text-[#71717A]">Human SLA assigned</span>
                 </div>
             `;
         }
 
         div.innerHTML = `
-            <div class="flex items-center gap-1.5 text-xs text-[#757575] mb-1 px-1">
+            <div class="flex items-center gap-1.5 text-xs text-[#71717A] mb-1 px-1">
                 <span>${senderLabel}</span>
                 <span class="text-[10px]">&bull;</span>
                 <span class="text-[11px]">${timeStr}</span>
             </div>
-            <div class="max-w-[85%] rounded-lg ${bg} p-3.5 leading-relaxed">
+            <div class="max-w-[85%] rounded-2xl ${bg} p-3.5 leading-relaxed shadow-xs">
                 <div>${renderMarkdown(text)}</div>
                 ${escalationChip}
             </div>
@@ -650,12 +681,12 @@
         div.id = id;
         div.className = "flex flex-col items-start";
         div.innerHTML = `
-            <span class="text-xs text-[#757575] mb-1 px-1">Supporto AI</span>
-            <div class="bg-[#F5F7FA] px-3.5 py-2.5 rounded-lg border border-[#E0E0E0] flex items-center gap-1 text-xs text-[#757575]">
+            <span class="text-xs text-[#71717A] mb-1 px-1">Supporto AI</span>
+            <div class="bg-[#F8FAFC] px-3.5 py-2.5 rounded-xl border border-[#E2E8F0] flex items-center gap-1 text-xs text-[#71717A]">
                 <span class="w-1.5 h-1.5 rounded-full bg-[#F97316] animate-bounce"></span>
                 <span class="w-1.5 h-1.5 rounded-full bg-[#F97316] animate-bounce delay-100"></span>
                 <span class="w-1.5 h-1.5 rounded-full bg-[#F97316] animate-bounce delay-200"></span>
-                <span class="text-xs text-[#757575] ml-1.5">Checking...</span>
+                <span class="text-xs text-[#71717A] ml-1.5">Checking...</span>
             </div>
         `;
         stream.appendChild(div);
@@ -680,17 +711,5 @@
         div.textContent = text;
         return div.innerHTML;
     }
-
-    {% if initial_query %}
-    document.addEventListener("DOMContentLoaded", function() {
-        const input = document.getElementById("chatInput");
-        if (input) {
-            input.value = "{{ initial_query|escapejs }}";
-            setTimeout(function() {
-                sendChatMessage();
-            }, 300);
-        }
-    });
-    {% endif %}
 </script>
 {% endblock %}

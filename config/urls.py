@@ -74,6 +74,9 @@ from apps.customers.widget_views import (
     widget_message_api,
     widget_voice_api,
     widget_complete_api,
+    widget_customer_check_api,
+    widget_customer_register_api,
+    widget_customer_logout_api,
 )
 from apps.workspaces.models import Workspace
 
@@ -134,6 +137,9 @@ urlpatterns = [
     path("widget/<uuid:public_key>/message/", widget_message_api, name="widget_message_api"),
     path("widget/<uuid:public_key>/voice/", widget_voice_api, name="widget_voice_api"),
     path("widget/<uuid:public_key>/complete/", widget_complete_api, name="widget_complete_api"),
+    path("widget/<uuid:public_key>/check-customer/", widget_customer_check_api, name="widget_customer_check_api"),
+    path("widget/<uuid:public_key>/register-customer/", widget_customer_register_api, name="widget_customer_register_api"),
+    path("widget/<uuid:public_key>/logout/", widget_customer_logout_api, name="widget_customer_logout_api"),
 
     # C. Company-Specific Portal at /<company_slug>/
     path("<slug:company_slug>/", workspace_dashboard, name="workspace_dashboard"),
