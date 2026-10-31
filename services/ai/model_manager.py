@@ -160,11 +160,13 @@ class ModelManager:
 
         try:
             from llama_cpp import Llama
-            logger.info(f"Loading Qwen LLM from {self.llm_path} (n_ctx=2048, n_gpu_layers=1)...")
+            cpu_threads = min(os.cpu_count() or 4, 8)
+            logger.info(f"Loading Qwen LLM from {self.llm_path} (n_ctx=2048, n_gpu_layers=-1, n_threads={cpu_threads})...")
             self._llm = Llama(
                 model_path=str(self.llm_path),
                 n_ctx=2048,
-                n_gpu_layers=1,
+                n_gpu_layers=-1,  # Offloads layers to Apple Silicon Metal GPU or CUDA
+                n_threads=cpu_threads,
                 verbose=False
             )
             return self._llm

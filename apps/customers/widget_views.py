@@ -109,13 +109,14 @@ def widget_voice_api(request, public_key):
         temp_audio_path = temp_audio.name
 
     try:
-        # 1. Transcribe with Whisper, with graceful WebSpeech fallback from client
-        stt_result = stt_service.transcribe_audio(temp_audio_path)
-        transcribed_text = stt_result.get("text", "").strip()
+        # 1. High-speed speech pipeline: Use browser real-time transcript if available (<100ms),
+        # otherwise run local Whisper Small STT
         browser_transcript = request.POST.get("browser_transcript", "").strip()
+        transcribed_text = browser_transcript
 
-        if not transcribed_text and browser_transcript:
-            transcribed_text = browser_transcript
+        if not transcribed_text:
+            stt_result = stt_service.transcribe_audio(temp_audio_path)
+            transcribed_text = stt_result.get("text", "").strip()
 
         if not transcribed_text:
             return JsonResponse({
@@ -140,12 +141,17 @@ def widget_voice_api(request, public_key):
         ai_result = agent_runner.handle_customer_message(conversation, transcribed_text)
         reply_text = ai_result["ai_message"]
 
-        # 4. Generate TTS audio with Kokoro
+        # 4. Generate TTS audio with Kokoro (optimized for low-latency conversational speech)
         voice_config = getattr(workspace, "voice_config", None)
         voice_name = voice_config.voice_name if voice_config else "af_sarah"
-        speed = voice_config.speed if voice_config else 1.0
+        speed = voice_config.speed if voice_config else 1.05
 
-        tts_result = tts_service.generate_speech(reply_text, voice=voice_name, speed=speed)
+        # Limit voice synthesis to first 2 concise sentences for instant audio streaming
+        import re
+        tts_sentences = [s.strip() for s in re.split(r'(?<=[.!?])\s+', reply_text) if s.strip()]
+        spoken_text = " ".join(tts_sentences[:2]) if tts_sentences else reply_text
+
+        tts_result = tts_service.generate_speech(spoken_text, voice=voice_name, speed=speed)
 
         return JsonResponse({
             "transcription": transcribed_text,
