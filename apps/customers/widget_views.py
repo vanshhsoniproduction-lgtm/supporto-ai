@@ -69,11 +69,16 @@ def widget_message_api(request, public_key):
         name=customer_name,
         email=customer_email
     )
-    conversation = conversation_service.start_conversation(
-        workspace=workspace,
-        customer=customer,
-        channel=Conversation.Channel.WEB_CHAT
-    )
+    conv_id = data.get("conversation_id")
+    conversation = None
+    if conv_id:
+        conversation = Conversation.objects.filter(workspace=workspace, id=conv_id).first()
+    if not conversation:
+        conversation = conversation_service.start_conversation(
+            workspace=workspace,
+            customer=customer,
+            channel=Conversation.Channel.WEB_CHAT
+        )
 
     result = agent_runner.handle_customer_message(conversation, message_text)
     result["session_token"] = session_token

@@ -16,6 +16,7 @@ RESERVED_ROOT_PATHS = {
     "select-workspace",
     "accounts",
     "integrations",
+    "api",
     "favicon.ico",
 }
 

@@ -28,6 +28,7 @@ from apps.workspaces.admin_views import (
 from apps.workspaces.views import (
     workspace_dashboard,
     workspace_settings_view,
+    mock_store_lookup_api,
 )
 from apps.emails.views import (
     email_inbox_view,
@@ -119,6 +120,9 @@ urlpatterns = [
     path("admin/users/", platform_admin_users, name="platform_admin_users"),
     path("admin/ai-models/", platform_admin_ai_models, name="platform_admin_ai_models"),
     path("admin/activity/", platform_admin_activity, name="platform_admin_activity"),
+
+    # External Mock Store Webhook API (Live Tool Calling)
+    path("api/v1/mock-store/lookup/", mock_store_lookup_api, name="mock_store_lookup_api"),
 
     # Customer Support Widget (Public routes identified by secure public_key UUID)
     path("widget/<uuid:public_key>/", widget_view, name="widget_embed"),

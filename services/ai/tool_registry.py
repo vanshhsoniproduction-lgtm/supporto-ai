@@ -7,7 +7,9 @@ import urllib.request
 import urllib.parse
 import json
 from ipaddress import ip_address
+from django.conf import settings
 from django.utils import timezone
+from apps.workspaces.models import Workspace, WorkspaceWebhook, WorkspaceSettings
 from apps.knowledge_base.models import KnowledgeDocument
 from apps.tickets.models import Ticket, TicketAssignment, TicketEvent
 from apps.teams.models import Team
@@ -21,12 +23,15 @@ logger = logging.getLogger(__name__)
 PRIVATE_IP_PREFIXES = ("127.", "10.", "192.168.", "169.254.", "0.0.0.0")
 
 def is_safe_url(url: str) -> bool:
-    """SSRF protection: rejects non-http(s), localhost, and private RFC-1918 IPs."""
+    """SSRF protection: rejects non-http(s), and in production rejects localhost and private RFC-1918 IPs."""
     try:
         parsed = urllib.parse.urlparse(url)
         if parsed.scheme not in ("http", "https"):
             return False
         host = (parsed.hostname or "").lower()
+        # In DEBUG / local dev mode, allow localhost/127.0.0.1 for live mock store webhooks
+        if getattr(settings, "DEBUG", False) and host in ("localhost", "127.0.0.1", "testserver"):
+            return True
         if host in ("localhost", "127.0.0.1", "::1", "0.0.0.0"):
             return False
         if any(host.startswith(p) for p in PRIVATE_IP_PREFIXES):
@@ -242,117 +247,168 @@ class ToolRegistry:
         except Exception as e:
             logger.warning(f"External webhook query failed for workspace {workspace_id}: {e}")
 
-        # 2. ExpressBeas Known Consignment Database
-        expressbeas_awb = {
-            "EB987654321": {
-                "order_number": "EB987654321",
-                "item": "Courier Consignment (5.2 kg) - Commercial Shipment",
-                "amount": "₹450.00",
-                "status": "In Transit - Delayed at Delhi Central Sort Facility",
-                "carrier": "ExpressBeas Surface Fleet (Vehicle DL-1AB-4412)",
-                "estimated_delivery": "Delivery expected within 24-48 hours",
-                "origin": "Mumbai Hub, Maharashtra",
-                "destination": "New Delhi Central, Delhi",
-                "last_scan": "Oct 30, 2026 - Arrival Scan at Delhi Central Sort Hub",
-                "can_cancel": False,
-                "can_return": False,
-            },
-            "EB123456789": {
-                "order_number": "EB123456789",
-                "item": "Air Express Document Parcel (0.8 kg)",
-                "amount": "₹280.00",
-                "status": "Out for Delivery",
-                "carrier": "ExpressBeas Last-Mile Fleet (Rider: Rajesh K. - +91 98765 43210)",
-                "estimated_delivery": "Today by 4:00 PM",
-                "origin": "Bangalore Air Hub, Karnataka",
-                "destination": "Pune Delivery Hub, Maharashtra",
-                "last_scan": "Today, 08:30 AM - Out for delivery from Pune Hub",
-                "can_cancel": False,
-                "can_return": False,
-            },
-            "EB112233445": {
-                "order_number": "EB112233445",
-                "item": "Electronics Freight - Tablet & Accessories",
-                "amount": "₹320.00",
-                "status": "Delivered - Damage Claim Under Investigation",
-                "carrier": "ExpressBeas Express Cargo",
-                "estimated_delivery": "Delivered on Oct 29, 2026",
-                "origin": "Hyderabad, Telangana",
-                "destination": "Jaipur, Rajasthan",
-                "last_scan": "Oct 29, 2026 - Delivered at recipient address",
-                "can_cancel": False,
-                "can_return": True,
-            }
-        }
-        if order_num in expressbeas_awb:
-            return {"success": True, "order": expressbeas_awb[order_num], "source": "expressbeas_records"}
+        # 2. Strict Multi-Tenant Scoped Datastores (No cross-tenant data leaks)
+        ws = Workspace.objects.filter(id=workspace_id).first()
+        ws_slug = (ws.slug or "").lower() if ws else ""
 
-        # 3. ShopEase Known Order Database
-        orders_db = {
-            "SE-84920": {
-                "order_number": "SE-84920",
-                "item": "Wireless Noise-Canceling Headphones",
-                "amount": "$199.00",
-                "status": "In Transit",
-                "carrier": "FedEx Express (Tracking: 940011189922)",
-                "estimated_delivery": "Tomorrow by 5:00 PM",
-                "can_cancel": False,
-                "can_return": True,
+        workspace_orders = {
+            "expressbeas": {
+                "EB987654321": {
+                    "order_number": "EB987654321",
+                    "customer_email": "rohit.kumar@example.com",
+                    "item": "Courier Consignment (5.2 kg) - Commercial Shipment",
+                    "amount": "₹450.00",
+                    "status": "In Transit - Delayed at Delhi Central Sort Facility",
+                    "carrier": "ExpressBeas Surface Fleet (Vehicle DL-1AB-4412)",
+                    "estimated_delivery": "Delivery expected within 24-48 hours",
+                    "origin": "Mumbai Hub, Maharashtra",
+                    "destination": "New Delhi Central, Delhi",
+                    "last_scan": "Oct 30, 2026 - Arrival Scan at Delhi Central Sort Hub",
+                    "can_cancel": False,
+                    "can_return": False,
+                },
+                "EB123456789": {
+                    "order_number": "EB123456789",
+                    "customer_email": "kavita.reddy@example.com",
+                    "item": "Air Express Document Parcel (0.8 kg)",
+                    "amount": "₹280.00",
+                    "status": "Out for Delivery",
+                    "carrier": "ExpressBeas Last-Mile Fleet (Rider: Rajesh K. - +91 98765 43210)",
+                    "estimated_delivery": "Today by 4:00 PM",
+                    "origin": "Bangalore Air Hub, Karnataka",
+                    "destination": "Pune Delivery Hub, Maharashtra",
+                    "last_scan": "Today, 08:30 AM - Out for delivery from Pune Hub",
+                    "can_cancel": False,
+                    "can_return": False,
+                },
+                "EB112233445": {
+                    "order_number": "EB112233445",
+                    "customer_email": "meera.patel@example.com",
+                    "item": "Electronics Freight - Tablet & Accessories",
+                    "amount": "₹320.00",
+                    "status": "Delivered - Damage Claim Under Investigation",
+                    "carrier": "ExpressBeas Express Cargo",
+                    "estimated_delivery": "Delivered on Oct 29, 2026",
+                    "origin": "Hyderabad, Telangana",
+                    "destination": "Jaipur, Rajasthan",
+                    "last_scan": "Oct 29, 2026 - Delivered at recipient address",
+                    "can_cancel": False,
+                    "can_return": True,
+                }
             },
-            "SE-84921": {
-                "order_number": "SE-84921",
-                "item": "Ultra-Slim Laptop Air 15\"",
-                "amount": "$1,199.00",
-                "status": "Processing in Warehouse",
-                "carrier": "Preparing for dispatch",
-                "estimated_delivery": "Within 2-3 business days",
-                "can_cancel": True,
-                "can_return": True,
+            "shopease": {
+                "SE-84920": {
+                    "order_number": "SE-84920",
+                    "customer_email": "alex.chen@example.com",
+                    "authorized_emails": ["alex.chen@example.com", "elena.fisher@example.com", "elena@example.com"],
+                    "item": "Wireless Noise-Canceling Headphones",
+                    "amount": "$199.00",
+                    "status": "In Transit",
+                    "carrier": "FedEx Express (Tracking: 940011189922)",
+                    "estimated_delivery": "Tomorrow by 5:00 PM",
+                    "can_cancel": False,
+                    "can_return": True,
+                },
+                "SE-10293": {
+                    "order_number": "SE-10293",
+                    "customer_email": "priya.patel@example.com",
+                    "authorized_emails": ["priya.patel@example.com"],
+                    "item": "Smart Noise-Cancelling Earbuds Pro",
+                    "amount": "$89.50",
+                    "status": "Processing - Order Placed 20 mins ago",
+                    "carrier": "Pending Fulfillment Dispatch",
+                    "estimated_delivery": "Estimated shipping within 24 hours",
+                    "can_cancel": True,
+                    "can_return": True,
+                },
+                "SE-84921": {
+                    "order_number": "SE-84921",
+                    "customer_email": "jordan.lee@example.com",
+                    "item": "Ultra-Slim Laptop Air 15\"",
+                    "amount": "$1,199.00",
+                    "status": "Processing in Warehouse",
+                    "carrier": "Preparing for dispatch",
+                    "estimated_delivery": "Within 2-3 business days",
+                    "can_cancel": True,
+                    "can_return": True,
+                },
+                "SE-84922": {
+                    "order_number": "SE-84922",
+                    "customer_email": "sam.fisher@example.com",
+                    "item": "Smart Fitness Watch Pro",
+                    "amount": "$149.00",
+                    "status": "Delivered",
+                    "carrier": "USPS Priority (Delivered 2 days ago)",
+                    "estimated_delivery": "Delivered",
+                    "can_cancel": False,
+                    "can_return": True,
+                }
             },
-            "SE-84922": {
-                "order_number": "SE-84922",
-                "item": "Smart Fitness Watch Pro",
-                "amount": "$149.00",
-                "status": "Delivered",
-                "carrier": "USPS Priority (Delivered 2 days ago)",
-                "estimated_delivery": "Delivered",
-                "can_cancel": False,
-                "can_return": True,
+            "technova": {
+                "TN-88234": {
+                    "order_number": "TN-88234",
+                    "customer_email": "devops@fintechcorp.com",
+                    "item": "Pro Developer API Plan (Annual)",
+                    "amount": "$999.00/yr",
+                    "status": "Active Subscription",
+                    "carrier": "Cloud Provisioning",
+                    "estimated_delivery": "Active",
+                    "can_cancel": True,
+                    "can_return": False,
+                }
+            },
+            "freshmart": {
+                "FM-44512": {
+                    "order_number": "FM-44512",
+                    "customer_email": "deepak.verma@example.com",
+                    "item": "Organic Fruits & Vegetable Box",
+                    "amount": "₹650.00",
+                    "status": "Delivered",
+                    "carrier": "FreshMart 15-Min Rider",
+                    "estimated_delivery": "Delivered",
+                    "can_cancel": False,
+                    "can_return": True,
+                }
             }
         }
-        if order_num in orders_db:
-            return {"success": True, "order": orders_db[order_num], "source": "shopease_records"}
 
-        # 4. TechNova & FreshMart Records
-        saas_orders = {
-            "TN-88234": {
-                "order_number": "TN-88234",
-                "item": "Pro Developer API Plan (Annual)",
-                "amount": "$999.00/yr",
-                "status": "Active Subscription",
-                "carrier": "Cloud Provisioning",
-                "estimated_delivery": "Active",
-                "can_cancel": True,
-                "can_return": False,
-            },
-            "FM-44512": {
-                "order_number": "FM-44512",
-                "item": "Organic Fruits & Vegetable Box",
-                "amount": "₹650.00",
-                "status": "Delivered",
-                "carrier": "FreshMart 15-Min Rider",
-                "estimated_delivery": "Delivered",
-                "can_cancel": False,
-                "can_return": True,
+        # Resolve scoped store by workspace
+        scoped_store = workspace_orders.get(ws_slug)
+        if scoped_store is None:
+            # Fallback for dynamic/test workspaces
+            if ws_slug.startswith("shopease"):
+                scoped_store = workspace_orders.get("shopease")
+            elif ws_slug.startswith("expressbeas"):
+                scoped_store = workspace_orders.get("expressbeas")
+            elif ws_slug.startswith("technova"):
+                scoped_store = workspace_orders.get("technova")
+            elif ws_slug.startswith("freshmart"):
+                scoped_store = workspace_orders.get("freshmart")
+            else:
+                scoped_store = {}
+
+        if order_num in scoped_store:
+            order_data = scoped_store[order_num]
+            # Customer verification check if email provided
+            if customer_email:
+                allowed = order_data.get("authorized_emails") or [order_data.get("customer_email", "")]
+                allowed_norm = [e.strip().lower() for e in allowed if e]
+                if allowed_norm and customer_email.strip().lower() not in allowed_norm:
+                    return {
+                        "success": False,
+                        "error": "Customer email does not match order record. Access denied."
+                    }
+            return {
+                "success": True,
+                "order": order_data,
+                "source": f"{ws_slug or 'store'}_verified_database"
             }
-        }
-        if order_num in saas_orders:
-            return {"success": True, "order": saas_orders[order_num], "source": "client_records"}
 
         # Order / AWB NOT FOUND - Never hallucinate fake orders!
+        store_display = ws.name if ws else "our store"
         return {
             "success": False,
-            "error": f"Order or AWB '{order_num}' was not found in our dispatch records."
+            "error": f"Order or AWB '{order_num}' was not found in {store_display} dispatch records."
         }
 
     @staticmethod
@@ -436,7 +492,33 @@ class ToolRegistry:
             return {"success": False, "error": str(e)}
 
     @staticmethod
-    def escalate_to_human(workspace_id: int, conversation_id: int, reason: str) -> dict:
+    def _resolve_escalation_team(workspace_id: int, intent: str, reason: str):
+        reason_lower = (reason or "").lower()
+        if intent == "BILLING" or any(w in reason_lower for w in ["double", "billing", "charge", "deducted", "refund", "invoice", "payment", "card"]):
+            team = Team.objects.filter(
+                workspace_id=workspace_id,
+                slug__in=["billing-support", "enterprise-billing", "claims-disputes", "quality-refunds"]
+            ).first()
+            if team:
+                return team
+        elif intent == "TECHNICAL" or any(w in reason_lower for w in ["crash", "api", "bug", "error", "down", "freeze", "glitch"]):
+            team = Team.objects.filter(
+                workspace_id=workspace_id,
+                slug__in=["technical-support", "dev-support"]
+            ).first()
+            if team:
+                return team
+        elif intent in ["SHIPPING", "RETURNS", "DEFECT"] or any(w in reason_lower for w in ["ship", "tracking", "awb", "lost", "delay", "damage"]):
+            team = Team.objects.filter(
+                workspace_id=workspace_id,
+                slug__in=["tracking-delivery", "order-support", "claims-disputes", "hyperlocal-delivery"]
+            ).first()
+            if team:
+                return team
+        return Team.objects.filter(workspace_id=workspace_id, is_active=True).first()
+
+    @classmethod
+    def escalate_to_human(cls, workspace_id: int, conversation_id: int, reason: str, customer_message: str = "") -> dict:
         try:
             conversation = Conversation.objects.get(id=conversation_id, workspace_id=workspace_id)
             conversation.is_escalated = True
@@ -445,51 +527,68 @@ class ToolRegistry:
                 conversation.urgency = "CRITICAL"
             conversation.save(update_fields=["is_escalated", "urgency", "updated_at"])
 
-            # Check if ticket already exists for this conversation
+            assigned_team = cls._resolve_escalation_team(workspace_id, conversation.intent or "", reason)
+
+            # Check if ticket already exists for this conversation (Item 1 Fix: upgrade & reassign)
             existing = Ticket.objects.filter(conversation=conversation).first()
             if existing:
+                needs_update = False
+                if is_critical and existing.priority != Ticket.Priority.CRITICAL:
+                    existing.priority = Ticket.Priority.CRITICAL
+                    needs_update = True
+                if assigned_team and existing.assigned_team != assigned_team:
+                    prev_team = existing.assigned_team
+                    existing.assigned_team = assigned_team
+                    needs_update = True
+                    TicketAssignment.objects.create(
+                        ticket=existing,
+                        previous_team=prev_team,
+                        new_team=assigned_team,
+                        reason=f"Reassigned on new escalation: {reason[:100]}"
+                    )
+                    TicketEvent.objects.create(
+                        ticket=existing,
+                        event_type="REASSIGNED",
+                        description=f"Ticket escalated & reassigned to '{assigned_team.name}': {reason[:100]}"
+                    )
+                if needs_update:
+                    existing.save(update_fields=["priority", "assigned_team", "updated_at"])
+
                 return {
                     "success": True,
                     "escalated": True,
                     "ticket_number": existing.ticket_number,
                     "priority": existing.priority,
-                    "assigned_team": existing.assigned_team.name if existing.assigned_team else "Support Team",
-                    "already_existed": True
+                    "assigned_team": existing.assigned_team.name if existing.assigned_team else "Billing Support",
+                    "already_existed": True,
+                    "updated": needs_update
                 }
-
-            # Map department team intelligently across all workspace types
-            assigned_team = None
-            reason_lower = reason.lower()
-            intent = conversation.intent or ""
-
-            if intent == "BILLING" or any(w in reason_lower for w in ["double", "billing", "charge", "deducted", "refund"]):
-                assigned_team = Team.objects.filter(
-                    workspace_id=workspace_id,
-                    slug__in=["billing-support", "enterprise-billing", "claims-disputes", "quality-refunds"]
-                ).first()
-            elif intent in ["SHIPPING", "RETURNS", "DEFECT"] or any(w in reason_lower for w in ["ship", "tracking", "awb", "lost", "delay", "damage"]):
-                assigned_team = Team.objects.filter(
-                    workspace_id=workspace_id,
-                    slug__in=["order-support", "tracking-delivery", "claims-disputes", "hyperlocal-delivery"]
-                ).first()
-            elif intent == "TECHNICAL" or any(w in reason_lower for w in ["crash", "api", "bug", "error", "down"]):
-                assigned_team = Team.objects.filter(
-                    workspace_id=workspace_id,
-                    slug__in=["technical-support", "dev-support", "order-support"]
-                ).first()
 
             if not assigned_team:
                 assigned_team = Team.objects.filter(workspace_id=workspace_id, is_active=True).first()
 
+            intent = conversation.intent or "SUPPORT"
+            category_map = {
+                "BILLING": "Billing & Payments",
+                "TECHNICAL": "Technical Support",
+                "SHIPPING": "Shipping & Logistics",
+                "RETURNS": "Returns & Exchanges",
+                "DEFECT": "Damaged & Defective",
+                "HUMAN_HANDOFF": "Customer Escalation",
+            }
+            ticket_category = category_map.get(intent, "General Support")
+
             ticket_priority = Ticket.Priority.CRITICAL if is_critical else Ticket.Priority.HIGH
+            description_text = customer_message.strip() if customer_message else reason.strip()
+
             ticket = Ticket.objects.create(
                 workspace_id=workspace_id,
                 customer=conversation.customer,
                 conversation=conversation,
-                subject=f"Urgent Escalation: {conversation.intent or 'Customer Query'}",
-                description=f"Reason: {reason}\nCustomer Sentiment: {conversation.sentiment}\nUrgency: {conversation.urgency}",
+                subject=f"Urgent: {ticket_category} Inquiry",
+                description=description_text,
                 priority=ticket_priority,
-                category=conversation.intent or "Escalation",
+                category=ticket_category,
                 assigned_team=assigned_team,
                 status=Ticket.Status.OPEN
             )

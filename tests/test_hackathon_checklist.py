@@ -119,7 +119,7 @@ class HackathonChecklistRegressionTests(TestCase):
         self.assertEqual(resp.status_code, 200)
         data = resp.json()
         reply_text = data.get("ai_message", "").lower()
-        self.assertTrue("not found" in reply_text or "couldn't find" in reply_text)
+        self.assertTrue("not found" in reply_text or "couldn't find" in reply_text or "could not find" in reply_text)
         self.assertNotIn("standard express shipping", reply_text)
 
     def test_03_order_tracking_without_number_prompts_for_id(self):
@@ -274,3 +274,169 @@ class HackathonChecklistRegressionTests(TestCase):
         )
 
         call_command("send_weekly_report", workspace=self.workspace.slug, dry_run=True)
+
+    def test_11_awb_tracking_unknown_does_not_hallucinate(self):
+        """
+        'find my parcel awb123459876' on ExpressBeas must NOT hallucinate transit status.
+        Must return clean not-found message.
+        """
+        eb_ws = Workspace.objects.create(
+            name="ExpressBeas",
+            slug="expressbeas"
+        )
+        WorkspaceSettings.objects.create(
+            workspace=eb_ws,
+            support_email="support@expressbeas.in",
+            welcome_message="Welcome to ExpressBeas!"
+        )
+
+        resp = self.client.post(
+            f"/widget/{eb_ws.public_key}/message/",
+            data=json.dumps({"message": "find my parcel awb123459876"}),
+            content_type="application/json"
+        )
+        self.assertEqual(resp.status_code, 200)
+        reply = resp.json().get("ai_message", "").lower()
+        self.assertNotIn("is currently in transit", reply)
+        self.assertTrue("could not find" in reply or "not found" in reply or "verify" in reply)
+
+    def test_12_cross_tenant_order_isolation(self):
+        """
+        Multi-tenant isolation: ShopEase cannot access ExpressBeas AWBs,
+        and ExpressBeas cannot access ShopEase orders.
+        """
+        eb_ws = Workspace.objects.create(name="ExpressBeas", slug="expressbeas")
+        se_ws = Workspace.objects.create(name="ShopEase", slug="shopease")
+
+        # Query ExpressBeas AWB in ShopEase
+        se_res = tool_registry.lookup_order(se_ws.id, "EB987654321")
+        self.assertFalse(se_res.get("success"))
+        self.assertIn("not found", se_res.get("error", "").lower())
+
+        # Query ShopEase order in ExpressBeas
+        eb_res = tool_registry.lookup_order(eb_ws.id, "SE-84920")
+        self.assertFalse(eb_res.get("success"))
+        self.assertIn("not found", eb_res.get("error", "").lower())
+
+    def test_13_customer_email_verification_on_order(self):
+        """
+        Customer email verification: querying an order with a mismatched email must fail.
+        """
+        se_ws = Workspace.objects.create(name="ShopEase", slug="shopease")
+
+        # Wrong email
+        res_fail = tool_registry.lookup_order(se_ws.id, "SE-84920", customer_email="intruder@evil.com")
+        self.assertFalse(res_fail.get("success"))
+        self.assertIn("email does not match", res_fail.get("error", "").lower())
+
+        # Correct email
+        res_ok = tool_registry.lookup_order(se_ws.id, "SE-84920", customer_email="alex.chen@example.com")
+        self.assertTrue(res_ok.get("success"))
+        self.assertEqual(res_ok["order"]["order_number"], "SE-84920")
+
+    def test_14_re_escalation_priority_upgrade_and_reassignment(self):
+        """
+        Re-escalation: If a conversation is already open for a tech issue and the user
+        reports duplicate billing fraud, ticket priority must be upgraded to CRITICAL
+        and reassigned to Billing Support.
+        """
+        cust = Customer.objects.create(workspace=self.workspace, name="Multi Issue Customer", email="multi@example.com")
+        conv = Conversation.objects.create(workspace=self.workspace, customer=cust)
+        initial_ticket = Ticket.objects.create(
+            workspace=self.workspace,
+            customer=cust,
+            conversation=conv,
+            subject="App crash issue",
+            description="App crashed on startup",
+            priority=Ticket.Priority.HIGH,
+            assigned_team=self.tech_team
+        )
+
+        # New message reporting double charge
+        msg = "My credit card was charged twice ($199) for order SE-84920! Refund immediately!"
+        resp = self.client.post(
+            f"/widget/{self.workspace.public_key}/message/",
+            data=json.dumps({"message": msg, "conversation_id": conv.id, "customer_email": "multi@example.com"}),
+            content_type="application/json"
+        )
+        self.assertEqual(resp.status_code, 200)
+
+        initial_ticket.refresh_from_db()
+        self.assertEqual(initial_ticket.priority, Ticket.Priority.CRITICAL)
+        self.assertEqual(initial_ticket.assigned_team, self.billing_team)
+
+    def test_15_cancellable_order_creates_cancellation_ticket(self):
+        """
+        Requesting cancellation for an eligible order (SE-10293) generates
+        a HIGH priority ticket for Order Support with ticket number in reply.
+        """
+        se_ws = Workspace.objects.create(name="ShopEase", slug="shopease")
+        Team.objects.create(workspace=se_ws, name="Order Support", slug="order-support", is_active=True)
+        WorkspaceSettings.objects.create(workspace=se_ws, support_email="support@shopease.com")
+
+        resp = self.client.post(
+            f"/widget/{se_ws.public_key}/message/",
+            data=json.dumps({"message": "Please cancel my order SE-10293", "customer_email": "priya.patel@example.com"}),
+            content_type="application/json"
+        )
+        self.assertEqual(resp.status_code, 200)
+        reply = resp.json().get("ai_message", "")
+        self.assertIn("#TK-", reply)
+        self.assertIn("cancellation request", reply.lower())
+
+        ticket = Ticket.objects.filter(workspace=se_ws, subject__icontains="Cancellation").first()
+        self.assertIsNotNone(ticket)
+        self.assertEqual(ticket.priority, Ticket.Priority.HIGH)
+
+    def test_16_human_handoff_direct_escalation(self):
+        """
+        Explicit request to speak to a human creates an escalation ticket.
+        """
+        resp = self.client.post(
+            f"/widget/{self.workspace.public_key}/message/",
+            data=json.dumps({"message": "I want to speak with a human support agent right now"}),
+            content_type="application/json"
+        )
+        self.assertEqual(resp.status_code, 200)
+        data = resp.json()
+        self.assertTrue(data.get("is_escalated"))
+        self.assertIn("#TK-", data.get("ai_message", ""))
+
+    def test_17_email_triage_compliment_no_ticket(self):
+        """
+        Customer compliments and praise are triaged with requires_ticket=False and POSITIVE sentiment.
+        """
+        from apps.emails.services.email_triage import triage_incoming_email
+
+        body = "Your delivery driver was courteous and the parcel arrived early! Thank you so much for the wonderful service."
+        result = triage_incoming_email(
+            sender="happy.customer@example.com",
+            subject="Great service today!",
+            body_text=body,
+            workspace=self.workspace
+        )
+        self.assertFalse(result.get("requires_ticket"))
+        self.assertEqual(result.get("sentiment"), "POSITIVE")
+
+    def test_18_mock_store_lookup_api_endpoint(self):
+        """
+        External mock store webhook API (/api/v1/mock-store/lookup/) correctly serves
+        verified orders and rejects unknown / unauthorized lookups.
+        """
+        # Valid order lookup
+        resp = self.client.get("/api/v1/mock-store/lookup/?order_id=SE-84920")
+        self.assertEqual(resp.status_code, 200)
+        data = resp.json()
+        self.assertTrue(data.get("success"))
+        self.assertEqual(data["order"]["order_number"], "SE-84920")
+
+        # Email mismatch
+        resp_mismatch = self.client.get("/api/v1/mock-store/lookup/?order_id=SE-84920&email=intruder@test.com")
+        self.assertEqual(resp_mismatch.status_code, 403)
+        self.assertFalse(resp_mismatch.json().get("success"))
+
+        # Unknown order
+        resp_404 = self.client.get("/api/v1/mock-store/lookup/?order_id=UNKNOWN-999")
+        self.assertEqual(resp_404.status_code, 404)
+        self.assertFalse(resp_404.json().get("success"))
+

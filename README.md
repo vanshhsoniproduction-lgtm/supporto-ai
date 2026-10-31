@@ -4,7 +4,7 @@
 [![Python 3.12](https://img.shields.io/badge/Python-3.12-blue.svg)](https://www.python.org/)
 [![Django 5.1](https://img.shields.io/badge/Django-5.1-green.svg)](https://www.djangoproject.com/)
 [![Local AI Stack](https://img.shields.io/badge/AI%20Stack-Qwen%208B%20%7C%20Whisper%20%7C%20Kokoro-orange.svg)]()
-[![Automated Tests](https://img.shields.io/badge/Tests-49%20Passing-brightgreen.svg)]()
+[![Automated Tests](https://img.shields.io/badge/Tests-68%20Passing-brightgreen.svg)]()
 [![License](https://img.shields.io/badge/License-MIT-purple.svg)]()
 
 > **Built for Hackathon Problem Statement 2.5:**  
@@ -257,10 +257,13 @@ python manage.py runserver
 | Portal | URL | Demo Credentials |
 | :--- | :--- | :--- |
 | **Demo Customer Store** | `http://127.0.0.1:8000/widget/205efaa9-4d66-4903-b6f6-cccb701c8668/demo/` | Public (Enter any name/email) |
-| **ShopEase Staff Portal** | `http://127.0.0.1:8000/shopease/` | `owner@shopease.com` / `ShopEase@123`<br>Or Continue with Google |
+| **Organization Switcher** | `http://127.0.0.1:8000/select-workspace/` | Switch between authorized companies |
+| **ShopEase Staff Portal** | `http://127.0.0.1:8000/shopease/` | `owner@shopease.com` / `ShopEase@123`<br>Or Continue with Google (`vanshhsoni.production@gmail.com`) |
+| **ExpressBeas Logistics** | `http://127.0.0.1:8000/expressbeas/` | Fast AWB tracking & carrier dispatch |
 | **Custom Platform Admin** | `http://127.0.0.1:8000/admin/` | `admin@supporto.ai` / `Supporto@Admin123` |
-| **Weekly Insights Report**| `http://127.0.0.1:8000/shopease/analytics/weekly-insights/` | Staff authenticated |
+| **Weekly Insights Report**| `http://127.0.0.1:8000/shopease/analytics/weekly/` | Staff authenticated |
 | **Email Review Queue**   | `http://127.0.0.1:8000/shopease/emails/review/` | Staff authenticated |
+| **Mock Store Webhook API**| `http://127.0.0.1:8000/api/v1/mock-store/lookup/` | External tool-calling webhook endpoint |
 
 ---
 
@@ -271,28 +274,29 @@ python manage.py runserver
 1. **Step 1: Open Widget Demo Store** (`/widget/<public_key>/demo/`):
    - Enter name & email &rarr; Click **"Open Full Experience"**.
    - Click **"Call Support AI"** &rarr; Show the mobile phone calling screen, ticking timer, and live waveform.
-   - Speak: *"Where is my order SE-84920?"* &rarr; AI invokes tool `lookup_order`, fetches live FedEx tracking, and speaks the answer.
+   - Speak: *"Where is my order SE-84920?"* &rarr; AI invokes tool `lookup_order`, fetches live tracking, and speaks the answer.
+   - Try an unknown AWB: *"find my parcel awb123459876"* &rarr; Demonstrates zero hallucination: AI strictly verifies with store records and notifies customer parcel is not found.
 2. **Step 2: Trigger Sensitive Financial Escalation**:
    - Speak or type: *"My credit card was charged twice ($199) for order SE-84920! Refund my money immediately!"*
    - Show that the AI **refuses to hallucinate a financial write**, flags **CRITICAL Urgency**, and creates an escalated ticket.
 3. **Step 3: Show Staff Ticket Dashboard** (`/shopease/tickets/`):
    - Show the newly created critical ticket assigned to **Billing Support** with a **15-minute SLA countdown**.
-4. **Step 4: Show Weekly Insights (The Bonus Twist)** (`/shopease/analytics/weekly-insights/`):
+4. **Step 4: Show Weekly Insights (The Bonus Twist)** (`/shopease/analytics/weekly/`):
    - Show recurring complaint analytics and click **"Download CSV Report"**.
 
 ---
 
 ## Automated Test Suite
 
-Supporto AI includes 49 automated unit and integration tests covering multi-tenant security, cross-workspace isolation, authentication ACL, ticket lifecycle, email triage, and widget communications:
+Supporto AI includes 68 automated unit, integration, and security regression tests covering multi-tenant security, cross-workspace isolation, authentication ACL, ticket lifecycle, email triage, live webhook calling, and widget communications:
 
 ```bash
-python manage.py test tests
+python manage.py test
 ```
 
 Output:
 ```
-Ran 49 tests in 0.025s
+Ran 68 tests in 25.749s
 OK
 ```
 

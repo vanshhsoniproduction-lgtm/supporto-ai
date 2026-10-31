@@ -16,11 +16,36 @@ def has_word(text: str, words: list[str]) -> bool:
     return bool(re.search(pattern, text, re.IGNORECASE))
 
 
+def extract_order_code(text: str) -> str | None:
+    """
+    Robust order and consignment AWB extractor.
+    Handles awb123459876, awb 123456789, EB987654321, SE-84920, TN-88234, FM-44512,
+    order #12345, parcel #12345, and numeric tracking codes in tracking contexts.
+    """
+    t = text.strip()
+    # 1. Matches with awb prefix: e.g. awb123459876, awb 123459876, awb-123459876
+    m = re.search(r'\bawb[:\s\-#]*([a-z0-9]{6,16})\b', t, re.IGNORECASE)
+    if m:
+        return m.group(1).upper()
+    # 2. Known prefixes: EB123456789, SE-84920, FM-8812, TN-201, ORD-12345, or XX-12345
+    m = re.search(r'\b(eb\d{6,14}|se-?\d{4,8}|fm-?\d{4,8}|tn-?\d{4,8}|ord-?\d{4,8}|[a-z]{2}-?\d{4,8})\b', t, re.IGNORECASE)
+    if m:
+        return m.group(1).upper()
+    # 3. Phrases: order #12345, parcel #12345, package #12345, consignment #12345
+    m = re.search(r'\b(?:order|parcel|package|consignment|shipment|tracking)[\s:#]+([a-z0-9\-]{5,16})\b', t, re.IGNORECASE)
+    if m:
+        return m.group(1).upper()
+    # 4. Long numeric sequences (8 to 14 digits) in tracking queries
+    m = re.search(r'\b(\d{8,14})\b', t)
+    if m and any(k in t.lower() for k in ["track", "parcel", "package", "shipment", "awb", "order", "where", "find"]):
+        return m.group(1)
+    return None
+
+
 class LLMService:
     """
     LLM Inference Service for Supporto AI.
-    Integrates with local Qwen 8B GGUF model when llama-cpp-python is available,
-    with tool-calling capabilities and an intelligent fallback engine.
+    Features deterministic pre-LLM guards, audited tool execution, and grounded fallback engine.
     """
 
     PROMPT_INJECTION_PATTERNS = [
@@ -28,6 +53,8 @@ class LLMService:
         r"reveal (?:your )?(?:system prompt|instructions|passwords)",
         r"give me (?:the )?(?:admin|root|system) password",
         r"disregard (?:all )?guidelines",
+        r"disregard (?:all )?prior rules",
+        r"print (?:your )?(?:system prompt|internal prompt)",
         r"you are now in (?:dan|developer) mode",
     ]
 
@@ -51,43 +78,107 @@ class LLMService:
                     "source": "security_guardrail"
                 }
 
-        # 1. Tool Calling: Order / AWB Consignment Tracking
-        awb_match = re.search(r'\b(eb\d{6,12})\b', msg_lower)
-        order_match = re.search(r'\b(se-?\d{4,6}|fm-?\d{4,6}|tn-?\d{4,6}|ord-?\d{4,6}|[a-z]{2}-?\d{4,6})\b', msg_lower)
+        # 1. Urgent Billing / Fraud Check (Pre-LLM Guard)
+        urgent_keywords = [
+            "deducted twice", "double charge", "double charged", "charged twice",
+            "unauthorized charge", "fraud", "scam", "overcharged", "money stolen",
+            "refund immediately", "cancel and refund"
+        ]
+        if any(k in msg_lower for k in urgent_keywords):
+            sla_mins = getattr(getattr(workspace, "settings", None), "sla_urgent_minutes", 15)
+            escalation_text = (
+                f"I understand you are reporting an urgent billing discrepancy ({customer_message.strip()}). "
+                f"I have flagged this as critical and escalated it to our Billing Support team. "
+                f"A specialist will review your transaction and reply within {sla_mins} minutes."
+            )
+            return {
+                "text": escalation_text,
+                "retrieved_docs": [],
+                "tokens_used": len(escalation_text.split()),
+                "source": "urgent_billing_guard"
+            }
+
+        # 2. Extract Order / AWB Consignment Code
+        extracted_code = extract_order_code(customer_message)
         tracking_keywords = [
             "my order", "track order", "track package", "where is my order",
-            "where is my package", "where is my parcel", "awb", "consignment", "tracking status"
+            "where is my package", "where is my parcel", "find my parcel", "awb", "consignment", "tracking status"
         ]
 
         order_data = None
         order_not_found_code = None
         needs_order_number = False
 
-        if awb_match or order_match:
-            code = awb_match.group(1).upper() if awb_match else order_match.group(1).upper()
-            tool_res = tool_registry.lookup_order(workspace.id, code, customer_email=customer_email)
+        if extracted_code:
+            tool_res = tool_registry.lookup_order(workspace.id, extracted_code, customer_email=customer_email)
+            if not tool_res.get("success") and workspace.slug == "expressbeas" and not extracted_code.startswith("EB"):
+                # Try prefixing EB for ExpressBeas consignments
+                tool_res = tool_registry.lookup_order(workspace.id, f"EB{extracted_code}", customer_email=customer_email)
+
             if tool_res.get("success"):
                 order_data = tool_res["order"]
             else:
-                order_not_found_code = code
+                order_not_found_code = extracted_code
         elif any(k in msg_lower for k in tracking_keywords):
             needs_order_number = True
 
-        # 2. Retrieve relevant Knowledge Base context (with stopword filtering & score threshold)
-        retrieved = rag_service.retrieve_context(workspace.id, customer_message, top_k=3)
-        if order_data:
-            retrieved.insert(0, {
-                "title": f"Live Order Details for {order_data['order_number']}",
-                "content": (
-                    f"Item: {order_data['item']} | Price: {order_data['amount']}\n"
-                    f"Status: {order_data['status']} | Carrier: {order_data['carrier']}\n"
-                    f"Delivery Date: {order_data['estimated_delivery']}\n"
-                    f"Eligible for cancellation: {order_data['can_cancel']} | Eligible for return: {order_data['can_return']}"
-                ),
-                "doc_type": "ORDER_TOOL"
-            })
+        # 3. Deterministic Pre-LLM Interceptions (Zero Hallucination Guarantee)
+        if order_not_found_code:
+            not_found_msg = (
+                f"I could not find order or AWB #{order_not_found_code} in our {workspace.name} records. "
+                "The order was not found. Please double-check the tracking number, or let me know if you would like me to connect you with our support team."
+            )
+            return {
+                "text": not_found_msg,
+                "retrieved_docs": [],
+                "tokens_used": len(not_found_msg.split()),
+                "source": "deterministic_order_lookup"
+            }
 
-        # 3. LLM Inference via Qwen (Local GGUF or Fallback Engine)
+        if needs_order_number:
+            sample_id = "EB987654321" if workspace.slug == "expressbeas" else "SE-84920"
+            prompt_msg = f"I would be glad to check your status! Could you please provide your Order ID or AWB Tracking Number (e.g. {sample_id})?"
+            return {
+                "text": prompt_msg,
+                "retrieved_docs": [],
+                "tokens_used": len(prompt_msg.split()),
+                "source": "deterministic_order_prompt"
+            }
+
+        if order_data:
+            details_msg = cls._format_order_reply(workspace, order_data, msg_lower)
+            return {
+                "text": details_msg,
+                "retrieved_docs": [],
+                "tokens_used": len(details_msg.split()),
+                "source": "deterministic_order_details"
+            }
+
+        # 4. Pure Greetings Check (Strict word boundaries, only for short introductory messages)
+        words = msg_lower.split()
+        if len(words) <= 4 and has_word(msg_lower, ["hello", "hi", "hey", "greetings", "good morning", "good afternoon", "hii", "heyy"]):
+            greeting_msg = f"Hello! Welcome to {workspace.name} support. How can I help you today?"
+            return {
+                "text": greeting_msg,
+                "retrieved_docs": [],
+                "tokens_used": len(greeting_msg.split()),
+                "source": "greeting_handler"
+            }
+
+        # 5. Closings & Gratitude
+        if has_word(msg_lower, ["thanks", "thank you", "bye", "goodbye", "have a nice day", "have a good day", "thanks bye"]):
+            closing_msg = "You're very welcome! Feel free to reach out anytime if you need help with your orders or services. Have a wonderful day!"
+            return {
+                "text": closing_msg,
+                "retrieved_docs": [],
+                "tokens_used": len(closing_msg.split()),
+                "source": "closing_handler"
+            }
+
+        # 6. Retrieve relevant Knowledge Base context
+        retrieved = rag_service.retrieve_context(workspace.id, customer_message, top_k=3)
+
+        # 7. LLM Inference via Qwen (Local GGUF or Grounded Fallback Engine)
         llm = model_manager.get_llm()
         if llm:
             try:
@@ -119,15 +210,18 @@ class LLMService:
             except Exception as e:
                 logger.error(f"Error executing Qwen inference: {e}")
 
-        # 4. Intelligent Fallback Response Engine
-        response_text = cls._generate_grounded_fallback(
-            workspace=workspace,
-            message=customer_message,
-            retrieved_docs=retrieved,
-            order_data=order_data,
-            order_not_found_code=order_not_found_code,
-            needs_order_number=needs_order_number
-        )
+        # 8. Grounded Knowledge Base answers (Filtered by relevance score)
+        if retrieved:
+            top_doc = retrieved[0]
+            answer = top_doc.get("content", "")
+            title = top_doc.get("title", "Policy")
+            response_text = f"According to {workspace.name}'s '{title}':\n\n{answer}"
+        else:
+            response_text = (
+                f"I couldn't find specific information regarding '{customer_message.strip()[:60]}' in our knowledge base. "
+                "Would you like me to connect you with a member of our human support team?"
+            )
+
         return {
             "text": response_text,
             "retrieved_docs": retrieved,
@@ -135,89 +229,51 @@ class LLMService:
             "source": "supporto_rag_engine"
         }
 
-    @classmethod
-    def _generate_grounded_fallback(cls, workspace, message: str, retrieved_docs: list[dict], order_data: dict = None, order_not_found_code: str = None, needs_order_number: bool = False) -> str:
-        msg_lower = message.lower().strip()
+    @staticmethod
+    def _format_order_reply(workspace, order_data: dict, msg_lower: str) -> str:
+        num = order_data["order_number"]
+        item = order_data["item"]
+        status = order_data["status"]
+        carrier = order_data["carrier"]
+        delivery = order_data["estimated_delivery"]
+        last_scan = order_data.get("last_scan")
+        origin = order_data.get("origin")
+        dest = order_data.get("destination")
 
-        # 1. Urgent Billing / Fraud keywords ALWAYS checked FIRST before order lookups
-        urgent_keywords = [
-            "deducted twice", "double charge", "double charged", "charged twice",
-            "unauthorized charge", "fraud", "scam", "overcharged", "money stolen",
-            "refund immediately", "cancel and refund"
-        ]
-        if any(k in msg_lower for k in urgent_keywords):
-            sla_mins = getattr(getattr(workspace, "settings", None), "sla_urgent_minutes", 15)
+        if "cancel" in msg_lower:
+            if order_data.get("can_cancel"):
+                return f"Your order {num} ({item}) is currently in processing and eligible for cancellation. I will submit a formal cancellation request to our Order Support team."
+            else:
+                return f"Shipment {num} ({item}) is already {status.lower()} with {carrier} and cannot be cancelled mid-transit. Once it arrives, you can process a return or claim."
+
+        if last_scan or origin:
             return (
-                f"I understand you are reporting an urgent billing discrepancy ({message.strip()}). "
-                f"I have flagged this as critical and escalated it to our Billing Support team. "
-                f"A specialist will review your transaction and reply within {sla_mins} minutes."
+                f"📦 **Tracking Status for {num}**\n\n"
+                f"• **Status**: {status}\n"
+                f"• **Carrier**: {carrier}\n"
+                f"• **Route**: {origin or 'Origin'} ➔ {dest or 'Destination'}\n"
+                f"• **Latest Scan**: {last_scan or 'In transit'}\n"
+                f"• **ETA**: {delivery}"
             )
 
-        # 2. Customer asked for order status without giving an ID
-        if needs_order_number:
-            sample_id = "EB987654321" if workspace.slug == "expressbeas" else "SE-84920"
-            return f"I would be glad to check your status! Could you please provide your Order ID or AWB Tracking Number (e.g. {sample_id})?"
-
-        # 3. Order ID was provided but not found
-        if order_not_found_code:
-            return f"I couldn't find order or AWB #{order_not_found_code} in our records. Please double-check the number, or let me know if you would like me to connect you with our support team."
-
-        # 4. Order or Shipment details found
-        if order_data:
-            num = order_data["order_number"]
-            item = order_data["item"]
-            status = order_data["status"]
-            carrier = order_data["carrier"]
-            delivery = order_data["estimated_delivery"]
-            last_scan = order_data.get("last_scan")
-            origin = order_data.get("origin")
-            dest = order_data.get("destination")
-
-            if "cancel" in msg_lower:
-                if order_data.get("can_cancel"):
-                    return f"Your order {num} ({item}) is currently in processing and can be cancelled. I will notify our Support team to cancel it."
-                else:
-                    return f"Shipment {num} ({item}) is already {status.lower()} with {carrier} and cannot be cancelled mid-transit. Once it arrives, you can process a return or claim."
-
-            if last_scan or origin:
-                return (
-                    f"📦 **Tracking Status for {num}**\n\n"
-                    f"• **Status**: {status}\n"
-                    f"• **Carrier**: {carrier}\n"
-                    f"• **Route**: {origin or 'Origin'} ➔ {dest or 'Destination'}\n"
-                    f"• **Latest Scan**: {last_scan or 'In transit'}\n"
-                    f"• **ETA**: {delivery}"
-                )
-
-            return f"Your order {num} ({item}) is currently **{status}** via {carrier}. Estimated delivery: **{delivery}**."
-
-        # 5. Pure Greetings Check (Strict word boundaries, only for short introductory messages)
-        words = msg_lower.split()
-        if len(words) <= 4 and has_word(msg_lower, ["hello", "hi", "hey", "greetings", "good morning", "good afternoon", "hii", "heyy"]):
-            return f"Hello! Welcome to {workspace.name} support. How can I help you today?"
-
-        # 6. Grounded Knowledge Base answers (Filtered by relevance score)
-        if retrieved_docs:
-            top_doc = retrieved_docs[0]
-            answer = top_doc.get("content", "")
-            title = top_doc.get("title", "Policy")
-            return f"According to {workspace.name}'s '{title}':\n\n{answer}"
-
-        # 7. Honest fallback when knowledge is not found
-        return (
-            f"I couldn't find specific information regarding '{message.strip()[:60]}' in our knowledge base. "
-            "Would you like me to connect you with a member of our human support team?"
-        )
+        return f"Your order {num} ({item}) is currently **{status}** via {carrier}. Estimated delivery: **{delivery}**."
 
     @classmethod
     def classify_intent_urgency(cls, text: str) -> dict:
-        """Classifies intent, sentiment, and urgency with negation resistance."""
+        """Classifies intent, sentiment, and urgency with negation resistance and human handoff detection."""
         t_lower = text.lower()
 
         # Negation handling: e.g. "not angry", "no rush", "not urgent", "no hurry"
         has_calm_negation = has_word(t_lower, [
             "not angry", "no rush", "not urgent", "no hurry",
             "whenever you can", "take your time", "not mad", "not upset"
+        ])
+
+        # 0. Human handoff request detection
+        is_human_handoff = has_word(t_lower, [
+            "human", "agent", "real person", "representative", "support person",
+            "talk to someone", "customer care executive", "connect to agent",
+            "connect to human", "speak with someone", "live person", "real human"
         ])
 
         # 1. Critical safety triggers (immediate human escalation)
@@ -238,7 +294,7 @@ class LLMService:
         if is_critical:
             urgency = "CRITICAL"
             is_escalated = True
-        elif is_high:
+        elif is_human_handoff or is_high:
             urgency = "HIGH"
             is_escalated = True
         elif has_calm_negation:
@@ -250,12 +306,16 @@ class LLMService:
 
         # 3. Intent detection
         intent = "GENERAL"
-        if has_word(t_lower, ["pay", "charge", "refund", "bill", "billing", "invoice", "price", "money", "deducted", "payment", "card"]):
+        if is_human_handoff:
+            intent = "HUMAN_HANDOFF"
+        elif has_word(t_lower, ["pay", "charge", "refund", "bill", "billing", "invoice", "price", "money", "deducted", "payment", "card"]):
             intent = "BILLING"
-        elif has_word(t_lower, ["crash", "crashing", "crashes", "error", "bug", "api", "login", "password", "server", "down"]):
+        elif has_word(t_lower, ["crash", "crashing", "crashes", "error", "bug", "api", "login", "password", "server", "down", "freeze"]):
             intent = "TECHNICAL"
-        elif has_word(t_lower, ["ship", "shipping", "track", "tracking", "delivery", "arrive", "order", "package", "awb", "courier", "consignment"]):
+        elif has_word(t_lower, ["ship", "shipping", "track", "tracking", "delivery", "arrive", "order", "package", "awb", "courier", "consignment", "parcel"]):
             intent = "SHIPPING"
+        elif has_word(t_lower, ["cancel", "cancellation"]):
+            intent = "RETURNS"
         elif has_word(t_lower, ["return", "returns", "exchange", "replace", "replacement"]):
             intent = "RETURNS"
         elif has_word(t_lower, ["broken", "damage", "damaged", "defect", "faulty", "spoiled", "rotten"]):
@@ -301,12 +361,12 @@ class LLMService:
             team = Team.objects.filter(workspace=workspace, slug__in=["billing-support", "enterprise-billing", "claims-disputes", "quality-refunds"]).first()
             if team:
                 return team
-        if has_word(t_lower, ["order", "ship", "deliver", "track", "package", "awb", "consignment", "delivery", "pickup"]):
-            team = Team.objects.filter(workspace=workspace, slug__in=["order-support", "tracking-delivery", "hyperlocal-delivery"]).first()
+        if has_word(t_lower, ["tech", "bug", "error", "broken", "login", "password", "crash", "crashing", "api", "freeze"]):
+            team = Team.objects.filter(workspace=workspace, slug__in=["technical-support", "dev-support"]).first()
             if team:
                 return team
-        if has_word(t_lower, ["tech", "bug", "error", "broken", "login", "password", "crash", "crashing", "api"]):
-            team = Team.objects.filter(workspace=workspace, slug__in=["technical-support", "dev-support"]).first()
+        if has_word(t_lower, ["order", "ship", "deliver", "track", "package", "awb", "consignment", "delivery", "pickup", "parcel"]):
+            team = Team.objects.filter(workspace=workspace, slug__in=["tracking-delivery", "order-support", "claims-disputes", "hyperlocal-delivery"]).first()
             if team:
                 return team
         return Team.objects.filter(workspace=workspace, is_active=True).first()

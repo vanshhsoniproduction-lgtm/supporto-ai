@@ -85,13 +85,13 @@ class Command(BaseCommand):
                 "welcome_message": "Welcome to ExpressBeas Support! Track your shipment AWB, report a delayed parcel, or schedule a pickup. How can we help today?",
                 "sla_urgent": 10,
                 "sla_standard": 8,
-                "orders_webhook": "https://expressbeas.in/api/v1/shipments/track",
+                "orders_webhook": "http://127.0.0.1:8000/api/v1/mock-store/lookup/",
                 "orders_secret": "sk_expressbeas_live_awb_2026",
                 "webhooks": [
                     {
                         "name": "ExpressBeas Public AWB Tracking API",
                         "type": WorkspaceWebhook.WebhookType.TRACKING,
-                        "url": "https://expressbeas.in/api/v1/shipments/track",
+                        "url": "http://127.0.0.1:8000/api/v1/mock-store/lookup/",
                         "secret": "sk_expressbeas_live_awb_2026"
                     },
                     {
@@ -219,13 +219,13 @@ class Command(BaseCommand):
                 "welcome_message": "Welcome to ShopEase Support! How can our AI assistant help you with your order, returns, or billing today?",
                 "sla_urgent": 15,
                 "sla_standard": 12,
-                "orders_webhook": "https://shopease.example.com/api/v1/orders/lookup",
+                "orders_webhook": "http://127.0.0.1:8000/api/v1/mock-store/lookup/",
                 "orders_secret": "sk_shopease_demo_secret_2026",
                 "webhooks": [
                     {
                         "name": "Shopify Store Orders API",
                         "type": WorkspaceWebhook.WebhookType.ORDERS,
-                        "url": "https://shopease.example.com/api/v1/orders/lookup",
+                        "url": "http://127.0.0.1:8000/api/v1/mock-store/lookup/",
                         "secret": "sk_shopease_demo_secret_2026"
                     }
                 ],
@@ -237,12 +237,13 @@ class Command(BaseCommand):
                 "teams": [
                     {"slug": "order-support", "name": "Order Support", "desc": "Handles shipments, fulfillment, order status, and delivery issues."},
                     {"slug": "billing-support", "name": "Billing Support", "desc": "Handles payment discrepancies, refunds, duplicate charges, and invoices."},
+                    {"slug": "technical-support", "name": "Technical Support", "desc": "Handles app crashes, website login issues, software bugs, and device integration."},
                 ],
                 "staff": [
-                    ("sarah.connor@shopease.com", "Sarah", "Connor", "AGENT", ["order-support"]),
-                    ("marcus.wright@shopease.com", "Marcus", "Wright", "AGENT", ["order-support", "billing-support"]),
+                    ("sarah.connor@shopease.com", "Sarah", "Connor", "AGENT", ["order-support", "technical-support"]),
+                    ("marcus.wright@shopease.com", "Marcus", "Wright", "AGENT", ["order-support", "billing-support", "technical-support"]),
                     ("kyle.reese@shopease.com", "Kyle", "Reese", "AGENT", ["billing-support"]),
-                    ("john.connor@shopease.com", "John", "Connor", "MANAGER", ["order-support", "billing-support"]),
+                    ("john.connor@shopease.com", "John", "Connor", "MANAGER", ["order-support", "billing-support", "technical-support"]),
                 ],
                 "faqs": [
                     ("Return & Exchange Policy",
