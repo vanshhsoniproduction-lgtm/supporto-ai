@@ -2,7 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.conf import settings
 from django.http import HttpResponseForbidden
-from apps.workspaces.models import WorkspaceSettings, WorkspaceMembership
+from apps.workspaces.models import Workspace, WorkspaceSettings, WorkspaceMembership, WorkspaceAuthorizedEmail
 from apps.tickets.models import Ticket
 from apps.conversations.models import Conversation
 from apps.teams.models import Team
