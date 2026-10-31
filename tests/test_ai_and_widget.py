@@ -129,3 +129,19 @@ class AIAndWidgetTests(TestCase):
             data={}
         )
         self.assertEqual(resp.status_code, 400)
+
+    def test_voice_endpoint_with_transcript(self):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        audio_file = SimpleUploadedFile('sample.webm', b'fake audio content', content_type='audio/webm')
+        resp = self.client.post(
+            f'/widget/{self.workspace.public_key}/voice/',
+            data={
+                'audio': audio_file,
+                'browser_transcript': 'Where is my order?',
+                'customer_phone': '9876543210'
+            }
+        )
+        self.assertEqual(resp.status_code, 200)
+        data = resp.json()
+        self.assertEqual(data['transcription'], 'Where is my order?')
+        self.assertIn('ai_message', data)

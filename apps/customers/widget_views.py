@@ -166,12 +166,10 @@ def widget_voice_api(request, public_key):
             channel=Conversation.Channel.BROWSER_VOICE
         )
 
-        if customer_phone and conversation:
-            if not conversation.metadata:
-                conversation.metadata = {}
-            if conversation.metadata.get("customer_phone") != customer_phone:
-                conversation.metadata["customer_phone"] = customer_phone
-                conversation.save(update_fields=["metadata", "updated_at"])
+        if customer_phone and customer and not customer.normalized_phone:
+            customer.phone = customer_phone
+            customer.clean()
+            customer.save(update_fields=["phone", "normalized_phone", "updated_at"])
 
         # 3. Handle message with AI
         ai_result = agent_runner.handle_customer_message(conversation, transcribed_text)
