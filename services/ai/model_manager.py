@@ -201,6 +201,19 @@ class ModelManager:
             return None
 
         try:
+            # Patch PyAV if installed to prevent metadata_errors incompatibility in faster-whisper
+            try:
+                import av
+                if hasattr(av, "open") and not getattr(av, "_supporto_patched", False):
+                    _orig_open = av.open
+                    def _patched_open(*args, **kwargs):
+                        kwargs.pop("metadata_errors", None)
+                        return _orig_open(*args, **kwargs)
+                    av.open = _patched_open
+                    av._supporto_patched = True
+            except Exception:
+                pass
+
             from faster_whisper import WhisperModel
             logger.info(f"Loading Whisper STT from {self.stt_path} (device=cpu, compute_type=int8)...")
             self._stt = WhisperModel(
@@ -226,10 +239,20 @@ class ModelManager:
 
         try:
             from kokoro_onnx import Kokoro
-            onnx_file = self.tts_path / "onnx" / "model.onnx"
-            if not onnx_file.exists():
-                onnx_file = self.tts_path / "onnx" / "kokoro-v0_19.onnx"
-            voices_file = self.tts_path / "voices.bin"
+            onnx_candidates = [
+                self.tts_path / "onnx" / "model.onnx",
+                self.tts_path / "onnx" / "kokoro-v0_19.onnx",
+                self.tts_path / "kokoro-v0_19.onnx",
+                self.tts_path / "model.onnx",
+            ]
+            onnx_file = next((f for f in onnx_candidates if f.exists()), onnx_candidates[0])
+
+            voices_candidates = [
+                self.tts_path / "voices.bin",
+                self.tts_path / "voices.json",
+                self.tts_path / "voices" / "voices.bin",
+            ]
+            voices_file = next((f for f in voices_candidates if f.exists()), voices_candidates[0])
 
             if not onnx_file.exists() or not voices_file.exists():
                 logger.warning(f"Missing Kokoro onnx or voices: {onnx_file}, {voices_file}")

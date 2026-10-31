@@ -119,3 +119,13 @@ class AIAndWidgetTests(TestCase):
         )
         self.assertEqual(resp_logout.status_code, 200)
         self.assertTrue(resp_logout.json()["success"])
+
+    def test_stt_pyav_patch_and_voice_endpoint(self):
+        from services.ai.stt_service import patch_pyav
+        patch_pyav()
+        # Test posting empty audio returns 400
+        resp = self.client.post(
+            f'/widget/{self.workspace.public_key}/voice/',
+            data={}
+        )
+        self.assertEqual(resp.status_code, 400)
