@@ -7,7 +7,10 @@ Seeds 4 realistic client workspaces:
   4. FreshMart (Hyperlocal Grocery Delivery)
 
 Owner for all workspaces: vanshhsoni.production@gmail.com
+Deterministic Public UUIDs guaranteed across database wipes.
 """
+import uuid
+from datetime import timedelta
 from django.core.management.base import BaseCommand
 from django.contrib.auth import get_user_model
 from django.utils import timezone
@@ -25,8 +28,8 @@ from apps.tickets.models import Ticket, TicketComment, TicketEvent, TicketAssign
 from apps.knowledge_base.models import KnowledgeDocument
 from apps.knowledge_base.services.document_processor import document_processor
 from apps.ai_engine.models import AgentConfiguration
-from apps.voice_support.models import VoiceConfiguration, IVRMenu, IVROption
-from apps.emails.models import MailboxConnection, InboundEmail, TicketProposal
+from apps.voice_support.models import VoiceConfiguration
+from apps.emails.models import MailboxConnection, InboundEmail
 from apps.emails.services.email_triage import email_triage_service
 
 User = get_user_model()
@@ -36,6 +39,14 @@ OWNER_EMAILS = [
     "sonivanshmaster@gmail.com",
     "vanshhsoni@gmail.com",
 ]
+
+# Fixed Deterministic Public UUIDs
+FIXED_WORKSPACE_KEYS = {
+    "shopease": uuid.UUID("205efaa9-4d66-4903-b6f6-cccb701c8668"),
+    "expressbeas": uuid.UUID("4ecc8df2-e72a-49e5-bb37-bb0211a39a05"),
+    "technova": uuid.UUID("c10541fd-b19b-4aa5-98b6-1fcdbbeab550"),
+    "freshmart": uuid.UUID("7f439472-80e5-4058-ab91-d884855ef2a5"),
+}
 
 
 class Command(BaseCommand):
@@ -111,7 +122,7 @@ class Command(BaseCommand):
                     (
                         "AWB Tracking & Status Scans",
                         "How do I track my ExpressBeas shipment with AWB number?",
-                        "Enter your 11-digit AWB number (starts with EB, like EB987654321) in the chat or visit expressbeas.in/track. Scans are recorded at each sort facility: Booked ➔ Hub Inward ➔ In Transit ➔ Out for Delivery ➔ Delivered."
+                        "Enter your 11-digit AWB number (starts with EB, like EB987654321) in the chat or visit expressbeas.in/track. Scans are recorded at each sort facility: Booked -> Hub Inward -> In Transit -> Out for Delivery -> Delivered."
                     ),
                     (
                         "Delivery Timelines & Express Slots",
@@ -162,16 +173,41 @@ class Command(BaseCommand):
                     ),
                 ],
                 "customers": [
-                    ("Rohit Kumar", "rohit.kumar@example.com", "WIDGET",
-                     "WEB_CHAT", "Delayed AWB EB987654321", "FRUSTRATED", "CRITICAL",
-                     "Customer reporting urgent shipment EB987654321 delayed at Delhi Sort Hub.",
-                     "EB-TK-101", "Delayed Shipment EB987654321", "Logistics & Delivery",
-                     "CRITICAL", "IN_PROGRESS", "tracking-delivery", "rahul.mehta@expressbeas.in"),
-                    ("Meera Patel", "meera.patel@example.com", "EMAIL",
-                     "EMAIL", "Damage Claim EB112233445", "ANGRY", "HIGH",
-                     "Customer filing damage compensation claim for crushed parcel EB112233445.",
-                     "EB-TK-102", "Damage Claim for EB112233445", "Claims & Insurance",
-                     "HIGH", "OPEN", "claims-disputes", "anjali.singh@expressbeas.in"),
+                    ("Rohit Kumar", "rohit.kumar@example.com", "WIDGET", "WEB_CHAT",
+                     "Delayed AWB EB987654321", "FRUSTRATED", "CRITICAL",
+                     "Consignment EB987654321 delayed at Delhi hub for 5 days without updates.",
+                     "EB-TK-101", "Delayed Consignment EB987654321 at Delhi Hub", "Logistics & Delivery",
+                     "CRITICAL", "IN_PROGRESS", "tracking-delivery", "rahul.mehta@expressbeas.in", 1, None),
+                    ("Meera Patel", "meera.patel@example.com", "EMAIL", "EMAIL",
+                     "Damage Claim EB112233445", "ANGRY", "HIGH",
+                     "Package delivered with outer carton crushed; internal tablet screen shattered.",
+                     "EB-TK-102", "Damage Claim for Crushed Package EB112233445", "Claims & Disputes",
+                     "HIGH", "OPEN", "claims-disputes", "anjali.singh@expressbeas.in", 2, None),
+                    ("Sameer Sen", "sameer.sen@example.com", "WIDGET", "WEB_CHAT",
+                     "Failed Delivery Attempt", "FRUSTRATED", "MEDIUM",
+                     "Rider marked customer unavailable although I was home all afternoon waiting.",
+                     "EB-TK-103", "False Delivery Attempt - Customer Was Home", "Logistics & Delivery",
+                     "MEDIUM", "RESOLVED", "tracking-delivery", "priya.sharma@expressbeas.in", 3, 3.8),
+                    ("Kavita Reddy", "kavita.reddy@example.com", "WIDGET", "WEB_CHAT",
+                     "Address Correction", "NEUTRAL", "HIGH",
+                     "Requested urgent flat number correction for out-for-delivery parcel EB123456789.",
+                     "EB-TK-104", "Urgent Address Correction for AWB EB123456789", "Logistics & Delivery",
+                     "HIGH", "RESOLVED", "tracking-delivery", "rahul.mehta@expressbeas.in", 4, 1.5),
+                    ("Vikram Malhotra", "vikram.m@example.com", "EMAIL", "EMAIL",
+                     "Lost Commercial Cargo", "ANGRY", "CRITICAL",
+                     "Commercial parcel missing for 12 days between Jaipur hub and Ahmedabad.",
+                     "EB-TK-105", "Lost Shipment Investigation for Commercial Cargo", "Claims & Disputes",
+                     "CRITICAL", "IN_PROGRESS", "claims-disputes", "anjali.singh@expressbeas.in", 5, None),
+                    ("Anita Rao", "anita.rao@example.com", "WIDGET", "WEB_CHAT",
+                     "Pickup Reschedule", "NEUTRAL", "LOW",
+                     "Client requested rescheduling warehouse parcel pickup from morning to 4 PM.",
+                     "EB-TK-106", "Pickup Reschedule Request for Bangalore Unit", "Logistics & Delivery",
+                     "LOW", "RESOLVED", "tracking-delivery", "priya.sharma@expressbeas.in", 6, 2.2),
+                    ("Siddharth Joshi", "siddharth.j@example.com", "WIDGET", "WEB_CHAT",
+                     "Missing Scan Status", "FRUSTRATED", "MEDIUM",
+                     "Tracking status not updated since parcel departed Mumbai Airport 48h ago.",
+                     "EB-TK-107", "Missing Inward Scan After Mumbai Airport Departure", "Logistics & Delivery",
+                     "MEDIUM", "OPEN", "tracking-delivery", "rahul.mehta@expressbeas.in", 7, None),
                 ]
             },
             {
@@ -233,11 +269,46 @@ class Command(BaseCommand):
                      "LOW", "SHIPPING", "order-support"),
                 ],
                 "customers": [
-                    ("Elena Fisher", "elena.fisher@example.com", "WIDGET",
-                     "WEB_CHAT", "Duplicate Payment Discrepancy", "FRUSTRATED", "CRITICAL",
-                     "Customer reported being charged $89.99 twice for order #SE-84920.",
-                     "TK-260101", "Double Charge on Order #SE-84920", "Billing & Payments",
-                     "CRITICAL", "IN_PROGRESS", "billing-support", "marcus.wright@shopease.com"),
+                    ("Elena Fisher", "elena.fisher@example.com", "WIDGET", "WEB_CHAT",
+                     "Duplicate Payment Discrepancy", "FRUSTRATED", "CRITICAL",
+                     "My credit card was charged twice ($199) for order SE-84920! Cancel it and refund my money immediately!",
+                     "TK-84920", "Double Charge on Order #SE-84920 ($199)", "Billing & Payments",
+                     "CRITICAL", "IN_PROGRESS", "billing-support", "marcus.wright@shopease.com", 1, None),
+                    ("David Miller", "david.m@example.com", "EMAIL", "EMAIL",
+                     "Shipping Delay Inquiry", "NEUTRAL", "MEDIUM",
+                     "Order SE-88210 smart wireless headphones delayed beyond estimated delivery date.",
+                     "TK-88210", "Delayed Shipment for Order #SE-88210", "Order & Shipping",
+                     "MEDIUM", "OPEN", "order-support", "sarah.connor@shopease.com", 2, None),
+                    ("Claire Redfield", "claire.r@example.com", "WIDGET", "WEB_CHAT",
+                     "Damaged Item on Delivery", "ANGRY", "HIGH",
+                     "Screen cracked on arrival for 4K Ultra HD Monitor; protective seal was broken.",
+                     "TK-89101", "Damaged Item - Cracked Screen on Ultra HD Monitor", "Damaged & Defective",
+                     "HIGH", "OPEN", "order-support", "sarah.connor@shopease.com", 3, None),
+                    ("Nathan Drake", "nathan.d@example.com", "WIDGET", "WEB_CHAT",
+                     "Return Window Question", "POSITIVE", "LOW",
+                     "Customer inquired about 30-day return policy for unopened noise-canceling headphones.",
+                     "TK-89102", "Return Policy Inquiry for Audio Headphones", "Returns & Exchanges",
+                     "LOW", "RESOLVED", "order-support", "john.connor@shopease.com", 4, 2.4),
+                    ("Leon Kennedy", "leon.k@example.com", "EMAIL", "EMAIL",
+                     "Checkout Payment Error", "FRUSTRATED", "HIGH",
+                     "Bank deducted amount during checkout timeout but order confirmation was not generated.",
+                     "TK-89103", "Gateway Timeout During Order Placement", "Billing & Payments",
+                     "HIGH", "RESOLVED", "billing-support", "kyle.reese@shopease.com", 5, 2.1),
+                    ("Jill Valentine", "jill.v@example.com", "WIDGET", "WEB_CHAT",
+                     "Shipping Address Update", "NEUTRAL", "MEDIUM",
+                     "Customer submitted apartment number change within 30 minutes of placing order SE-90112.",
+                     "TK-89104", "Delivery Address Modification Pre-Dispatch", "Order & Shipping",
+                     "MEDIUM", "RESOLVED", "order-support", "sarah.connor@shopease.com", 6, 1.2),
+                    ("Sam Fisher", "sam.fisher@example.com", "EMAIL", "EMAIL",
+                     "Defective Cable Replacement", "NEUTRAL", "MEDIUM",
+                     "Braided USB-C fast charging cable stopped working after 3 days of light use.",
+                     "TK-89105", "Defective USB-C Braided Cable Replacement", "Damaged & Defective",
+                     "MEDIUM", "RESOLVED", "order-support", "john.connor@shopease.com", 7, 3.5),
+                    ("Chloe Frazer", "chloe.f@example.com", "WIDGET", "WEB_CHAT",
+                     "Where is My Order", "NEUTRAL", "LOW",
+                     "Where is my order SE-84920? Requested current transit tracking status.",
+                     "TK-89106", "Order Tracking Verification for SE-84920", "Order & Shipping",
+                     "LOW", "RESOLVED", "order-support", "marcus.wright@shopease.com", 8, 0.8),
                 ]
             },
             {
@@ -248,85 +319,114 @@ class Command(BaseCommand):
                 "support_email": "vanshhsoni.production@gmail.com",
                 "welcome_message": "Welcome to TechNova Developer Support! Need help with API rate limits, webhooks, SSO provisioning, or enterprise billing?",
                 "sla_urgent": 20,
-                "sla_standard": 6,
-                "orders_webhook": "https://technova.example.io/api/v2/subscriptions/lookup",
-                "orders_secret": "sk_technova_saas_2026",
+                "sla_standard": 12,
+                "orders_webhook": "https://technova.example.io/api/v2/subscriptions/verify",
+                "orders_secret": "sk_technova_prod_token_2026",
                 "webhooks": [
                     {
                         "name": "TechNova Subscription Engine",
-                        "type": WorkspaceWebhook.WebhookType.ORDERS,
-                        "url": "https://technova.example.io/api/v2/subscriptions/lookup",
-                        "secret": "sk_technova_saas_2026"
+                        "type": WorkspaceWebhook.WebhookType.CUSTOM,
+                        "url": "https://technova.example.io/api/v2/subscriptions/verify",
+                        "secret": "sk_technova_prod_token_2026"
                     }
                 ],
                 "system_prompt": (
-                    "You are Supporto AI for TechNova Developer Platform. "
-                    "Help software engineering and IT teams resolve API throttling, webhook errors, "
-                    "OAuth/SAML configurations, and seat billing. Escalate production outages immediately."
+                    "You are Supporto AI for TechNova Enterprise Cloud. Provide precise developer-focused answers. "
+                    "For production outages, webhook failures, or SAML SSO issues, escalate immediately to Technical Support."
                 ),
                 "mailbox_email": "support@technova.example.io",
                 "teams": [
-                    {"slug": "dev-support", "name": "Developer Support", "desc": "Handles API keys, SDK issues, webhook reliability, and integration errors."},
-                    {"slug": "enterprise-billing", "name": "Enterprise Billing", "desc": "Handles subscription tiers, seat licensing, and invoice reconciliation."},
+                    {"slug": "technical-support", "name": "Technical Support", "desc": "Handles core API integrations, runtime 5xx errors, SDK bugs, and webhook delivery failures."},
+                    {"slug": "enterprise-billing", "name": "Enterprise Billing", "desc": "Handles enterprise invoices, seat licensing, wire transfers, and billing disputes."},
+                    {"slug": "dev-support", "name": "Developer Support", "desc": "Handles API documentation, authentication keys, rate limits, and onboarding."},
                 ],
                 "staff": [
-                    ("alex.chen@technova.io", "Alex", "Chen", "AGENT", ["dev-support"]),
-                    ("sophia.taylor@technova.io", "Sophia", "Taylor", "MANAGER", ["dev-support", "enterprise-billing"]),
+                    ("vikram.patel@technova.example.io", "Vikram", "Patel", "AGENT", ["technical-support"]),
+                    ("neha.sen@technova.example.io", "Neha", "Sen", "AGENT", ["enterprise-billing"]),
+                    ("aravind.swamy@technova.example.io", "Aravind", "Swamy", "MANAGER", ["technical-support", "dev-support"]),
                 ],
                 "faqs": [
                     ("API Rate Limits & Upgrades",
-                     "What are the default rate limits on the Developer API?",
-                     "Standard accounts have a limit of 1,200 requests/minute. Enterprise tiers support burst limits up to 10,000 req/min with zero cold-start throttling."),
-                    ("Webhook Verification & Signatures",
-                     "How do I verify incoming webhooks from TechNova?",
-                     "Each webhook includes an X-TechNova-Signature header containing an HMAC-SHA256 signature generated with your webhook secret."),
+                     "What are the default API rate limits and how can I request an increase?",
+                     "Standard Tier accounts have a limit of 1,200 requests/minute. Enterprise tiers support up to 50,000 requests/minute. To upgrade, submit a request specifying your expected peak QPS."),
+                    ("Webhook Retry Architecture",
+                     "How does TechNova handle failed webhook deliveries?",
+                     "Webhooks retry with exponential backoff over 24 hours: immediately, then at 5m, 15m, 1h, 6h, and 24h. Payloads are signed with HMAC-SHA256 headers (X-TechNova-Signature)."),
+                    ("SAML 2.0 & Okta SSO Configuration",
+                     "How do I configure SAML 2.0 Single Sign-On with Okta or Azure AD?",
+                     "Navigate to Workspace Settings -> Security -> SSO. Upload your IdP metadata XML or provide the ACS URL and Entity ID."),
                 ],
                 "sample_emails": [
-                    ("tn_msg_001", "devlead@fintech.co", "Kavita Rao",
-                     "CRITICAL: Webhook dispatch failure blocking payment events",
-                     "Our production payment webhook is dropping events since 14:00 UTC. Error 503 Service Unavailable. This is impacting 4,000 live checkout sessions.",
-                     "CRITICAL", "TECHNICAL", "dev-support"),
+                    ("tn_msg_001", "devops@fintechcorp.com", "FintechCorp Ops",
+                     "Production 500 error on webhook event dispatching",
+                     "Our production webhook endpoint stopped receiving events 20 minutes ago. Error logs indicate TechNova endpoint returning 500 Internal Server Error. Need urgent escalation.",
+                     "CRITICAL", "TECHNICAL_SUPPORT", "technical-support"),
                 ],
                 "customers": [
-                    ("Kavita Rao", "devlead@fintech.co", "EMAIL",
-                     "EMAIL", "Webhook outage incident", "PANIC", "CRITICAL",
-                     "Production webhooks dropping checkout events.",
-                     "TN-TK-201", "Production Webhook Dispatch Failure", "API & Platform Outage",
-                     "CRITICAL", "OPEN", "dev-support", "alex.chen@technova.io"),
+                    ("FintechCorp Ops", "devops@fintechcorp.com", "EMAIL", "EMAIL",
+                     "Production Webhook Outage", "ANGRY", "CRITICAL",
+                     "Webhook event dispatch endpoint throwing 500 errors during live transaction processing.",
+                     "TN-TK-201", "Production Webhook 500 Outage on Events Endpoint", "Technical Support",
+                     "CRITICAL", "IN_PROGRESS", "technical-support", "vikram.patel@technova.example.io", 1, None),
+                    ("CloudScale Security", "sec@cloudscale.io", "WIDGET", "WEB_CHAT",
+                     "SAML SSO Failure", "FRUSTRATED", "HIGH",
+                     "Users unable to authenticate via Okta SAML 2.0; IdP certificate mismatch error.",
+                     "TN-TK-202", "SAML 2.0 SSO Authentication Failure for Okta", "Technical Support",
+                     "HIGH", "OPEN", "technical-support", "aravind.swamy@technova.example.io", 2, None),
+                    ("ScaleUp CFO", "billing@scaleup.io", "EMAIL", "EMAIL",
+                     "Invoice Discrepancy", "FRUSTRATED", "HIGH",
+                     "Annual enterprise invoice includes charge for 150 inactive developer seats.",
+                     "TN-TK-203", "Annual Contract Seat Licensing Discrepancy", "Enterprise Billing",
+                     "HIGH", "OPEN", "enterprise-billing", "neha.sen@technova.example.io", 3, None),
+                    ("DataStream Inc", "api@datastream.com", "WIDGET", "WEB_CHAT",
+                     "Rate Limit Increase", "POSITIVE", "MEDIUM",
+                     "Requested rate limit upgrade to 15,000 req/min for scheduled data pipeline migration.",
+                     "TN-TK-204", "API Rate Limit Upgrade Request to 15,000 QPM", "Developer Support",
+                     "MEDIUM", "RESOLVED", "dev-support", "aravind.swamy@technova.example.io", 4, 3.2),
+                    ("AuditSecure Ltd", "compliance@auditsecure.com", "EMAIL", "EMAIL",
+                     "Audit Log Export", "NEUTRAL", "MEDIUM",
+                     "CSV export for administrative audit logs failed to generate for Q3 data.",
+                     "TN-TK-205", "Audit Log CSV Export Generation Timeout", "Technical Support",
+                     "MEDIUM", "RESOLVED", "technical-support", "vikram.patel@technova.example.io", 5, 2.8),
+                    ("Nordic SaaS AB", "finance@nordicsaas.se", "WIDGET", "WEB_CHAT",
+                     "Currency Switch", "NEUTRAL", "LOW",
+                     "Client requested changing billing currency from USD to EUR for European subsidiary.",
+                     "TN-TK-206", "Billing Currency Migration USD to EUR", "Enterprise Billing",
+                     "LOW", "RESOLVED", "enterprise-billing", "neha.sen@technova.example.io", 6, 1.9),
                 ]
             },
             {
                 "slug": "freshmart",
                 "name": "FreshMart",
-                "description": "Hyperlocal 15-minute grocery and fresh farm produce delivery platform connecting regional organic farmers to households.",
+                "description": "Ultra-fast hyperlocal grocery and organic produce delivery service with a 15-minute guarantee.",
                 "website": "https://freshmart.example.com",
                 "support_email": "vanshhsoni.production@gmail.com",
-                "welcome_message": "Welcome to FreshMart Support! How can we assist with your grocery delivery, produce freshness, or instant refund today?",
+                "welcome_message": "Welcome to FreshMart Support! Instant resolution for missing grocery items, spoiled produce, or rider delays.",
                 "sla_urgent": 8,
                 "sla_standard": 4,
-                "orders_webhook": "https://freshmart.example.com/api/v1/cart/lookup",
-                "orders_secret": "sk_freshmart_grocery_2026",
+                "orders_webhook": "https://freshmart.example.com/api/v1/deliveries/live",
+                "orders_secret": "sk_freshmart_live_dispatch_2026",
                 "webhooks": [
                     {
-                        "name": "FreshMart Hyperlocal Order System",
+                        "name": "FreshMart Dark Store Dispatch Webhook",
                         "type": WorkspaceWebhook.WebhookType.ORDERS,
-                        "url": "https://freshmart.example.com/api/v1/cart/lookup",
-                        "secret": "sk_freshmart_grocery_2026"
+                        "url": "https://freshmart.example.com/api/v1/deliveries/live",
+                        "secret": "sk_freshmart_live_dispatch_2026"
                     }
                 ],
                 "system_prompt": (
-                    "You are Supporto AI for FreshMart Grocery. "
-                    "Help customers with 15-minute delivery status, damaged or missing items, "
-                    "quality replacements, and instant wallet refunds. Issue immediate credits for spoiled produce."
+                    "You are Supporto AI for FreshMart Hyperlocal Grocery. Empathize warmly. "
+                    "For spoiled produce or missing food items, immediately process wallet credits or escalate to Quality & Refunds."
                 ),
-                "mailbox_email": "support@freshmart.example.com",
+                "mailbox_email": "support@freshmart.com",
                 "teams": [
-                    {"slug": "hyperlocal-delivery", "name": "Hyperlocal Delivery", "desc": "Handles dark-store dispatch, delivery partner routing, and address fixes."},
-                    {"slug": "quality-refunds", "name": "Quality & Instant Refunds", "desc": "Handles spoiled produce reports, damaged grocery items, and instant wallet credits."},
+                    {"slug": "quality-refunds", "name": "Quality & Refunds", "desc": "Handles spoiled items, damaged produce, missing grocery items, and instant wallet refunds."},
+                    {"slug": "hyperlocal-delivery", "name": "Hyperlocal Delivery", "desc": "Handles dark store dispatch, rider delays, live GPS routing, and doorstep delivery issues."},
                 ],
                 "staff": [
-                    ("vikram.patel@freshmart.com", "Vikram", "Patel", "AGENT", ["hyperlocal-delivery"]),
                     ("neha.sharma@freshmart.com", "Neha", "Sharma", "AGENT", ["quality-refunds"]),
+                    ("amit.verma@freshmart.com", "Amit", "Verma", "AGENT", ["hyperlocal-delivery"]),
+                    ("kavita.nair@freshmart.com", "Kavita", "Nair", "MANAGER", ["quality-refunds", "hyperlocal-delivery"]),
                 ],
                 "faqs": [
                     ("Instant Quality Refund Policy",
@@ -343,11 +443,36 @@ class Command(BaseCommand):
                      "MEDIUM", "SHIPPING", "quality-refunds"),
                 ],
                 "customers": [
-                    ("Deepak Verma", "deepak.verma@example.com", "WIDGET",
-                     "WEB_CHAT", "Missing item in delivery", "NEUTRAL", "MEDIUM",
-                     "Missing organic milk carton in order #FM-8812.",
-                     "FM-TK-301", "Missing Item - Order #FM-8812", "Missing Grocery Items",
-                     "MEDIUM", "RESOLVED", "quality-refunds", "neha.sharma@freshmart.com"),
+                    ("Deepak Verma", "deepak.verma@example.com", "WIDGET", "WEB_CHAT",
+                     "Missing item in delivery", "NEUTRAL", "MEDIUM",
+                     "Organic milk carton was missing from delivery order #FM-8812.",
+                     "FM-TK-301", "Missing Organic Milk Carton - Order #FM-8812", "Missing Grocery Items",
+                     "MEDIUM", "RESOLVED", "quality-refunds", "neha.sharma@freshmart.com", 1, 0.4),
+                    ("Pooja Singhania", "pooja.s@example.com", "WIDGET", "WEB_CHAT",
+                     "Spoiled Produce", "ANGRY", "HIGH",
+                     "Strawberries were moldy and avocados crushed in grocery crate #FM-8830.",
+                     "FM-TK-302", "Spoiled Strawberries and Crushed Produce #FM-8830", "Quality & Freshness",
+                     "HIGH", "OPEN", "quality-refunds", "neha.sharma@freshmart.com", 2, None),
+                    ("Ramesh Gupta", "ramesh.g@example.com", "EMAIL", "EMAIL",
+                     "Severe Rider Delay", "FRUSTRATED", "MEDIUM",
+                     "Delivery took 45 minutes instead of the promised 15 minutes in heavy rain.",
+                     "FM-TK-303", "Rider Delayed 45 Minutes Beyond SLA", "Hyperlocal Delivery",
+                     "MEDIUM", "RESOLVED", "hyperlocal-delivery", "amit.verma@freshmart.com", 3, 0.9),
+                    ("Sonal Jain", "sonal.j@example.com", "WIDGET", "WEB_CHAT",
+                     "Wallet Refund Missing", "FRUSTRATED", "HIGH",
+                     "Wallet refund of $18.50 for canceled morning order #FM-8819 not credited.",
+                     "FM-TK-304", "Instant Wallet Credit Missing for Canceled Order", "Billing & Refunds",
+                     "HIGH", "OPEN", "quality-refunds", "kavita.nair@freshmart.com", 4, None),
+                    ("Harish Menon", "harish.m@example.com", "EMAIL", "EMAIL",
+                     "Wrong Product Delivered", "NEUTRAL", "LOW",
+                     "Received almond milk instead of organic oat milk in basket #FM-8855.",
+                     "FM-TK-305", "Incorrect Brand Substitute Delivered", "Missing Grocery Items",
+                     "LOW", "RESOLVED", "quality-refunds", "neha.sharma@freshmart.com", 5, 0.5),
+                    ("Sunita Roy", "sunita.roy@example.com", "WIDGET", "WEB_CHAT",
+                     "Contactless Delivery", "NEUTRAL", "LOW",
+                     "Delivery rider rang the doorbell repeatedly despite 'Do not ring, sleeping infant' note.",
+                     "FM-TK-306", "Special Delivery Instructions Ignored by Courier", "Hyperlocal Delivery",
+                     "LOW", "RESOLVED", "hyperlocal-delivery", "amit.verma@freshmart.com", 6, 1.1),
                 ]
             }
         ]
@@ -359,7 +484,7 @@ class Command(BaseCommand):
             slug = ws_data["slug"]
             self.stdout.write(f"\n  -> Setting up workspace: {ws_data['name']} (/{slug}/)")
 
-            # Create or update Workspace
+            # Create or update Workspace with deterministic public_key
             workspace, _ = Workspace.objects.get_or_create(
                 slug=slug,
                 defaults={
@@ -371,6 +496,8 @@ class Command(BaseCommand):
             workspace.name = ws_data["name"]
             workspace.description = ws_data["description"]
             workspace.status = Workspace.Status.ACTIVE
+            if slug in FIXED_WORKSPACE_KEYS:
+                workspace.public_key = FIXED_WORKSPACE_KEYS[slug]
             workspace.save()
 
             # Settings
@@ -438,8 +565,12 @@ class Command(BaseCommand):
                 team, _ = Team.objects.get_or_create(
                     workspace=workspace,
                     slug=t_info["slug"],
-                    defaults={"name": t_info["name"], "description": t_info["desc"]}
+                    defaults={"name": t_info["name"], "description": t_info["desc"], "is_active": True}
                 )
+                team.name = t_info["name"]
+                team.description = t_info["desc"]
+                team.is_active = True
+                team.save()
                 teams_map[t_info["slug"]] = team
 
             # Seed Staff Users
@@ -548,12 +679,15 @@ class Command(BaseCommand):
                     except Exception:
                         pass
 
-            # Seed Customers & Tickets
+            # Seed Customers & Historical Tickets
             first_team = list(teams_map.values())[0] if teams_map else None
-            for (cust_name, cust_email, source, channel,
+            now = timezone.now()
+
+            for item in ws_data["customers"]:
+                (cust_name, cust_email, source, channel,
                  intent, sentiment, urgency, summary,
                  ticket_no, ticket_subj, ticket_cat, ticket_pri, ticket_status,
-                 team_slug, agent_email) in ws_data["customers"]:
+                 team_slug, agent_email, days_ago, res_hours) = item
 
                 customer, _ = Customer.objects.get_or_create(
                     workspace=workspace,
@@ -566,39 +700,59 @@ class Command(BaseCommand):
                     }
                 )
 
-                conv, _ = Conversation.objects.get_or_create(
-                    workspace=workspace,
-                    customer=customer,
-                    defaults={
-                        "channel": getattr(Conversation.Channel, channel, Conversation.Channel.WEB_CHAT),
-                        "status": Conversation.Status.ACTIVE,
-                        "intent": intent,
-                        "sentiment": getattr(Conversation.Sentiment, sentiment, Conversation.Sentiment.NEUTRAL),
-                        "urgency": getattr(Conversation.Urgency, urgency, Conversation.Urgency.MEDIUM),
-                        "summary": summary,
-                    }
-                )
+                created_time = now - timedelta(days=days_ago, hours=2)
+
+                conv_status = Conversation.Status.ACTIVE if ticket_status != "RESOLVED" else Conversation.Status.COMPLETED
+                conv_sentiment = getattr(Conversation.Sentiment, sentiment, None)
+                if not conv_sentiment:
+                    conv_sentiment = Conversation.Sentiment.FRUSTRATED if sentiment == "ANGRY" else Conversation.Sentiment.NEUTRAL
 
                 assigned_team = teams_map.get(team_slug, first_team)
                 assigned_agent = staff_users.get(agent_email)
 
-                ticket_defaults = {
-                    "customer": customer,
-                    "conversation": conv,
-                    "subject": ticket_subj,
-                    "description": summary,
-                    "category": ticket_cat,
-                    "priority": getattr(Ticket.Priority, ticket_pri, Ticket.Priority.MEDIUM),
-                    "status": getattr(Ticket.Status, ticket_status, Ticket.Status.OPEN),
-                    "assigned_team": assigned_team,
-                }
-                if assigned_agent:
-                    ticket_defaults["assigned_agent"] = assigned_agent
+                ticket = Ticket.objects.filter(workspace=workspace, ticket_number=ticket_no).first()
+                if not ticket:
+                    conv = Conversation.objects.create(
+                        workspace=workspace,
+                        customer=customer,
+                        channel=getattr(Conversation.Channel, channel, Conversation.Channel.WEB_CHAT),
+                        status=conv_status,
+                        intent=intent,
+                        sentiment=conv_sentiment,
+                        urgency=getattr(Conversation.Urgency, urgency, Conversation.Urgency.MEDIUM),
+                        summary=summary,
+                    )
+                    Conversation.objects.filter(id=conv.id).update(created_at=created_time)
 
-                ticket, _ = Ticket.objects.get_or_create(
-                    workspace=workspace,
-                    ticket_number=ticket_no,
-                    defaults=ticket_defaults
+                    ticket_defaults = {
+                        "customer": customer,
+                        "conversation": conv,
+                        "subject": ticket_subj,
+                        "description": summary,
+                        "category": ticket_cat,
+                        "priority": getattr(Ticket.Priority, ticket_pri, Ticket.Priority.MEDIUM),
+                        "status": getattr(Ticket.Status, ticket_status, Ticket.Status.OPEN),
+                        "assigned_team": assigned_team,
+                    }
+                    if assigned_agent:
+                        ticket_defaults["assigned_agent"] = assigned_agent
+
+                    ticket = Ticket.objects.create(
+                        workspace=workspace,
+                        ticket_number=ticket_no,
+                        **ticket_defaults
+                    )
+
+                resolved_time = (created_time + timedelta(hours=res_hours)) if res_hours else None
+                Ticket.objects.filter(id=ticket.id).update(
+                    created_at=created_time,
+                    resolved_at=resolved_time
+                )
+
+                resolved_time = (created_time + timedelta(hours=res_hours)) if res_hours else None
+                Ticket.objects.filter(id=ticket.id).update(
+                    created_at=created_time,
+                    resolved_at=resolved_time
                 )
 
                 owner_user = User.objects.filter(email=OWNER_EMAILS[0]).first()
@@ -618,7 +772,7 @@ class Command(BaseCommand):
 
         # ── 3. Summary ───────────────────────────────────────────────────────
         self.stdout.write(self.style.SUCCESS("\n[+] Demo data successfully seeded for all 4 clients!\n"))
-        self.stdout.write(f"    Platform Admin   : /admin/  (admin@supporto.ai / Supporto@Admin123)")
+        self.stdout.write("    Platform Admin   : /admin/  (admin@supporto.ai / Supporto@Admin123)")
         self.stdout.write(f"    Owner Sign-In    : Sign in with Google as: {OWNER_EMAILS[0]}")
         self.stdout.write("    " + "-" * 60)
         for name, slug, pk in all_outputs:

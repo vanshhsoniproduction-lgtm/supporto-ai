@@ -43,9 +43,26 @@ class AgentRunner:
         conversation.save(update_fields=["intent", "sentiment", "urgency", "is_escalated", "updated_at"])
 
         # 4. Generate AI response
-        history = list(conversation.messages.values("sender_type", "content"))
-        ai_result = llm_service.generate_response(workspace, customer_text, history)
-        ai_response_text = ai_result["text"]
+        # Authoritative Escalation Override: When an urgent escalation ticket is raised, guarantee the response mentions the ticket and SLA
+        if escalation_result and escalation_result.get("ticket_number"):
+            ticket_num = escalation_result["ticket_number"]
+            team_name = escalation_result.get("assigned_team") or "Billing Support"
+            sla_mins = getattr(getattr(workspace, "settings", None), "sla_urgent_minutes", 15)
+            ai_response_text = (
+                f"I have marked this as urgent and immediately routed it to our {team_name} team. "
+                f"Your support ticket is #{ticket_num}. A dedicated human specialist will review your case and respond within {sla_mins} minutes."
+            )
+            ai_result = {
+                "text": ai_response_text,
+                "source": "urgent_escalation_protocol",
+                "tokens_used": len(ai_response_text.split()),
+                "retrieved_docs": []
+            }
+        else:
+            history = list(conversation.messages.values("sender_type", "content"))
+            customer_email = conversation.customer.email if conversation.customer else None
+            ai_result = llm_service.generate_response(workspace, customer_text, history, customer_email=customer_email)
+            ai_response_text = ai_result["text"]
 
         # 5. Save AI message
         ai_msg = Message.objects.create(
@@ -78,4 +95,3 @@ class AgentRunner:
         }
 
 agent_runner = AgentRunner()
-

@@ -2,12 +2,11 @@ import csv
 import io
 from datetime import timedelta
 from django.utils import timezone
-from django.db.models import Count, Avg, F
+from django.db.models import Count
 from apps.emails.models import InboundEmail, TicketProposal
 from apps.conversations.models import Conversation, Message
 from apps.tickets.models import Ticket
 from apps.teams.models import Team
-from apps.analytics.models import SentimentLog
 
 class WeeklyInsightsService:
     @classmethod
@@ -41,12 +40,32 @@ class WeeklyInsightsService:
             status__in=[Ticket.Status.OPEN, Ticket.Status.IN_PROGRESS, Ticket.Status.PENDING]
         ).count()
 
-        # Ticket Categories
+        # Ticket Categories & Percentages
         category_counts = list(
             tickets_qs.values("category")
             .annotate(count=Count("id"))
             .order_by("-count")
         )
+
+        recurring_complaints = []
+        for cat_info in category_counts:
+            pct = round((cat_info["count"] / total_tickets) * 100, 1) if total_tickets > 0 else 0
+            cat_info["percentage"] = pct
+
+            # Gather sample quotes from tickets or emails in this category
+            quotes = list(
+                tickets_qs.filter(category=cat_info["category"])
+                .exclude(description="")
+                .values_list("description", flat=True)[:2]
+            )
+            clean_quotes = [q.strip()[:140] for q in quotes if q and q.strip()]
+
+            recurring_complaints.append({
+                "category": cat_info["category"],
+                "count": cat_info["count"],
+                "percentage": pct,
+                "sample_quotes": clean_quotes,
+            })
 
         # Urgent issues
         urgent_tickets = tickets_qs.filter(priority__in=[Ticket.Priority.HIGH, Ticket.Priority.CRITICAL]).count()
@@ -108,7 +127,7 @@ class WeeklyInsightsService:
         ai_reply_drafts = proposals_qs.exclude(ai_suggested_reply="").count()
         total_ai_assisted = ai_messages + ai_reply_drafts
 
-        # 9. Most common customer complaint topics
+        # 9. Most common customer complaint topics from proposals
         complaint_topics = list(
             proposals_qs.values("ai_intent")
             .annotate(count=Count("id"))
@@ -129,7 +148,7 @@ class WeeklyInsightsService:
         )
 
         return {
-            "period": f"{start_date.strftime('%b %d, %Y')} – {now.strftime('%b %d, %Y')}",
+            "period": f"{start_date.strftime('%b %d, %Y')} - {now.strftime('%b %d, %Y')}",
             "total_emails": total_emails,
             "total_conversations": total_conversations,
             "total_tickets": total_tickets,
@@ -139,6 +158,7 @@ class WeeklyInsightsService:
             "unresolved_tickets": unresolved_tickets,
             "urgent_count": total_urgent,
             "category_counts": category_counts,
+            "recurring_complaints": recurring_complaints,
             "sentiments": sentiments,
             "total_sentiment_events": total_sentiment_events,
             "team_workload": team_workload,
@@ -193,6 +213,10 @@ class WeeklyInsightsService:
         writer.writerow(["Average Resolution Hours", report["avg_resolution_hours"]])
         writer.writerow(["AI-Assisted Operations", report["ai_assisted_count"]])
         writer.writerow([])
+        writer.writerow(["Category", "Count", "Percentage (%)"])
+        for c in report.get("category_counts", []):
+            writer.writerow([c.get("category"), c.get("count"), f"{c.get('percentage', 0)}%"])
+        writer.writerow([])
         writer.writerow(["Sentiment", "Count"])
         for k, v in report["sentiments"].items():
             writer.writerow([k, v])
@@ -203,4 +227,3 @@ class WeeklyInsightsService:
         return output.getvalue()
 
 weekly_insights_service = WeeklyInsightsService()
-

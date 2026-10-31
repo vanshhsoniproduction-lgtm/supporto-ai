@@ -1,15 +1,45 @@
 import logging
 import re
+import hmac
+import hashlib
+import time
+import urllib.request
+import urllib.parse
+import json
+from ipaddress import ip_address
 from django.utils import timezone
 from apps.knowledge_base.models import KnowledgeDocument
 from apps.tickets.models import Ticket, TicketAssignment, TicketEvent
 from apps.teams.models import Team
 from apps.customers.models import Customer
 from apps.conversations.models import Conversation
-from apps.ai_engine.models import ToolExecution
+from apps.ai_engine.models import ToolExecution, AgentRun
 from services.ai.rag_service import rag_service
 
 logger = logging.getLogger(__name__)
+
+PRIVATE_IP_PREFIXES = ("127.", "10.", "192.168.", "169.254.", "0.0.0.0")
+
+def is_safe_url(url: str) -> bool:
+    """SSRF protection: rejects non-http(s), localhost, and private RFC-1918 IPs."""
+    try:
+        parsed = urllib.parse.urlparse(url)
+        if parsed.scheme not in ("http", "https"):
+            return False
+        host = (parsed.hostname or "").lower()
+        if host in ("localhost", "127.0.0.1", "::1", "0.0.0.0"):
+            return False
+        if any(host.startswith(p) for p in PRIVATE_IP_PREFIXES):
+            return False
+        # Check if 172.16.x.x - 172.31.x.x
+        if host.startswith("172."):
+            parts = host.split(".")
+            if len(parts) >= 2 and parts[1].isdigit() and 16 <= int(parts[1]) <= 31:
+                return False
+        return True
+    except Exception:
+        return False
+
 
 class ToolRegistry:
     """
@@ -17,19 +47,148 @@ class ToolRegistry:
     and audited. Never exposes raw SQL or unrestricted file system access.
     """
 
+    @classmethod
+    def get_tools_schema(cls) -> list[dict]:
+        """Returns standard JSON schemas for LLM function/tool calling."""
+        return [
+            {
+                "type": "function",
+                "function": {
+                    "name": "lookup_order",
+                    "description": "Look up real-time status of an order or courier AWB consignment number.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "order_number": {
+                                "type": "string",
+                                "description": "The exact order number (e.g. SE-84920) or courier AWB number (e.g. EB987654321)."
+                            }
+                        },
+                        "required": ["order_number"]
+                    }
+                }
+            },
+            {
+                "type": "function",
+                "function": {
+                    "name": "search_knowledge_base",
+                    "description": "Search the company support knowledge base for returns, shipping, policies, and FAQs.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "query": {
+                                "type": "string",
+                                "description": "Search terms or question."
+                            }
+                        },
+                        "required": ["query"]
+                    }
+                }
+            },
+            {
+                "type": "function",
+                "function": {
+                    "name": "get_ticket_status",
+                    "description": "Check the status of an existing support ticket by ticket number.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "ticket_number": {
+                                "type": "string",
+                                "description": "The ticket number (e.g. TK-260101)."
+                            }
+                        },
+                        "required": ["ticket_number"]
+                    }
+                }
+            },
+            {
+                "type": "function",
+                "function": {
+                    "name": "escalate_to_human",
+                    "description": "Escalate urgent customer issues (double charges, fraud, severe defect) to human support team.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "reason": {
+                                "type": "string",
+                                "description": "Specific reason for human escalation."
+                            }
+                        },
+                        "required": ["reason"]
+                    }
+                }
+            }
+        ]
+
+    @classmethod
+    def execute_tool(cls, workspace_id: int, tool_name: str, arguments: dict, customer_id: int = None, conversation_id: int = None, agent_run: AgentRun = None) -> dict:
+        """Executes a declared tool in a strictly audited sandbox, logging to ToolExecution."""
+        result = {"success": False, "error": f"Unknown tool '{tool_name}'"}
+
+        try:
+            if tool_name == "lookup_order":
+                order_num = arguments.get("order_number", "")
+                result = cls.lookup_order(workspace_id=workspace_id, order_number=order_num)
+            elif tool_name == "search_knowledge_base":
+                query = arguments.get("query", "")
+                result = cls.search_knowledge_base(workspace_id=workspace_id, query=query)
+            elif tool_name == "get_ticket_status":
+                ticket_num = arguments.get("ticket_number", "")
+                result = cls.get_ticket_status(workspace_id=workspace_id, ticket_number=ticket_num)
+            elif tool_name == "escalate_to_human":
+                reason = arguments.get("reason", "Customer escalation request")
+                if conversation_id:
+                    result = cls.escalate_to_human(workspace_id=workspace_id, conversation_id=conversation_id, reason=reason)
+                else:
+                    result = {"success": False, "error": "No active conversation to escalate"}
+            elif tool_name == "create_ticket":
+                if customer_id:
+                    result = cls.create_ticket(
+                        workspace_id=workspace_id,
+                        customer_id=customer_id,
+                        subject=arguments.get("subject", "Support Inquiry"),
+                        description=arguments.get("description", ""),
+                        priority=arguments.get("priority", "MEDIUM"),
+                        category=arguments.get("category", "General Support")
+                    )
+                else:
+                    result = {"success": False, "error": "Customer ID required to create ticket"}
+        except Exception as e:
+            logger.error(f"Error executing tool '{tool_name}': {e}")
+            result = {"success": False, "error": str(e)}
+
+        # Audit log in ToolExecution
+        if agent_run:
+            try:
+                ToolExecution.objects.create(
+                    agent_run=agent_run,
+                    tool_name=tool_name,
+                    arguments=arguments,
+                    result=result,
+                    is_success=result.get("success", False)
+                )
+            except Exception as e:
+                logger.warning(f"Could not log ToolExecution: {e}")
+
+        return result
+
     @staticmethod
     def lookup_order(workspace_id: int, order_number: str, customer_email: str = None) -> dict:
-        """Looks up real-time e-commerce order details or shipment tracking across multiple webhooks & catalogs."""
+        """
+        Looks up real-time e-commerce order details or shipment tracking across
+        configured external store webhooks and verified company records.
+        NEVER invents fake synthetic data for unknown orders.
+        """
+        if not order_number or not order_number.strip():
+            return {"success": False, "error": "No order number provided"}
+
         order_num = order_number.strip().upper()
 
-        # 1. Multi-Webhook Support: Query configured active WorkspaceWebhook endpoints (ORDERS / TRACKING)
+        # 1. Multi-Webhook Outbound Query with HMAC Signing & SSRF Protection
         try:
             from apps.workspaces.models import WorkspaceWebhook, WorkspaceSettings
-            import urllib.request
-            import urllib.parse
-            import json
 
-            # Check dedicated secondary webhooks first
             active_wh = WorkspaceWebhook.objects.filter(
                 workspace_id=workspace_id,
                 is_active=True,
@@ -39,14 +198,12 @@ class ToolRegistry:
             target_url = active_wh.url if active_wh else None
             secret_key = active_wh.secret_key if active_wh else None
 
-            # Fallback to WorkspaceSettings orders_api_webhook_url
-            if not target_url:
-                settings_obj = WorkspaceSettings.objects.filter(workspace_id=workspace_id).first()
-                if settings_obj and settings_obj.orders_api_webhook_url:
-                    target_url = settings_obj.orders_api_webhook_url
-                    secret_key = settings_obj.orders_api_secret_key
+            settings_obj = WorkspaceSettings.objects.filter(workspace_id=workspace_id).first()
+            if not target_url and settings_obj and settings_obj.orders_api_webhook_url:
+                target_url = settings_obj.orders_api_webhook_url
+                secret_key = settings_obj.orders_api_secret_key
 
-            if target_url:
+            if target_url and is_safe_url(target_url):
                 params = {"order_id": order_num, "awb": order_num}
                 if customer_email:
                     params["email"] = customer_email
@@ -54,87 +211,83 @@ class ToolRegistry:
                 sep = "&" if "?" in target_url else "?"
                 full_url = f"{target_url}{sep}{query_str}"
 
-                headers = {"User-Agent": "SupportoAI-ToolRunner/2.0"}
+                timestamp_str = str(int(time.time()))
+                headers = {
+                    "User-Agent": "SupportoAI-ToolRunner/2.0",
+                    "X-Supporto-Timestamp": timestamp_str
+                }
                 if secret_key:
                     headers["Authorization"] = f"Bearer {secret_key}"
+                
+                # HMAC verification header
+                hmac_secret = getattr(settings_obj, "customer_verification_secret", "") or secret_key
+                if hmac_secret:
+                    signature_payload = f"{order_num}:{customer_email or ''}:{timestamp_str}".encode("utf-8")
+                    sig = hmac.new(hmac_secret.encode("utf-8"), signature_payload, hashlib.sha256).hexdigest()
+                    headers["X-Supporto-Signature"] = sig
 
                 req = urllib.request.Request(full_url, headers=headers)
                 with urllib.request.urlopen(req, timeout=3.0) as resp:
                     if resp.status == 200:
                         payload = json.loads(resp.read().decode("utf-8"))
-                        if "order" in payload:
-                            return {"success": True, "order": payload["order"], "source": "external_webhook"}
-                        if "tracking" in payload:
+                        if "order" in payload and payload["order"]:
+                            # Customer verification check if email provided
+                            order_record = payload["order"]
+                            if customer_email and order_record.get("customer_email"):
+                                if order_record["customer_email"].lower() != customer_email.lower():
+                                    return {"success": False, "error": "Customer email does not match order record"}
+                            return {"success": True, "order": order_record, "source": "external_webhook"}
+                        if "tracking" in payload and payload["tracking"]:
                             return {"success": True, "order": payload["tracking"], "source": "external_carrier_api"}
         except Exception as e:
-            logger.warning(f"External store webhook call failed for workspace {workspace_id}: {e}. Falling back to company catalog.")
+            logger.warning(f"External webhook query failed for workspace {workspace_id}: {e}")
 
-        # 2. ExpressBeas Logistics AWB Catalog
+        # 2. ExpressBeas Known Consignment Database
         expressbeas_awb = {
             "EB987654321": {
                 "order_number": "EB987654321",
-                "item": "Courier Consignment (5.2 kg) - Mumbai Hub to Delhi Central",
+                "item": "Courier Consignment (5.2 kg) - Commercial Shipment",
                 "amount": "₹450.00",
                 "status": "In Transit - Delayed at Delhi Central Sort Facility",
                 "carrier": "ExpressBeas Surface Fleet (Vehicle DL-1AB-4412)",
                 "estimated_delivery": "Delivery expected within 24-48 hours",
-                "origin": "Mumbai, Maharashtra",
-                "destination": "New Delhi, Delhi",
+                "origin": "Mumbai Hub, Maharashtra",
+                "destination": "New Delhi Central, Delhi",
                 "last_scan": "Oct 30, 2026 - Arrival Scan at Delhi Central Sort Hub",
                 "can_cancel": False,
                 "can_return": False,
             },
             "EB123456789": {
                 "order_number": "EB123456789",
-                "item": "Express Air Package (0.8 kg) - Bangalore to Pune",
+                "item": "Air Express Document Parcel (0.8 kg)",
                 "amount": "₹280.00",
                 "status": "Out for Delivery",
-                "carrier": "ExpressBeas Last-Mile Delivery (Rider: Rajesh K. - +91 98765 43210)",
+                "carrier": "ExpressBeas Last-Mile Fleet (Rider: Rajesh K. - +91 98765 43210)",
                 "estimated_delivery": "Today by 4:00 PM",
-                "origin": "Bangalore, Karnataka",
-                "destination": "Pune, Maharashtra",
+                "origin": "Bangalore Air Hub, Karnataka",
+                "destination": "Pune Delivery Hub, Maharashtra",
                 "last_scan": "Today, 08:30 AM - Out for delivery from Pune Hub",
                 "can_cancel": False,
                 "can_return": False,
             },
             "EB112233445": {
                 "order_number": "EB112233445",
-                "item": "Electronics Shipment - Smartphone & Accessories",
+                "item": "Electronics Freight - Tablet & Accessories",
                 "amount": "₹320.00",
                 "status": "Delivered - Damage Claim Under Investigation",
                 "carrier": "ExpressBeas Express Cargo",
                 "estimated_delivery": "Delivered on Oct 29, 2026",
                 "origin": "Hyderabad, Telangana",
                 "destination": "Jaipur, Rajasthan",
-                "last_scan": "Oct 29, 2026 - Delivered at recipient door",
+                "last_scan": "Oct 29, 2026 - Delivered at recipient address",
                 "can_cancel": False,
                 "can_return": True,
             }
         }
         if order_num in expressbeas_awb:
-            return {"success": True, "order": expressbeas_awb[order_num]}
+            return {"success": True, "order": expressbeas_awb[order_num], "source": "expressbeas_records"}
 
-        # If it looks like an ExpressBeas AWB number (starts with EB or numbers)
-        if order_num.startswith("EB") or (order_num.isdigit() and len(order_num) >= 8):
-            clean_awb = order_num
-            return {
-                "success": True,
-                "order": {
-                    "order_number": clean_awb,
-                    "item": "Express Courier Parcel",
-                    "amount": "₹350.00",
-                    "status": "In Transit - Expected on schedule",
-                    "carrier": "ExpressBeas Fast Logistics Network",
-                    "estimated_delivery": "Within 2 business days",
-                    "origin": "Origin Hub Scan Completed",
-                    "destination": "Delivery Address on Record",
-                    "last_scan": "In transit between regional distribution hubs",
-                    "can_cancel": False,
-                    "can_return": False,
-                }
-            }
-
-        # 3. ShopEase E-commerce Catalog
+        # 3. ShopEase Known Order Database
         orders_db = {
             "SE-84920": {
                 "order_number": "SE-84920",
@@ -168,21 +321,38 @@ class ToolRegistry:
             }
         }
         if order_num in orders_db:
-            return {"success": True, "order": orders_db[order_num]}
+            return {"success": True, "order": orders_db[order_num], "source": "shopease_records"}
 
-        clean = re.sub(r'[^A-Z0-9-]', '', order_num)
-        return {
-            "success": True,
-            "order": {
-                "order_number": clean or "ORD-84920",
-                "item": "Customer Order / Shipment",
-                "amount": "₹1,499.00",
-                "status": "In Transit",
-                "carrier": "Express Delivery Network",
-                "estimated_delivery": "Within 2 business days",
+        # 4. TechNova & FreshMart Records
+        saas_orders = {
+            "TN-88234": {
+                "order_number": "TN-88234",
+                "item": "Pro Developer API Plan (Annual)",
+                "amount": "$999.00/yr",
+                "status": "Active Subscription",
+                "carrier": "Cloud Provisioning",
+                "estimated_delivery": "Active",
+                "can_cancel": True,
+                "can_return": False,
+            },
+            "FM-44512": {
+                "order_number": "FM-44512",
+                "item": "Organic Fruits & Vegetable Box",
+                "amount": "₹650.00",
+                "status": "Delivered",
+                "carrier": "FreshMart 15-Min Rider",
+                "estimated_delivery": "Delivered",
                 "can_cancel": False,
                 "can_return": True,
             }
+        }
+        if order_num in saas_orders:
+            return {"success": True, "order": saas_orders[order_num], "source": "client_records"}
+
+        # Order / AWB NOT FOUND - Never hallucinate fake orders!
+        return {
+            "success": False,
+            "error": f"Order or AWB '{order_num}' was not found in our dispatch records."
         }
 
     @staticmethod
@@ -283,22 +453,40 @@ class ToolRegistry:
                     "escalated": True,
                     "ticket_number": existing.ticket_number,
                     "priority": existing.priority,
+                    "assigned_team": existing.assigned_team.name if existing.assigned_team else "Support Team",
                     "already_existed": True
                 }
 
-            # Map department team
+            # Map department team intelligently across all workspace types
             assigned_team = None
-            if conversation.intent == "BILLING" or any(w in reason.lower() for w in ["double", "billing", "charge", "deducted"]):
-                assigned_team = Team.objects.filter(workspace_id=workspace_id, slug="billing-support").first()
-            elif conversation.intent in ["SHIPPING", "RETURNS", "DEFECT"]:
-                assigned_team = Team.objects.filter(workspace_id=workspace_id, slug="order-support").first()
+            reason_lower = reason.lower()
+            intent = conversation.intent or ""
 
-            ticket_priority = Ticket.Priority.CRITICAL if is_critical else Ticket.Priority.MEDIUM
+            if intent == "BILLING" or any(w in reason_lower for w in ["double", "billing", "charge", "deducted", "refund"]):
+                assigned_team = Team.objects.filter(
+                    workspace_id=workspace_id,
+                    slug__in=["billing-support", "enterprise-billing", "claims-disputes", "quality-refunds"]
+                ).first()
+            elif intent in ["SHIPPING", "RETURNS", "DEFECT"] or any(w in reason_lower for w in ["ship", "tracking", "awb", "lost", "delay", "damage"]):
+                assigned_team = Team.objects.filter(
+                    workspace_id=workspace_id,
+                    slug__in=["order-support", "tracking-delivery", "claims-disputes", "hyperlocal-delivery"]
+                ).first()
+            elif intent == "TECHNICAL" or any(w in reason_lower for w in ["crash", "api", "bug", "error", "down"]):
+                assigned_team = Team.objects.filter(
+                    workspace_id=workspace_id,
+                    slug__in=["technical-support", "dev-support", "order-support"]
+                ).first()
+
+            if not assigned_team:
+                assigned_team = Team.objects.filter(workspace_id=workspace_id, is_active=True).first()
+
+            ticket_priority = Ticket.Priority.CRITICAL if is_critical else Ticket.Priority.HIGH
             ticket = Ticket.objects.create(
                 workspace_id=workspace_id,
                 customer=conversation.customer,
                 conversation=conversation,
-                subject=f"Escalated Chat: {conversation.intent or 'Urgent Support'}",
+                subject=f"Urgent Escalation: {conversation.intent or 'Customer Query'}",
                 description=f"Reason: {reason}\nCustomer Sentiment: {conversation.sentiment}\nUrgency: {conversation.urgency}",
                 priority=ticket_priority,
                 category=conversation.intent or "Escalation",
@@ -318,7 +506,7 @@ class ToolRegistry:
                 "ticket_id": ticket.id,
                 "ticket_number": ticket.ticket_number,
                 "priority": ticket_priority,
-                "assigned_team": assigned_team.name if assigned_team else "General Queue"
+                "assigned_team": assigned_team.name if assigned_team else "Billing Support"
             }
         except Exception as e:
             logger.error(f"Error escalating conversation: {e}")

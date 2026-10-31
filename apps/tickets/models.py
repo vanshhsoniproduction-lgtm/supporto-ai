@@ -1,5 +1,6 @@
+import uuid
 from django.conf import settings
-from django.db import models
+from django.db import models, IntegrityError
 from django.utils import timezone
 from apps.workspaces.models import Workspace
 from apps.customers.models import Customer
@@ -62,12 +63,20 @@ class Ticket(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.ticket_number:
-            prefix = "TK"
-            rand_id = timezone.now().strftime("%y%m%d%H%M%S")
-            self.ticket_number = f"{prefix}-{rand_id}"
+            rand_suffix = f"{timezone.now().strftime('%y%m%d')}-{uuid.uuid4().hex[:6].upper()}"
+            self.ticket_number = f"TK-{rand_suffix}"
         if self.status in (self.Status.RESOLVED, self.Status.CLOSED) and not self.resolved_at:
             self.resolved_at = timezone.now()
-        super().save(*args, **kwargs)
+
+        for attempt in range(5):
+            try:
+                super().save(*args, **kwargs)
+                break
+            except IntegrityError as e:
+                if "ticket_number" in str(e) and attempt < 4:
+                    self.ticket_number = f"TK-{timezone.now().strftime('%y%m%d')}-{uuid.uuid4().hex[:8].upper()}"
+                else:
+                    raise
 
 
 class TicketAssignment(models.Model):
@@ -130,4 +139,3 @@ class TicketEvent(models.Model):
 
     class Meta:
         ordering = ["created_at"]
-

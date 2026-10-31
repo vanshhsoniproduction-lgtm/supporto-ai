@@ -72,7 +72,7 @@
         </div>
     </div>
 
-    <!-- Sentiment & Topics Breakdown -->
+    <!-- Sentiment & Recurring Complaints Breakdown -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <!-- Sentiment Distribution -->
         <div class="bg-white p-6 sm:p-8 rounded-3xl border border-gray-200 shadow-sm space-y-5">
@@ -98,23 +98,42 @@
             </div>
         </div>
 
-        <!-- Top Complaint / Inquiry Topics -->
+        <!-- Recurring Complaints with Quotes & Share -->
         <div class="bg-white p-6 sm:p-8 rounded-3xl border border-gray-200 shadow-sm space-y-5">
             <div class="flex items-center justify-between pb-3 border-b border-gray-100">
-                <h3 class="font-bold text-sm text-charcoal-900">Most Common Customer Complaint Topics</h3>
-                <span class="text-xs text-gray-400">Classified by AI Engine</span>
+                <div>
+                    <h3 class="font-bold text-sm text-charcoal-900">Recurring Complaints & Category Share</h3>
+                    <p class="text-[11px] text-gray-400 mt-0.5">Automated pattern extraction from customer reports</p>
+                </div>
+                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                    Bonus Twist
+                </span>
             </div>
 
-            <div class="space-y-2">
-                {% for topic in report.complaint_topics %}
-                <div class="p-3.5 rounded-2xl border border-gray-100 bg-gray-50/50 flex items-center justify-between">
-                    <span class="font-bold text-xs text-charcoal-800">{{ topic.ai_intent }}</span>
-                    <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-white border border-gray-200 text-charcoal-900">
-                        {{ topic.count }} inquiry
-                    </span>
+            <div class="space-y-3">
+                {% for comp in report.recurring_complaints %}
+                <div class="p-4 rounded-2xl border border-gray-100 bg-gray-50/70 space-y-2">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <span class="font-bold text-xs text-charcoal-900">{{ comp.category }}</span>
+                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-100">
+                                {{ comp.percentage }}% share
+                            </span>
+                        </div>
+                        <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-white border border-gray-200 text-charcoal-800 shadow-2xs">
+                            {{ comp.count }} ticket(s)
+                        </span>
+                    </div>
+                    {% if comp.sample_quotes %}
+                    <div class="space-y-1 pt-1.5 border-t border-gray-200/60">
+                        {% for quote in comp.sample_quotes %}
+                        <p class="text-[11px] text-gray-600 italic leading-snug">“{{ quote }}”</p>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
                 </div>
                 {% empty %}
-                <p class="text-xs text-gray-400 py-6 text-center">No complaint patterns recorded this week.</p>
+                <p class="text-xs text-gray-400 py-6 text-center">No recurring complaint patterns recorded this week.</p>
                 {% endfor %}
             </div>
         </div>
@@ -152,4 +171,3 @@
     </div>
 </div>
 {% endblock %}
-

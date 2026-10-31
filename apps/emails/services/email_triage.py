@@ -1,6 +1,8 @@
 import json
 import logging
+import re
 from django.db import transaction
+from django.db.models import Q
 from django.utils import timezone
 from apps.customers.models import Customer
 from apps.conversations.models import Conversation, Message
@@ -8,7 +10,7 @@ from apps.teams.models import Team
 from apps.tickets.models import Ticket
 from apps.emails.models import InboundEmail, TicketProposal
 from services.ai.rag_service import rag_service
-from services.ai.llm_service import llm_service
+from services.ai.llm_service import has_word
 from services.ai.model_manager import model_manager
 
 logger = logging.getLogger(__name__)
@@ -33,7 +35,7 @@ class EmailTriageService:
         Executes end-to-end AI triage pipeline for an inbound email:
         1. Resolves or creates Customer in workspace
         2. Creates Conversation & initial Message
-        3. Analyzes intent, urgency, sentiment, confidence using Qwen/engine
+        3. Analyzes intent, urgency, sentiment, confidence
         4. Retrieves relevant workspace Knowledge Base context
         5. Generates grounded draft reply
         6. Creates TicketProposal awaiting mandatory human approval
@@ -147,7 +149,7 @@ class EmailTriageService:
                     "ai_confidence": analysis["confidence"],
                     "ai_suggested_reply": draft_reply,
                     "edited_suggested_reply": draft_reply,
-                    "kb_sources_used": [c.get("title") for c in retrieved_chunks],
+                    "kb_sources_used": [c.get("title") for c in retrieved_chunks if c.get("title")],
                     "approval_status": approval_status,
                 }
             )
@@ -166,11 +168,17 @@ class EmailTriageService:
     def _analyze_email_content(cls, workspace, subject: str, body: str) -> dict:
         """
         Executes structured intent, sentiment, and urgency classification.
-        Integrates with local Qwen GGUF model when available with reliable fallback.
+        Features negation resistance, word-boundary checks, and calibrated confidence.
         """
         full_text = f"{subject}\n{body}".lower()
 
-        # Critical / Fraud / Billing pattern detection
+        # Check for negation patterns (e.g. "not angry", "no rush", "not urgent")
+        has_calm_negation = bool(re.search(
+            r"\b(?:not|no|never|don't|dont)\s+(?:angry|mad|furious|urgent|rush|hurry|panic)\b",
+            full_text
+        ))
+
+        # Critical / Fraud / Severe outage pattern detection
         critical_markers = [
             "fraud", "unauthorized", "stolen", "deducted twice", "charged twice",
             "double charge", "security breach", "lawyer", "legal action", "compromised",
@@ -178,7 +186,7 @@ class EmailTriageService:
         ]
         is_critical = any(m in full_text for m in critical_markers)
 
-        # Default classification
+        # Default baseline
         intent = "GENERAL_INQUIRY"
         category = "General Support"
         priority = Ticket.Priority.MEDIUM
@@ -187,46 +195,57 @@ class EmailTriageService:
         confidence = 0.85
         requires_ticket = True
 
-        if any(w in full_text for w in ["charged twice", "double charge", "deducted twice", "refund", "invoice", "payment", "overcharged", "card charged"]):
-            intent = "PAYMENT_ISSUE" if ("twice" in full_text or "double" in full_text or "unauthorized" in full_text) else "REFUND_REQUEST"
+        # Exact word-boundary classification
+        if has_word(full_text, ["charged twice", "double charge", "deducted twice", "refund", "invoice", "payment", "overcharged", "card charged", "billing"]):
+            is_double = any(w in full_text for w in ["twice", "double", "unauthorized", "stolen"])
+            intent = "PAYMENT_ISSUE" if is_double else "REFUND_REQUEST"
             category = "Billing & Payments"
-            urgency = "CRITICAL" if is_critical else "HIGH"
-            priority = Ticket.Priority.CRITICAL if is_critical else Ticket.Priority.HIGH
-            sentiment = "ANGRY" if is_critical else "NEGATIVE"
-            confidence = 0.94
-        elif any(w in full_text for w in ["order", "shipment", "tracking", "arrive", "delivery", "delivered", "package"]):
-            intent = "ORDER_STATUS"
-            category = "Order & Shipping"
-            urgency = "MEDIUM" if "delayed" in full_text or "lost" in full_text else "LOW"
-            priority = Ticket.Priority.MEDIUM
-            sentiment = "NEUTRAL"
-            confidence = 0.91
-        elif any(w in full_text for w in ["broken", "error", "bug", "crash", "not working", "fails", "glitch"]):
+            urgency = "CRITICAL" if (is_critical or is_double) else ("LOW" if has_calm_negation else "HIGH")
+            priority = Ticket.Priority.CRITICAL if (is_critical or is_double) else Ticket.Priority.HIGH
+            sentiment = "ANGRY" if (is_critical and not has_calm_negation) else ("NEUTRAL" if has_calm_negation else "NEGATIVE")
+            confidence = 0.95
+        elif has_word(full_text, ["crash", "crashing", "crashed", "outage", "broken", "bug", "glitch", "error", "fails", "failed", "500"]):
             intent = "TECHNICAL_SUPPORT"
             category = "Technical Support"
             urgency = "HIGH"
             priority = Ticket.Priority.HIGH
-            sentiment = "FRUSTRATED"
-            confidence = 0.88
-        elif any(w in full_text for w in ["cancel", "cancel subscription", "close account", "termination"]):
+            sentiment = "NEUTRAL" if has_calm_negation else "FRUSTRATED"
+            confidence = 0.92
+        elif has_word(full_text, ["order", "shipment", "tracking", "arrive", "delivery", "delivered", "package", "awb", "consignment", "courier", "dispatch"]):
+            intent = "ORDER_STATUS"
+            category = "Order & Shipping"
+            is_delayed = has_word(full_text, ["delayed", "delay", "lost", "stuck", "missing"])
+            urgency = "MEDIUM" if is_delayed else "LOW"
+            priority = Ticket.Priority.HIGH if is_delayed else Ticket.Priority.MEDIUM
+            sentiment = "FRUSTRATED" if (is_delayed and not has_calm_negation) else "NEUTRAL"
+            confidence = 0.93
+        elif has_word(full_text, ["cancel", "cancellation", "close account", "termination", "unsubscribe"]):
             intent = "CANCELLATION"
             category = "Account Services"
             urgency = "MEDIUM"
             priority = Ticket.Priority.MEDIUM
             sentiment = "NEGATIVE"
-            confidence = 0.89
-        elif any(w in full_text for w in ["complaint", "terrible", "awful", "unacceptable", "horrible", "worst"]):
+            confidence = 0.90
+        elif has_word(full_text, ["damaged", "crushed", "spoiled", "rotten", "broken item", "defect"]):
+            intent = "COMPLAINT"
+            category = "Quality & Damage"
+            urgency = "HIGH"
+            priority = Ticket.Priority.HIGH
+            sentiment = "ANGRY" if not has_calm_negation else "NEUTRAL"
+            confidence = 0.92
+        elif has_word(full_text, ["terrible", "awful", "unacceptable", "horrible", "worst", "cheated", "scam"]):
             intent = "COMPLAINT"
             category = "Customer Experience"
             urgency = "HIGH"
             priority = Ticket.Priority.HIGH
             sentiment = "ANGRY"
-            confidence = 0.92
+            confidence = 0.91
 
         if is_critical:
             urgency = "CRITICAL"
             priority = Ticket.Priority.CRITICAL
-            sentiment = "ANGRY"
+            if not has_calm_negation:
+                sentiment = "ANGRY"
 
         summary = f"Customer inquiring about {intent.lower().replace('_', ' ')}. Subject: '{subject}'."
         if is_critical:
@@ -273,7 +292,7 @@ class EmailTriageService:
                 f"Hi {first_name},\n\n"
                 f"Thank you for reaching out to {company_name} regarding your order status.{kb_snippet}\n\n"
                 f"Our fulfillment team is reviewing your details to provide you with the latest tracking updates. "
-                f"Please reply with your order number if not already provided so we can verify delivery right away.\n\n"
+                f"Please reply with your order number or AWB if not already provided so we can verify delivery right away.\n\n"
                 f"Sincerely,\n{company_name} Support Team"
             )
 
@@ -296,11 +315,30 @@ class EmailTriageService:
     def _resolve_recommended_team(cls, workspace, intent: str):
         """Resolves the best matching Team in the workspace based on intent."""
         if intent in ("PAYMENT_ISSUE", "REFUND_REQUEST", "BILLING"):
-            team = Team.objects.filter(workspace=workspace, is_active=True, name__icontains="Billing").first()
+            team = Team.objects.filter(
+                workspace=workspace,
+                is_active=True
+            ).filter(
+                Q(name__icontains="Billing") |
+                Q(name__icontains="Claims") |
+                Q(name__icontains="Refund")
+            ).first()
+            if team:
+                return team
+        elif intent == "TECHNICAL_SUPPORT":
+            team = Team.objects.filter(
+                workspace=workspace,
+                is_active=True,
+                name__iregex=r"(tech|engineer|dev)"
+            ).first()
             if team:
                 return team
         elif intent in ("ORDER_STATUS", "CANCELLATION"):
-            team = Team.objects.filter(workspace=workspace, is_active=True, name__icontains="Order").first()
+            team = Team.objects.filter(
+                workspace=workspace,
+                is_active=True,
+                name__iregex=r"(order|tracking|delivery|shipping)"
+            ).first()
             if team:
                 return team
 
@@ -308,4 +346,3 @@ class EmailTriageService:
         return Team.objects.filter(workspace=workspace, is_active=True).first()
 
 email_triage_service = EmailTriageService()
-
