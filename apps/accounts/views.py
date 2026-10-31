@@ -17,25 +17,40 @@ logger = logging.getLogger(__name__)
 User = get_user_model()
 
 def login_view(request):
-    """
-    Legacy /login/ route:
-    Company staff must use Google OAuth at their company slug URL (e.g. /shopease/).
-    Platform administrators should log in at /admin/login/.
-    Redirects to landing or provides workspace guidance.
-    """
-    next_url = request.GET.get("next", "")
-
-    # If the user was trying to access /admin/, send them directly to /admin/login/
-    if next_url.startswith("/admin"):
-        return redirect(f"/admin/login/?next={next_url}")
+    next_url = request.GET.get("next", "") or request.POST.get("next", "")
 
     if request.user.is_authenticated:
+        if next_url and (not next_url.startswith("/admin") or getattr(request.user, "is_platform_admin", False)):
+            return redirect(next_url)
         return redirect("login_redirect")
 
-    # Render a clean workspace entry / guidance page without staff password login
-    workspaces = Workspace.objects.filter(status=Workspace.Status.ACTIVE)
-    return render(request, "auth/login_selector.html", {
-        "workspaces": workspaces,
+    form = LoginForm(request.POST or None)
+
+    if request.method == "POST" and form.is_valid():
+        ident = (form.cleaned_data.get("username_or_email") or form.cleaned_data.get("email", "")).strip()
+        password = form.cleaned_data["password"]
+        user = authenticate(request, username=ident, password=password)
+
+        if user is not None:
+            if not user.is_active:
+                messages.error(request, "This account is inactive. Please contact your workspace administrator.")
+            else:
+                login(request, user)
+                AuditLog.objects.create(
+                    actor=user,
+                    action="STAFF_LOGIN",
+                    resource_type="User",
+                    resource_id=str(user.id),
+                    ip_address=request.META.get("REMOTE_ADDR")
+                )
+                if next_url:
+                    return redirect(next_url)
+                return redirect("login_redirect")
+        else:
+            messages.error(request, "Invalid username/email or password.")
+
+    return render(request, "auth/login.html", {
+        "form": form,
         "next": next_url,
     })
 
