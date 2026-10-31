@@ -18,7 +18,7 @@ Features:
 - Honest external webhook configuration (zero fake mock endpoints)
 """
 import uuid
-from datetime import timedelta
+from datetime import timedelta, datetime, timezone as dt_tz
 from decimal import Decimal
 from django.core.management.base import BaseCommand
 from django.core.management import call_command
@@ -374,7 +374,7 @@ class Command(BaseCommand):
                 doc.content = f"Question: {q}\n\nAnswer: {content}"
                 doc.is_active = True
                 doc.save()
-                document_processor.process_document(doc)
+                document_processor.chunk_and_index(doc)
 
     # -------------------------------------------------------------------------
     # ExpressBeas FAQs & Knowledge Base
@@ -421,7 +421,7 @@ class Command(BaseCommand):
                 doc.content = f"Question: {q}\n\nAnswer: {content}"
                 doc.is_active = True
                 doc.save()
-                document_processor.process_document(doc)
+                document_processor.chunk_and_index(doc)
 
     # -------------------------------------------------------------------------
     # ShopEase SQL Orders & Demo Customers
@@ -436,7 +436,6 @@ class Command(BaseCommand):
                 "name": "Vansh Soni",
                 "email": "vansh.soni@example.com",
                 "phone": "+91 63677 43066",
-                "city": "Jaipur",
                 "source": Customer.Source.WIDGET,
                 "is_anonymous": False,
             }
@@ -450,7 +449,6 @@ class Command(BaseCommand):
                 "name": "Riya Sharma",
                 "email": "riya.sharma@example.com",
                 "phone": "+91 95715 38144",
-                "city": "Jaipur",
                 "source": Customer.Source.WIDGET,
                 "is_anonymous": False,
             }
@@ -473,7 +471,6 @@ class Command(BaseCommand):
                 "discount": Decimal("0.00"),
                 "total": Decimal("4999.00"),
                 "shipping_address": "12, Civil Lines",
-                "city": "Jaipur",
                 "pincode": "302006",
                 "placed_at": now - timedelta(days=5),
                 "estimated_delivery": now - timedelta(days=3),
@@ -539,7 +536,6 @@ class Command(BaseCommand):
                 "discount": Decimal("0.00"),
                 "total": Decimal("64999.00"),
                 "shipping_address": "12, Civil Lines",
-                "city": "Jaipur",
                 "pincode": "302006",
                 "placed_at": now - timedelta(days=2),
                 "estimated_delivery": now + timedelta(days=1),
@@ -568,7 +564,6 @@ class Command(BaseCommand):
                 "discount": Decimal("0.00"),
                 "total": Decimal("2499.00"),
                 "shipping_address": "12, Civil Lines",
-                "city": "Jaipur",
                 "pincode": "302006",
                 "placed_at": now - timedelta(minutes=45),
                 "estimated_delivery": now + timedelta(days=3),
@@ -597,7 +592,6 @@ class Command(BaseCommand):
                 "discount": Decimal("0.00"),
                 "total": Decimal("1298.00"),
                 "shipping_address": "12, Civil Lines",
-                "city": "Jaipur",
                 "pincode": "302006",
                 "placed_at": now - timedelta(days=42),
                 "estimated_delivery": now - timedelta(days=40),
@@ -632,7 +626,6 @@ class Command(BaseCommand):
                 "discount": Decimal("0.00"),
                 "total": Decimal("3299.00"),
                 "shipping_address": "45, Malviya Nagar",
-                "city": "Jaipur",
                 "pincode": "302017",
                 "placed_at": now - timedelta(days=3),
                 "estimated_delivery": now,
@@ -660,7 +653,6 @@ class Command(BaseCommand):
                 "discount": Decimal("0.00"),
                 "total": Decimal("1899.00"),
                 "shipping_address": "45, Malviya Nagar",
-                "city": "Jaipur",
                 "pincode": "302017",
                 "placed_at": now - timedelta(days=6),
                 "cancelled_at": now - timedelta(days=6, minutes=-20),
@@ -688,7 +680,6 @@ class Command(BaseCommand):
                 "name": "Vansh Soni",
                 "email": "vansh.soni@example.com",
                 "phone": "+91 63677 43066",
-                "city": "Jaipur",
                 "source": Customer.Source.WIDGET,
                 "is_anonymous": False,
             }
@@ -702,7 +693,6 @@ class Command(BaseCommand):
                 "name": "Riya Sharma",
                 "email": "riya.sharma@example.com",
                 "phone": "+91 95715 38144",
-                "city": "Jaipur",
                 "source": Customer.Source.WIDGET,
                 "is_anonymous": False,
             }
@@ -723,16 +713,16 @@ class Command(BaseCommand):
                 "receiver_phone": "6367743066",
                 "status": Shipment.Status.DELIVERED,
                 "current_location": "Jaipur Delivery Center",
-                "delivered_at": timezone.datetime(2026, 9, 22, 15, 42, tzinfo=timezone.utc),
+                "delivered_at": datetime(2026, 9, 22, 15, 42, tzinfo=dt_tz.utc),
             }
         )
         if created_s1 or not ship_1.events.exists():
-            ShipmentEvent.objects.create(shipment=ship_1, status="Manifest Uploaded & Data Received", location="Ghaziabad Hub", occurred_at=timezone.datetime(2026, 9, 20, 9, 12, tzinfo=timezone.utc), remarks="Consignment electronic manifest received from seller.")
-            ShipmentEvent.objects.create(shipment=ship_1, status="Pickup Done", location="Ghaziabad Facility", occurred_at=timezone.datetime(2026, 9, 20, 14, 30, tzinfo=timezone.utc), remarks="Package received from Cloudtail warehouse.")
-            ShipmentEvent.objects.create(shipment=ship_1, status="In Transit", location="Delhi Main Sort Hub", occurred_at=timezone.datetime(2026, 9, 20, 21, 15, tzinfo=timezone.utc), remarks="Inward sorting scan completed.")
-            ShipmentEvent.objects.create(shipment=ship_1, status="In Transit", location="Delhi Highway Dispatch", occurred_at=timezone.datetime(2026, 9, 21, 4, 20, tzinfo=timezone.utc), remarks="Dispatched in vehicle DL-1C-5012 to Jaipur.")
-            ShipmentEvent.objects.create(shipment=ship_1, status="Reached at Destination", location="Jaipur Central Mother Hub", occurred_at=timezone.datetime(2026, 9, 21, 23, 45, tzinfo=timezone.utc), remarks="Arrival scan completed at destination mother hub.")
-            ShipmentEvent.objects.create(shipment=ship_1, status="Delivered", location="Jaipur Delivery Center", occurred_at=timezone.datetime(2026, 9, 22, 15, 42, tzinfo=timezone.utc), remarks="Delivered to recipient with OTP verification.")
+            ShipmentEvent.objects.create(shipment=ship_1, status="Manifest Uploaded & Data Received", location="Ghaziabad Hub", occurred_at=datetime(2026, 9, 20, 9, 12, tzinfo=dt_tz.utc), remarks="Consignment electronic manifest received from seller.")
+            ShipmentEvent.objects.create(shipment=ship_1, status="Pickup Done", location="Ghaziabad Facility", occurred_at=datetime(2026, 9, 20, 14, 30, tzinfo=dt_tz.utc), remarks="Package received from Cloudtail warehouse.")
+            ShipmentEvent.objects.create(shipment=ship_1, status="In Transit", location="Delhi Main Sort Hub", occurred_at=datetime(2026, 9, 20, 21, 15, tzinfo=dt_tz.utc), remarks="Inward sorting scan completed.")
+            ShipmentEvent.objects.create(shipment=ship_1, status="In Transit", location="Delhi Highway Dispatch", occurred_at=datetime(2026, 9, 21, 4, 20, tzinfo=dt_tz.utc), remarks="Dispatched in vehicle DL-1C-5012 to Jaipur.")
+            ShipmentEvent.objects.create(shipment=ship_1, status="Reached at Destination", location="Jaipur Central Mother Hub", occurred_at=datetime(2026, 9, 21, 23, 45, tzinfo=dt_tz.utc), remarks="Arrival scan completed at destination mother hub.")
+            ShipmentEvent.objects.create(shipment=ship_1, status="Delivered", location="Jaipur Delivery Center", occurred_at=datetime(2026, 9, 22, 15, 42, tzinfo=dt_tz.utc), remarks="Delivered to recipient with OTP verification.")
 
         # Consignment 152785863851741 (In Transit - Delayed at Delhi Sort Hub)
         ship_2, created_s2 = Shipment.objects.get_or_create(
@@ -979,7 +969,7 @@ class Command(BaseCommand):
     1. "What are my orders?"                                [ShopEase / ExpressBeas]
     2. "Where is order SE-84920?"                           [ShopEase — Delivered, Return Scheduled]
     3. "Where is my consignment 152785863851740?"           [ExpressBeas — 6-event verified timeline]
-    4. "What is the status of my return and refund?"        [ShopEase — Pickup Scheduled, ₹4,999]
+    4. "What is the status of my return and refund?"        [ShopEase — Pickup Scheduled, INR 4,999]
     5. "Cancel order SE-84922"                              [ShopEase — Auto-Ticket, Real Ticket #]
     6. "Where is my consignment 152785863851740?" (with phone 9571538144) -> Access Denied (Safe Zero-Leak)
 
