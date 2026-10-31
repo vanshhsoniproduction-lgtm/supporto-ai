@@ -147,6 +147,10 @@ class ModelManager:
             }
         }
 
+    @property
+    def llm_context_window(self) -> int:
+        return getattr(settings, "LLM_CONTEXT_WINDOW", 4096)
+
     def get_llm(self):
         """Lazy loader for Qwen LLM using llama-cpp-python if available."""
         if not getattr(settings, "AI_ENABLED", True):
@@ -161,10 +165,12 @@ class ModelManager:
         try:
             from llama_cpp import Llama
             cpu_threads = min(os.cpu_count() or 4, 8)
-            logger.info(f"Loading Qwen LLM from {self.llm_path} (n_ctx=2048, n_gpu_layers=-1, n_threads={cpu_threads})...")
+            n_ctx = self.llm_context_window
+            logger.info(f"Loading Qwen LLM from {self.llm_path} (n_ctx={n_ctx}, n_batch=512, n_gpu_layers=-1, n_threads={cpu_threads})...")
             self._llm = Llama(
                 model_path=str(self.llm_path),
-                n_ctx=2048,
+                n_ctx=n_ctx,
+                n_batch=512,
                 n_gpu_layers=-1,  # Offloads layers to Apple Silicon Metal GPU or CUDA
                 n_threads=cpu_threads,
                 verbose=False
@@ -173,6 +179,15 @@ class ModelManager:
         except Exception as e:
             logger.warning(f"Could not load llama-cpp runtime: {e}")
             return None
+
+    def reset_llm(self):
+        """Safely clear KV cache and reset context state in llama-cpp."""
+        if self._llm is not None:
+            try:
+                self._llm.reset()
+            except Exception as e:
+                logger.warning(f"Error resetting LLM KV cache: {e}. Purging model instance.")
+                self.unload_models()
 
     def get_stt(self):
         """Lazy loader for Whisper Small using faster-whisper."""

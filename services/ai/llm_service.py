@@ -140,13 +140,21 @@ class LLMService:
 
                 return {"text": reply, "retrieved_docs": [], "tokens_used": len(reply.split()), "source": "order_cancellation_completed"}
 
-        # 4. Intent: "What are my orders" / "Track my order" (without specific code)
+        # 4. Intent: "What are my orders" / "Track my order" / "My consignments" (without specific code)
         list_orders_queries = [
             "what are my orders", "my orders", "list my orders", "show my orders",
             "show orders", "view my orders", "where is my order", "where is my package",
-            "track my order", "track my parcel", "where are my parcels", "my parcels", "my shipments"
+            "track my order", "track my parcel", "where are my parcels", "my parcels", "my shipments",
+            "what are my consignments", "my consignments", "list my consignments", "show my consignments",
+            "track my consignment", "where is my consignment", "where are my consignments", "my tracking",
+            "check my consignments", "check consignments", "consignment status", "all consignments", "all shipments"
         ]
-        if not extracted_code and any(q in msg_lower for q in list_orders_queries):
+        is_order_listing = not extracted_code and (
+            any(q in msg_lower for q in list_orders_queries) or
+            ("consignment" in msg_lower and any(w in msg_lower for w in ["what", "my", "list", "show", "track", "where", "status", "check"])) or
+            ("shipment" in msg_lower and any(w in msg_lower for w in ["what", "my", "list", "show", "track", "where", "status", "check"]))
+        )
+        if is_order_listing:
             if not norm_phone:
                 sample_id = "152785863851740" if workspace.slug == "expressbeas" else "SE-84920"
                 prompt_msg = f"I'd be glad to look up your records! Please provide your registered 10-digit phone number or an Order / AWB Number (e.g. {sample_id})."
@@ -240,10 +248,13 @@ class LLMService:
         # 10. Retrieve relevant Knowledge Base context
         retrieved = rag_service.retrieve_context(workspace.id, customer_message, top_k=3)
 
-        # 11. LLM Inference via Qwen (Local GGUF if available)
+        # 11. LLM Inference via Qwen (Local GGUF if available) with KV cache reset & token budgeting
         llm = model_manager.get_llm()
         if llm:
             try:
+                # 1. Reset KV cache prior to generation so n_past is always 0
+                model_manager.reset_llm()
+
                 prompt = prompt_builder.build_chat_prompt(
                     system_prompt=system_prompt,
                     company_name=workspace.name,
@@ -251,9 +262,29 @@ class LLMService:
                     message_history=message_history,
                     customer_message=customer_message,
                 )
+
+                # 2. Token budget check: prevent llama_decode returned -1 by bounding prompt length
+                ctx_limit = model_manager.llm_context_window
+                max_tokens = min(config.max_tokens or 160, 160)
+                safety_budget = ctx_limit - max_tokens - 32
+
+                try:
+                    toks = llm.tokenize(prompt.encode("utf-8", errors="ignore"), add_bos=False)
+                    if len(toks) > safety_budget:
+                        logger.warning(f"Prompt tokens ({len(toks)}) exceed safe budget ({safety_budget}). Trimming context.")
+                        prompt = prompt_builder.build_chat_prompt(
+                            system_prompt=system_prompt,
+                            company_name=workspace.name,
+                            retrieved_context=retrieved[:1] if retrieved else [],
+                            message_history=message_history[-1:],
+                            customer_message=customer_message,
+                        )
+                except Exception as tok_err:
+                    logger.debug(f"Tokenizer budget check skipped: {tok_err}")
+
                 output = llm(
                     prompt,
-                    max_tokens=min(config.max_tokens or 160, 160),
+                    max_tokens=max_tokens,
                     temperature=0.1,
                     stop=["<|im_end|>", "<|endoftext|>", "Customer:", "\nUser:"]
                 )
@@ -262,15 +293,23 @@ class LLMService:
                 cleaned_text = re.sub(r"<thought>.*?</thought>", "", cleaned_text, flags=re.DOTALL).strip()
 
                 if cleaned_text:
-                    tokens = output.get("usage", {}).get("total_tokens", 0)
+                    tokens_used = output.get("usage", {}).get("total_tokens", len(cleaned_text.split()))
                     return {
                         "text": cleaned_text,
                         "retrieved_docs": retrieved,
-                        "tokens_used": tokens,
+                        "tokens_used": tokens_used,
                         "source": "qwen_local_llm"
                     }
             except Exception as e:
                 logger.error(f"Error executing Qwen inference: {e}")
+                model_manager.reset_llm()
+            finally:
+                # Clear KV cache state so subsequent requests never accumulate dirty context
+                try:
+                    if llm:
+                        llm.reset()
+                except Exception:
+                    model_manager.unload_models()
 
         # 12. Grounded Knowledge Base answers (Filtered by relevance score)
         if retrieved:
