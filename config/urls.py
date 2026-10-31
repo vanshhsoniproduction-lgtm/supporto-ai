@@ -78,14 +78,21 @@ from apps.customers.widget_views import (
 from apps.workspaces.models import Workspace
 
 def landing_view(request):
-    """Root landing page - preserves existing public landing page."""
+    """Root landing page - restrained, single-page presentation."""
     workspaces = Workspace.objects.filter(status=Workspace.Status.ACTIVE)
-    demo_ws = workspaces.first()
-    demo_widget_url = f"/widget/{demo_ws.public_key}/demo/" if demo_ws else ""
+    shopease = Workspace.objects.filter(slug="shopease").first() or workspaces.first()
+    expressbeas = Workspace.objects.filter(slug="expressbeas").first()
     return render(request, "landing.html", {
         "workspaces": workspaces,
-        "demo_widget_url": demo_widget_url
+        "shopease": shopease,
+        "expressbeas": expressbeas,
     })
+
+def company_demo_redirect_view(request, company_slug):
+    """Redirects /shopease/demo/ or /expressbeas/demo/ to widget_demo."""
+    from django.shortcuts import get_object_or_404
+    ws = get_object_or_404(Workspace, slug=company_slug)
+    return redirect("widget_demo", public_key=ws.public_key)
 
 def inbox_redirect_view(request, company_slug):
     return redirect("email_inbox", company_slug=company_slug)
@@ -93,6 +100,7 @@ def inbox_redirect_view(request, company_slug):
 urlpatterns = [
     # A. Public Landing Page
     path("", landing_view, name="landing"),
+    path("<slug:company_slug>/demo/", company_demo_redirect_view, name="company_demo_redirect"),
 
     # Django internal admin
     path("django-admin/", admin.site.urls),

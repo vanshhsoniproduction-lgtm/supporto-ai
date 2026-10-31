@@ -90,12 +90,10 @@ def widget_message_api(request, public_key):
             channel=Conversation.Channel.WEB_CHAT
         )
 
-    if customer_phone and conversation:
-        if not conversation.metadata:
-            conversation.metadata = {}
-        if conversation.metadata.get("customer_phone") != customer_phone:
-            conversation.metadata["customer_phone"] = customer_phone
-            conversation.save(update_fields=["metadata", "updated_at"])
+    if customer_phone and customer and not customer.normalized_phone:
+        customer.phone = customer_phone
+        customer.clean()
+        customer.save(update_fields=["phone", "normalized_phone", "updated_at"])
 
     result = agent_runner.handle_customer_message(conversation, message_text)
     result["session_token"] = session_token

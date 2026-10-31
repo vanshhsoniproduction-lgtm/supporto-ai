@@ -81,8 +81,8 @@ class AgentRunner:
             }
         else:
             history = list(conversation.messages.values("sender_type", "content"))
-            customer_email = (conversation.customer.email if conversation.customer else None) or conversation.metadata.get("customer_email")
-            customer_phone = (conversation.customer.normalized_phone if conversation.customer else None) or (conversation.customer.phone if conversation.customer else None) or conversation.metadata.get("customer_phone")
+            customer_email = (conversation.customer.email if conversation.customer else None) or ""
+            customer_phone = (conversation.customer.normalized_phone if conversation.customer else None) or (conversation.customer.phone if conversation.customer else None) or ""
             ai_result = llm_service.generate_response(
                 workspace=workspace,
                 customer_message=customer_text,
@@ -115,7 +115,7 @@ class AgentRunner:
 
         # Audit tools in ToolExecution
         extracted_code = extract_order_code(customer_text)
-        customer_phone = (conversation.customer.normalized_phone if conversation.customer else None) or conversation.metadata.get("customer_phone")
+        customer_phone = (conversation.customer.normalized_phone if conversation.customer else None) or (conversation.customer.phone if conversation.customer else None) or ""
         if extracted_code:
             tool_registry.execute_tool(
                 workspace_id=workspace.id,

@@ -1,271 +1,301 @@
 {% extends "base.html" %}
 
-{% block title %}Supporto AI — Enterprise AI Support & Intelligent Ticket Triage{% endblock %}
+{% block title %}Supporto AI — Automated Customer Support & Ticket Triage{% endblock %}
 
 {% block content %}
-<div class="min-h-full flex flex-col bg-[#FBFBFD] text-charcoal-900 selection:bg-brand-500 selection:text-white">
-    <!-- Top Minimal Navigation Bar -->
-    <header class="bg-white/80 backdrop-blur-md sticky top-0 z-40 border-b border-gray-200/80">
-        <div class="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
-            <div class="flex items-center gap-3">
-                <div class="w-9 h-9 rounded-xl bg-charcoal-900 text-white flex items-center justify-center font-black shadow-sm">
-                    <span class="material-symbols-outlined text-xl">smart_toy</span>
-                </div>
-                <div>
-                    <span class="font-extrabold text-base tracking-tight text-charcoal-900">Supporto<span class="text-brand-500">.ai</span></span>
-                    <span class="hidden sm:inline-block text-[10px] uppercase font-bold text-gray-500 tracking-wider ml-2 px-2 py-0.5 rounded-full bg-gray-100 border border-gray-200/60">Core 2.5</span>
-                </div>
-            </div>
+<div class="min-h-screen flex flex-col bg-white text-[#212121]">
 
-            <nav class="hidden md:flex items-center gap-8 text-xs font-semibold text-gray-600">
-                <a href="#workspaces" class="hover:text-charcoal-900 transition">Live Workspaces</a>
-                <a href="#capabilities" class="hover:text-charcoal-900 transition">Architecture</a>
-                <a href="/select-workspace/" class="hover:text-charcoal-900 transition">Switch Company</a>
-                <a href="/admin/" class="hover:text-charcoal-900 transition">Platform Admin</a>
+    <!-- 1. Top Bar -->
+    <header class="border-b border-[#E0E0E0] bg-white sticky top-0 z-30">
+        <div class="max-w-[1100px] mx-auto px-6 h-16 flex items-center justify-between">
+            <a href="/" class="text-lg font-bold text-[#212121] tracking-tight hover:text-[#1976D2] transition-colors" style="text-decoration: none;">
+                Supporto AI
+            </a>
+            <nav class="flex items-center gap-6 text-sm font-medium">
+                <a href="#try-it" class="text-[#616161] hover:text-[#1976D2] transition-colors" style="text-decoration: none;">Live demo</a>
+                <a href="{% url 'login' %}" class="text-[#1976D2] hover:underline" style="text-decoration: none;">Staff login</a>
             </nav>
-
-            <div class="flex items-center gap-3">
-                <a href="{% url 'google_login' %}" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold text-white bg-charcoal-900 hover:bg-black transition shadow-sm">
-                    <svg class="w-4 h-4" viewBox="0 0 24 24">
-                        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
-                        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
-                    </svg>
-                    Continue with Google
-                </a>
-            </div>
         </div>
     </header>
 
-    <!-- Hero Section -->
-    <section class="pt-20 pb-16 px-6 max-w-5xl mx-auto w-full text-center space-y-6">
-        <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold bg-white border border-gray-200 shadow-xs">
-            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-            <span class="text-gray-700">Enterprise AI Support &amp; Autonomous Ticket Triage</span>
-            <span class="text-gray-400">&bull;</span>
-            <span class="text-brand-600 font-bold">Hackathon 2.5</span>
-        </div>
+    <main class="flex-1 flex flex-col">
 
-        <h1 class="text-4xl sm:text-6xl font-black text-charcoal-900 tracking-tight leading-[1.1] max-w-4xl mx-auto">
-            Autonomous Customer Support.<br/>
-            <span class="text-transparent bg-clip-text bg-gradient-to-r from-brand-500 via-indigo-600 to-violet-600">Zero Hallucinations. Guaranteed SLAs.</span>
-        </h1>
+        <!-- 2. Hero Section (Headline, Supporting Line, CTAs, Embedded Live Chat) -->
+        <section class="border-b border-[#E0E0E0] py-12 md:py-16">
+            <div class="max-w-[1100px] mx-auto px-6">
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
+                    <!-- Left: Copy & Actions -->
+                    <div class="lg:col-span-6 space-y-6">
+                        <h1 class="text-3xl sm:text-4xl lg:text-[40px] font-bold text-[#212121] leading-[1.2] tracking-tight">
+                            Reads chats, calls and emails; answers from your FAQs and order data; hands risky cases to a human.
+                        </h1>
 
-        <p class="text-base sm:text-lg text-gray-600 max-w-2xl mx-auto leading-relaxed font-normal">
-            Supporto AI reads customer conversations across live web chat, voice calling, and Gmail. It executes secure tool-calls against your real store backend and routes high-risk billing and defect claims straight to human specialists.
-        </p>
+                        <p class="text-base sm:text-lg text-[#616161] leading-relaxed">
+                            A support assistant for small online stores and couriers, backed by real order data and human-in-the-loop escalation.
+                        </p>
 
-        <!-- CTA Buttons -->
-        <div class="pt-4 flex flex-wrap items-center justify-center gap-3">
-            <a href="/select-workspace/" class="px-6 py-3.5 rounded-xl text-sm font-bold text-white bg-charcoal-900 hover:bg-black shadow-md transition flex items-center gap-2.5">
-                <span class="material-symbols-outlined text-lg">swap_horiz</span>
-                Select Company Workspace
-            </a>
-            <a href="{% url 'google_login' %}" class="px-6 py-3.5 rounded-xl text-sm font-bold text-charcoal-900 bg-white hover:bg-gray-50 border border-gray-200 shadow-xs transition flex items-center gap-2">
-                Sign in with Google &rarr;
-            </a>
-        </div>
-        <p class="text-[12px] text-gray-400">Master Owner Account: <span class="font-mono text-gray-600 font-semibold">vanshhsoni.production@gmail.com</span></p>
-    </section>
+                        <div class="flex flex-wrap items-center gap-4 pt-2">
+                            <a href="#try-it" class="btn-primary" style="text-decoration: none;">
+                                Try the live demo
+                            </a>
+                            <a href="{% url 'login' %}" class="btn-text" style="text-decoration: none;">
+                                Staff login &rarr;
+                            </a>
+                        </div>
+                    </div>
 
-    <!-- Two Flagship Enterprise Workspaces -->
-    <section id="workspaces" class="py-12 px-6 max-w-6xl mx-auto w-full space-y-6">
-        <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-gray-200 pb-5">
-            <div>
-                <p class="text-[11px] uppercase font-bold tracking-wider text-brand-600">Live Enterprise Deployments</p>
-                <h2 class="text-2xl font-black text-charcoal-900 tracking-tight">Select an Active Company Helpdesk</h2>
-            </div>
-            <p class="text-xs text-gray-500 max-w-md">
-                Each company operates with isolated knowledge documents, team routing logic, dedicated staff, and private backend store webhooks.
-            </p>
-        </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 pt-2">
-            <!-- 1. ExpressBeas Logistics Network -->
-            <div class="bg-white rounded-3xl border border-gray-200/90 shadow-sm hover:shadow-xl hover:border-amber-400 transition-all duration-300 p-8 flex flex-col justify-between space-y-6 relative overflow-hidden group">
-                <div class="absolute -top-12 -right-12 w-36 h-36 rounded-full bg-amber-500/5 blur-2xl group-hover:bg-amber-500/10 transition"></div>
-
-                <div class="space-y-4">
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center gap-3">
-                            <div class="w-12 h-12 rounded-2xl bg-amber-500 text-white flex items-center justify-center font-black shadow-md">
-                                <span class="material-symbols-outlined text-2xl">local_shipping</span>
+                    <!-- Right: Embedded Live Chat Widget (Not a screenshot) -->
+                    <div class="lg:col-span-6">
+                        <div class="bg-white border border-[#E0E0E0] rounded-lg shadow-[0_4px_12px_rgba(0,0,0,0.08)] overflow-hidden">
+                            <div class="bg-[#F5F7FA] px-4 py-3 border-b border-[#E0E0E0] flex items-center justify-between text-xs text-[#616161]">
+                                <span class="font-medium text-[#212121]">Live Widget Preview &mdash; {{ shopease.name|default:"ShopEase" }}</span>
+                                <span class="text-[11px] bg-[#E3F2FD] text-[#0D47A1] px-2 py-0.5 rounded font-medium">Interactive</span>
                             </div>
+                            {% if shopease %}
+                            <iframe src="/widget/{{ shopease.public_key }}/?embedded=true"
+                                    title="Supporto AI Live Chat Widget"
+                                    class="w-full h-[500px] border-none bg-white block"></iframe>
+                            {% else %}
+                            <div class="p-8 text-center text-sm text-[#616161]">
+                                Run <code class="font-mono text-xs bg-[#F5F7FA] px-1.5 py-0.5 rounded border border-[#E0E0E0]">python manage.py seed_demo</code> to load workspaces.
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 3. How It Works (4 numbered steps in one row) -->
+        <section class="border-b border-[#E0E0E0] bg-[#F5F7FA] py-12 md:py-16">
+            <div class="max-w-[1100px] mx-auto px-6 space-y-8">
+                <div>
+                    <h2 class="text-xl sm:text-2xl font-bold text-[#212121] tracking-tight">How it works</h2>
+                    <p class="text-sm text-[#616161] mt-1">Four simple steps from customer inquiry to resolution.</p>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <!-- Step 1 -->
+                    <div class="bg-white p-6 rounded-lg border border-[#E0E0E0] space-y-3">
+                        <div class="w-8 h-8 rounded border border-[#E0E0E0] bg-[#F5F7FA] text-[#1976D2] font-bold text-sm flex items-center justify-center">
+                            1
+                        </div>
+                        <h3 class="font-semibold text-base text-[#212121]">Customer asks</h3>
+                        <p class="text-sm text-[#616161] leading-relaxed">
+                            Inquiries arrive through the website chat widget, browser voice call, or inbound support email.
+                        </p>
+                    </div>
+
+                    <!-- Step 2 -->
+                    <div class="bg-white p-6 rounded-lg border border-[#E0E0E0] space-y-3">
+                        <div class="w-8 h-8 rounded border border-[#E0E0E0] bg-[#F5F7FA] text-[#1976D2] font-bold text-sm flex items-center justify-center">
+                            2
+                        </div>
+                        <h3 class="font-semibold text-base text-[#212121]">Agent classifies and checks tools</h3>
+                        <p class="text-sm text-[#616161] leading-relaxed">
+                            Detects issue intent, verifies customer phone number, and retrieves verified order or tracking data from SQL.
+                        </p>
+                    </div>
+
+                    <!-- Step 3 -->
+                    <div class="bg-white p-6 rounded-lg border border-[#E0E0E0] space-y-3">
+                        <div class="w-8 h-8 rounded border border-[#E0E0E0] bg-[#F5F7FA] text-[#1976D2] font-bold text-sm flex items-center justify-center">
+                            3
+                        </div>
+                        <h3 class="font-semibold text-base text-[#212121]">Answer or ticket</h3>
+                        <p class="text-sm text-[#616161] leading-relaxed">
+                            Answers routine questions from indexed FAQs; routes billing disputes and sensitive claims to human teams with SLA tracking.
+                        </p>
+                    </div>
+
+                    <!-- Step 4 -->
+                    <div class="bg-white p-6 rounded-lg border border-[#E0E0E0] space-y-3">
+                        <div class="w-8 h-8 rounded border border-[#E0E0E0] bg-[#F5F7FA] text-[#1976D2] font-bold text-sm flex items-center justify-center">
+                            4
+                        </div>
+                        <h3 class="font-semibold text-base text-[#212121]">Weekly insights</h3>
+                        <p class="text-sm text-[#616161] leading-relaxed">
+                            Categorizes complaint volume and identifies recurring customer issues in automated weekly summary reports.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 4. Try It (Two tabs: ShopEase & ExpressBeas) -->
+        <section id="try-it" class="py-12 md:py-16">
+            <div class="max-w-[1100px] mx-auto px-6 space-y-8">
+                <div>
+                    <h2 class="text-xl sm:text-2xl font-bold text-[#212121] tracking-tight">Try it</h2>
+                    <p class="text-sm text-[#616161] mt-1">Select a workspace below to test real order lookup, consignment tracking, and human escalation.</p>
+                </div>
+
+                <!-- Tab Buttons -->
+                <div class="flex items-center gap-2 border-b border-[#E0E0E0]">
+                    <button type="button" id="tabBtnShopEase" onclick="selectDemoTab('shopease')" class="px-5 py-2.5 font-medium text-sm text-[#1976D2] border-b-2 border-[#1976D2] transition-colors">
+                        ShopEase (Online Store)
+                    </button>
+                    <button type="button" id="tabBtnExpressBeas" onclick="selectDemoTab('expressbeas')" class="px-5 py-2.5 font-medium text-sm text-[#616161] border-b-2 border-transparent hover:text-[#212121] transition-colors">
+                        ExpressBeas (Courier & Logistics)
+                    </button>
+                </div>
+
+                <!-- Tab 1: ShopEase -->
+                <div id="tabContentShopEase" class="space-y-6">
+                    <div class="bg-[#F5F7FA] p-6 rounded-lg border border-[#E0E0E0] space-y-4">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                             <div>
-                                <h3 class="text-xl font-black text-charcoal-900 tracking-tight">ExpressBeas</h3>
-                                <p class="text-xs font-mono text-gray-500">expressbeas.in &bull; Logistics &amp; Supply Chain</p>
+                                <h3 class="font-semibold text-base text-[#212121]">ShopEase E-Commerce Helpdesk</h3>
+                                <p class="text-xs text-[#616161] mt-0.5">Consumer electronics storefront. Order lookups, returns, and billing disputes.</p>
                             </div>
+                            {% if shopease %}
+                            <a href="/widget/{{ shopease.public_key }}/demo/" class="btn-primary" style="text-decoration: none;">
+                                Open ShopEase demo
+                            </a>
+                            {% else %}
+                            <a href="/shopease/demo/" class="btn-primary" style="text-decoration: none;">
+                                Open ShopEase demo
+                            </a>
+                            {% endif %}
                         </div>
-                        <span class="text-[11px] font-bold px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200/60 flex items-center gap-1.5">
-                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                            Live Webhook Active
-                        </span>
+
+                        <!-- Verified Demo Personas -->
+                        <div class="pt-2 border-t border-[#E0E0E0] text-xs text-[#616161] flex flex-wrap items-center gap-x-6 gap-y-2">
+                            <span><strong>Customer A:</strong> Vansh Soni (<span class="font-mono text-[#212121]">6367743066</span>)</span>
+                            <span><strong>Customer B:</strong> Riya Sharma (<span class="font-mono text-[#212121]">9571538144</span>)</span>
+                        </div>
                     </div>
 
-                    <p class="text-xs text-gray-600 leading-relaxed">
-                        Fast and reliable nationwide courier network. Real-time Air Waybill (AWB) consignment tracking, doorstep dispatch scheduling, and automated damage claim routing.
-                    </p>
-
-                    <!-- Real Data Highlights -->
-                    <div class="p-4 rounded-2xl bg-gray-50/80 border border-gray-100 space-y-2 text-xs">
-                        <div class="flex items-center justify-between font-mono">
-                            <span class="text-gray-500">Live Test AWB:</span>
-                            <span class="font-bold text-charcoal-900 bg-white px-2 py-0.5 rounded border border-gray-200">EB987654321</span>
-                        </div>
-                        <div class="flex items-center justify-between font-mono">
-                            <span class="text-gray-500">Consignment:</span>
-                            <span class="text-charcoal-800 font-medium">Commercial Shipment (5.2 kg)</span>
-                        </div>
-                        <div class="flex items-center justify-between font-mono">
-                            <span class="text-gray-500">External Webhook:</span>
-                            <span class="text-amber-700 font-medium">/api/v1/mock-store/lookup/</span>
+                    <!-- 4 Sample Question Chips -->
+                    <div class="space-y-2">
+                        <p class="text-xs font-semibold text-[#616161] uppercase tracking-wider">Sample Questions (click to copy):</p>
+                        <div class="flex flex-wrap gap-2.5">
+                            <button type="button" onclick="copyPrompt(this, 'What are my orders?')" class="chip">
+                                What are my orders?
+                            </button>
+                            <button type="button" onclick="copyPrompt(this, 'Where is order SE-84920?')" class="chip">
+                                Where is order SE-84920?
+                            </button>
+                            <button type="button" onclick="copyPrompt(this, 'What is the status of my return and refund?')" class="chip">
+                                What is the status of my return and refund?
+                            </button>
+                            <button type="button" onclick="copyPrompt(this, 'Cancel order SE-84922')" class="chip">
+                                Cancel order SE-84922
+                            </button>
                         </div>
                     </div>
                 </div>
 
-                <div class="space-y-2.5 pt-2">
-                    <a href="/widget/4ecc8df2-e72a-49e5-bb37-bb0211a39a05/demo/" target="_blank"
-                       class="w-full py-3 px-4 rounded-xl text-xs font-bold text-white bg-amber-500 hover:bg-amber-600 transition flex items-center justify-center gap-2 shadow-xs">
-                        <span class="material-symbols-outlined text-base">open_in_new</span>
-                        Launch ExpressBeas Customer Tracking Site &rarr;
-                    </a>
-                    <a href="/expressbeas/"
-                       class="w-full py-2.5 px-4 rounded-xl text-xs font-semibold text-charcoal-900 bg-gray-100 hover:bg-gray-200 transition flex items-center justify-center gap-2">
-                        <span class="material-symbols-outlined text-base text-gray-600">badge</span>
-                        Open ExpressBeas Staff Portal (/expressbeas/)
-                    </a>
-                </div>
-            </div>
-
-            <!-- 2. ShopEase Modern E-Commerce -->
-            <div class="bg-white rounded-3xl border border-gray-200/90 shadow-sm hover:shadow-xl hover:border-brand-500 transition-all duration-300 p-8 flex flex-col justify-between space-y-6 relative overflow-hidden group">
-                <div class="absolute -top-12 -right-12 w-36 h-36 rounded-full bg-brand-500/5 blur-2xl group-hover:bg-brand-500/10 transition"></div>
-
-                <div class="space-y-4">
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center gap-3">
-                            <div class="w-12 h-12 rounded-2xl bg-brand-500 text-white flex items-center justify-center font-black shadow-md">
-                                <span class="material-symbols-outlined text-2xl">shopping_bag</span>
-                            </div>
+                <!-- Tab 2: ExpressBeas -->
+                <div id="tabContentExpressBeas" class="hidden space-y-6">
+                    <div class="bg-[#F5F7FA] p-6 rounded-lg border border-[#E0E0E0] space-y-4">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                             <div>
-                                <h3 class="text-xl font-black text-charcoal-900 tracking-tight">ShopEase</h3>
-                                <p class="text-xs font-mono text-gray-500">shopease.example.com &bull; Smart Electronics</p>
+                                <h3 class="font-semibold text-base text-[#212121]">ExpressBeas Logistics Network</h3>
+                                <p class="text-xs text-[#616161] mt-0.5">Nationwide courier network. 15-digit AWB tracking, dispatch scans, and delivery verification.</p>
                             </div>
+                            {% if expressbeas %}
+                            <a href="/widget/{{ expressbeas.public_key }}/demo/" class="btn-primary" style="text-decoration: none;">
+                                Open ExpressBeas demo
+                            </a>
+                            {% else %}
+                            <a href="/expressbeas/demo/" class="btn-primary" style="text-decoration: none;">
+                                Open ExpressBeas demo
+                            </a>
+                            {% endif %}
                         </div>
-                        <span class="text-[11px] font-bold px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200/60 flex items-center gap-1.5">
-                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                            Live Webhook Active
-                        </span>
+
+                        <!-- Verified Demo Personas -->
+                        <div class="pt-2 border-t border-[#E0E0E0] text-xs text-[#616161] flex flex-wrap items-center gap-x-6 gap-y-2">
+                            <span><strong>Customer A:</strong> Vansh Soni (<span class="font-mono text-[#212121]">6367743066</span>)</span>
+                            <span><strong>Customer B:</strong> Riya Sharma (<span class="font-mono text-[#212121]">9571538144</span>)</span>
+                        </div>
                     </div>
 
-                    <p class="text-xs text-gray-600 leading-relaxed">
-                        Modern consumer storefront for mechanical keyboards, smart earbuds, and audio gear. Supports real-time FedEx order lookups, 30-day return policy grounding, and instant duplicate billing escalation.
-                    </p>
-
-                    <!-- Real Data Highlights -->
-                    <div class="p-4 rounded-2xl bg-gray-50/80 border border-gray-100 space-y-2 text-xs">
-                        <div class="flex items-center justify-between font-mono">
-                            <span class="text-gray-500">Live Test Orders:</span>
-                            <div class="flex gap-1.5">
-                                <span class="font-bold text-charcoal-900 bg-white px-2 py-0.5 rounded border border-gray-200">SE-84920</span>
-                                <span class="font-bold text-charcoal-900 bg-white px-2 py-0.5 rounded border border-gray-200">SE-10293</span>
-                            </div>
-                        </div>
-                        <div class="flex items-center justify-between font-mono">
-                            <span class="text-gray-500">Catalog Item:</span>
-                            <span class="text-charcoal-800 font-medium">Mechanical Keyboard ($199.00)</span>
-                        </div>
-                        <div class="flex items-center justify-between font-mono">
-                            <span class="text-gray-500">External Webhook:</span>
-                            <span class="text-brand-700 font-medium">/api/v1/mock-store/lookup/</span>
+                    <!-- 4 Sample Question Chips -->
+                    <div class="space-y-2">
+                        <p class="text-xs font-semibold text-[#616161] uppercase tracking-wider">Sample Questions (click to copy):</p>
+                        <div class="flex flex-wrap gap-2.5">
+                            <button type="button" onclick="copyPrompt(this, 'What are my consignments?')" class="chip">
+                                What are my consignments?
+                            </button>
+                            <button type="button" onclick="copyPrompt(this, 'Where is my consignment 152785863851740?')" class="chip">
+                                Where is my consignment 152785863851740?
+                            </button>
+                            <button type="button" onclick="copyPrompt(this, 'Where is my shipment 152785863851741?')" class="chip">
+                                Where is my shipment 152785863851741?
+                            </button>
+                            <button type="button" onclick="copyPrompt(this, 'Where is parcel 152785863851742?')" class="chip">
+                                Where is parcel 152785863851742?
+                            </button>
                         </div>
                     </div>
                 </div>
 
-                <div class="space-y-2.5 pt-2">
-                    <a href="/widget/205efaa9-4d66-4903-b6f6-cccb701c8668/demo/" target="_blank"
-                       class="w-full py-3 px-4 rounded-xl text-xs font-bold text-white bg-brand-500 hover:bg-brand-600 transition flex items-center justify-center gap-2 shadow-xs">
-                        <span class="material-symbols-outlined text-base">open_in_new</span>
-                        Launch ShopEase Storefront Demo &rarr;
-                    </a>
-                    <a href="/shopease/"
-                       class="w-full py-2.5 px-4 rounded-xl text-xs font-semibold text-charcoal-900 bg-gray-100 hover:bg-gray-200 transition flex items-center justify-center gap-2">
-                        <span class="material-symbols-outlined text-base text-gray-600">badge</span>
-                        Open ShopEase Staff Portal (/shopease/)
-                    </a>
-                </div>
             </div>
-        </div>
-    </section>
+        </section>
 
-    <!-- Capabilities Matrix -->
-    <section id="capabilities" class="py-16 px-6 max-w-6xl mx-auto w-full space-y-8">
-        <div class="text-center space-y-2">
-            <p class="text-[11px] uppercase font-bold tracking-wider text-brand-600">Architectural Guarantees</p>
-            <h3 class="text-3xl font-black text-charcoal-900 tracking-tight">Engineered for Safe Autonomous Operations</h3>
-            <p class="text-sm text-gray-500 max-w-xl mx-auto">
-                No black-box hallucinated orders. No unvetted financial mutations. Pure deterministic tool calling backed by human-in-the-loop review.
-            </p>
-        </div>
+    </main>
 
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 pt-4">
-            <div class="bg-white p-6 rounded-2xl border border-gray-200/80 shadow-xs space-y-3">
-                <div class="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
-                    <span class="material-symbols-outlined">database</span>
-                </div>
-                <h4 class="font-bold text-sm text-charcoal-900">Zero Hallucination Tool-Calls</h4>
-                <p class="text-xs text-gray-600 leading-relaxed">
-                    AI strictly calls registered tools (<code class="text-[11px] bg-gray-100 px-1 py-0.5 rounded">lookup_order</code>) and verified store webhooks. Invalid AWBs are cleanly reported as not found.
-                </p>
-            </div>
-
-            <div class="bg-white p-6 rounded-2xl border border-gray-200/80 shadow-xs space-y-3">
-                <div class="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center">
-                    <span class="material-symbols-outlined">shield</span>
-                </div>
-                <h4 class="font-bold text-sm text-charcoal-900">Safe Action Boundaries</h4>
-                <p class="text-xs text-gray-600 leading-relaxed">
-                    Read-only tracking queries resolve immediately. High-risk actions (cancellations, double charges, refunds) immediately open prioritized human support tickets.
-                </p>
-            </div>
-
-            <div class="bg-white p-6 rounded-2xl border border-gray-200/80 shadow-xs space-y-3">
-                <div class="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
-                    <span class="material-symbols-outlined">mail</span>
-                </div>
-                <h4 class="font-bold text-sm text-charcoal-900">Email Triage &amp; Human Approval</h4>
-                <p class="text-xs text-gray-600 leading-relaxed">
-                    Inbound Gmail emails are automatically triaged by intent and sentiment. AI drafts grounded replies using the Knowledge Base for 1-click staff approval.
-                </p>
-            </div>
-
-            <div class="bg-white p-6 rounded-2xl border border-gray-200/80 shadow-xs space-y-3">
-                <div class="w-10 h-10 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center">
-                    <span class="material-symbols-outlined">record_voice_over</span>
-                </div>
-                <h4 class="font-bold text-sm text-charcoal-900">Live Phone Call Screen</h4>
-                <p class="text-xs text-gray-600 leading-relaxed">
-                    Dedicated mobile-style phone call screen with ticking timer, live audio waveform, browser WebSpeech recognition, Whisper STT, and Kokoro ONNX TTS.
-                </p>
-            </div>
-        </div>
-    </section>
-
-    <!-- Footer -->
-    <footer class="mt-auto border-t border-gray-200 bg-white py-10 px-6">
-        <div class="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-gray-400">
-            <div class="flex items-center gap-2">
-                <span class="font-bold text-charcoal-900">Supporto AI</span>
+    <!-- 5. Footer (Team name, Hackathon name, Repo link. Nothing else.) -->
+    <footer class="border-t border-[#E0E0E0] bg-[#F5F7FA] py-8">
+        <div class="max-w-[1100px] mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-[#616161]">
+            <div class="flex items-center gap-3">
+                <span class="font-semibold text-[#212121]">Supporto AI</span>
                 <span>&bull;</span>
-                <span>Automated Customer Support &amp; Ticket Triage Platform</span>
+                <span>Hackathon 2.5</span>
             </div>
-            <div class="flex items-center gap-4">
-                <a href="/select-workspace/" class="hover:text-charcoal-900 transition">Switch Company</a>
-                <a href="/admin/" class="hover:text-charcoal-900 transition">Platform Admin</a>
-                <a href="/shopease/analytics/weekly/" class="hover:text-charcoal-900 transition">Weekly Insights</a>
+            <div>
+                <a href="https://github.com/vanshhsoniproduction-lgtm/supporto-ai" target="_blank" rel="noopener noreferrer" class="text-[#1976D2] hover:underline">
+                    GitHub Repository
+                </a>
             </div>
         </div>
     </footer>
+
 </div>
+
+<!-- Tab and Clipboard Scripts -->
+<script>
+function selectDemoTab(tab) {
+    const tabShopEase = document.getElementById('tabContentShopEase');
+    const tabExpressBeas = document.getElementById('tabContentExpressBeas');
+    const btnShopEase = document.getElementById('tabBtnShopEase');
+    const btnExpressBeas = document.getElementById('tabBtnExpressBeas');
+
+    if (tab === 'shopease') {
+        tabShopEase.classList.remove('hidden');
+        tabExpressBeas.classList.add('hidden');
+        btnShopEase.className = 'px-5 py-2.5 font-medium text-sm text-[#1976D2] border-b-2 border-[#1976D2] transition-colors';
+        btnExpressBeas.className = 'px-5 py-2.5 font-medium text-sm text-[#616161] border-b-2 border-transparent hover:text-[#212121] transition-colors';
+    } else {
+        tabShopEase.classList.add('hidden');
+        tabExpressBeas.classList.remove('hidden');
+        btnShopEase.className = 'px-5 py-2.5 font-medium text-sm text-[#616161] border-b-2 border-transparent hover:text-[#212121] transition-colors';
+        btnExpressBeas.className = 'px-5 py-2.5 font-medium text-sm text-[#1976D2] border-b-2 border-[#1976D2] transition-colors';
+    }
+}
+
+function copyPrompt(btn, text) {
+    navigator.clipboard.writeText(text).then(() => {
+        const orig = btn.innerText;
+        btn.innerText = 'Copied to clipboard';
+        btn.classList.add('chip-active');
+        setTimeout(() => {
+            btn.innerText = orig;
+            btn.classList.remove('chip-active');
+        }, 1800);
+    }).catch(() => {
+        // Fallback for older browsers
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        btn.innerText = 'Copied';
+        setTimeout(() => { btn.innerText = text; }, 1800);
+    });
+}
+</script>
 {% endblock %}

@@ -1,241 +1,235 @@
 {% extends "base.html" %}
 
-{% block title %}Supporto AI - Chat with {{ workspace.name }}{% endblock %}
+{% block title %}Supporto AI — {{ workspace.name }} Helpdesk{% endblock %}
 
 {% block content_layout %}
-<div class="h-full flex flex-col bg-[#F7F8FA] max-w-3xl mx-auto shadow-2xl border-x border-gray-200 relative">
+<div class="h-full flex flex-col bg-[#F5F7FA] max-w-2xl mx-auto shadow-[0_4px_12px_rgba(0,0,0,0.08)] border-x border-[#E0E0E0] relative text-[#212121]">
+
     <!-- Widget Header -->
-    <header class="bg-charcoal-900 text-white p-4 flex items-center justify-between border-b border-charcoal-800 shadow-sm flex-shrink-0">
+    <header class="bg-white border-b border-[#E0E0E0] px-4 py-3 flex items-center justify-between flex-shrink-0">
         <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-2xl bg-brand-500/20 text-brand-500 flex items-center justify-center font-bold">
-                <span class="material-symbols-outlined text-2xl">support_agent</span>
+            <div class="w-9 h-9 rounded bg-[#E3F2FD] text-[#1976D2] flex items-center justify-center font-bold">
+                <span class="material-symbols-outlined text-xl">support_agent</span>
             </div>
             <div>
                 <div class="flex items-center gap-2">
-                    <h3 class="font-bold text-sm text-white">{{ workspace.name }} Support</h3>
-                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                    <h1 class="font-semibold text-sm text-[#212121] leading-tight">{{ workspace.name }} Support</h1>
+                    <span class="inline-flex items-center gap-1 text-[11px] font-medium text-[#2E7D32] bg-[#E8F5E9] px-2 py-0.5 rounded">
+                        <span class="w-1.5 h-1.5 rounded-full bg-[#2E7D32]"></span>
                         Online
                     </span>
                 </div>
-                <p class="text-[11px] text-gray-400" id="headerCustomerSub">
-                    {% if customer_name %}Hello, <strong class="text-gray-200" id="headerNameDisplay">{{ customer_name }}</strong>{% if customer_phone %} (<span class="font-mono text-gray-300" id="headerPhoneDisplay">{{ customer_phone }}</span>){% endif %}{% else %}24/7 AI-Powered Customer Helpdesk{% endif %}
+                <p class="text-xs text-[#616161]" id="headerCustomerSub">
+                    {% if customer_name %}
+                    {{ customer_name }}{% if customer_phone %} &bull; <span class="font-mono">{{ customer_phone }}</span>{% endif %}
+                    {% else %}
+                    Verified Customer Support
+                    {% endif %}
                 </p>
             </div>
         </div>
 
         <div class="flex items-center gap-2">
-            <!-- Edit Profile / Phone Button -->
-            <button onclick="openPreChatModal()" title="Switch Customer Identity" class="p-1.5 rounded-xl bg-charcoal-800 hover:bg-charcoal-700 text-gray-300 hover:text-white transition">
-                <span class="material-symbols-outlined text-base">manage_accounts</span>
+            <!-- Edit Identity / Phone Button -->
+            <button type="button" onclick="openPreChatModal()" title="Switch Customer Identity" class="p-2 rounded border border-[#E0E0E0] bg-white hover:bg-[#F5F7FA] text-[#616161] hover:text-[#212121] transition-colors">
+                <span class="material-symbols-outlined text-base">person</span>
             </button>
-            <!-- Voice Calling Button -->
-            <button onclick="handleVoiceCallClicked()" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl transition flex items-center gap-1.5 shadow-md">
+            <!-- Voice Call Button -->
+            <button type="button" onclick="handleVoiceCallClicked()" class="btn-primary text-xs py-2 px-3 gap-1.5" style="text-decoration: none;">
                 <span class="material-symbols-outlined text-base">call</span>
-                Voice Call AI
+                Voice Call
             </button>
         </div>
     </header>
 
+    <!-- Ticket Escalation Banner (Hidden until created) -->
+    <div id="ticketBanner" class="hidden px-4 py-2.5 bg-[#E3F2FD] border-b border-[#BBDEFB] flex items-center justify-between text-xs text-[#0D47A1]">
+        <div class="flex items-center gap-2">
+            <span class="font-semibold flex items-center gap-1">
+                <span class="material-symbols-outlined text-base text-[#1976D2]">confirmation_number</span>
+                Ticket Created:
+            </span>
+            <span id="ticketNumberDisplay" class="font-mono font-bold bg-white px-2 py-0.5 rounded border border-[#90CAF9]"></span>
+        </div>
+        <span class="text-[11px] text-[#1565C0]">SLA timer active</span>
+    </div>
+
+    <!-- Audio Player Bar (Shown when voice response plays) -->
+    <div id="audioPlayerContainer" class="hidden px-4 py-2 bg-[#F5F7FA] border-b border-[#E0E0E0] flex items-center justify-between text-xs text-[#616161]">
+        <span class="flex items-center gap-1 font-medium text-[#1976D2]">
+            <span class="material-symbols-outlined text-base">volume_up</span>
+            Voice response
+        </span>
+        <audio id="audioPlayer" controls class="h-6 max-w-[200px]"></audio>
+    </div>
+
     <!-- Chat Stream Area -->
-    <div id="chatStream" class="flex-1 p-4 sm:p-6 overflow-y-auto space-y-4 text-xs sm:text-sm">
-        <!-- Welcome Message -->
-        <div class="flex flex-col items-start">
-            <div class="flex items-center gap-1.5 text-[10px] text-gray-400 mb-1 px-1">
-                <span class="material-symbols-outlined text-xs text-brand-500">smart_toy</span>
-                Supporto AI
+    <div id="chatStream" class="flex-1 p-4 overflow-y-auto space-y-4 text-sm bg-white">
+        <!-- Welcome Greeting -->
+        <div class="flex flex-col items-start space-y-1">
+            <div class="flex items-center gap-1.5 text-xs text-[#757575] px-1">
+                <span>Supporto AI</span>
+                <span class="text-[10px]">&bull;</span>
+                <span id="welcomeTime" class="text-[11px] text-[#757575]"></span>
             </div>
-            <div class="max-w-[85%] rounded-2xl rounded-tl-none bg-white p-4 shadow-sm border border-gray-100 text-charcoal-900 leading-relaxed space-y-2">
-                <p id="welcomeGreetingText">
+            <div class="max-w-[85%] rounded-lg bg-[#F5F7FA] p-4 border border-[#E0E0E0] text-[#212121] leading-relaxed space-y-3">
+                <p id="welcomeGreetingText" class="text-sm">
                     {% if customer_name %}
-                    Welcome {{ customer_name }}! How can our AI assistant help you today?
+                    Welcome, {{ customer_name }}. How can we assist you with your order, returns, or billing today?
                     {% else %}
-                    {{ settings.welcome_message|default:"Welcome! How can our AI assistant help you with your order, returns, or tracking today?" }}
+                    {{ settings.welcome_message|default:"Welcome to support. How can we assist you with your order, returns, or billing today?" }}
                     {% endif %}
                 </p>
-                <div class="flex flex-wrap gap-2 pt-1 text-[11px]">
-                    <button onclick="quickAsk('What are my orders?')" class="px-2.5 py-1 bg-gray-50 hover:bg-gray-100 rounded-lg border border-gray-200 text-gray-700 transition">
-                        📦 My Orders
-                    </button>
-                    <button onclick="quickAsk('Where is my shipment?')" class="px-2.5 py-1 bg-gray-50 hover:bg-gray-100 rounded-lg border border-gray-200 text-gray-700 transition">
-                        🚚 Track Package
-                    </button>
-                    <button onclick="quickAsk('What is the status of my return and refund?')" class="px-2.5 py-1 bg-gray-50 hover:bg-gray-100 rounded-lg border border-gray-200 text-gray-700 transition">
-                        🔄 Return Status
-                    </button>
-                    <button onclick="quickAsk('What are my open support tickets?')" class="px-2.5 py-1 bg-gray-50 hover:bg-gray-100 rounded-lg border border-gray-200 text-gray-700 transition">
-                        🎫 My Tickets
-                    </button>
+
+                <!-- Plain Text Quick-Reply Chips (No Emojis) -->
+                <div class="space-y-1.5 pt-1">
+                    <p class="text-[11px] font-medium text-[#757575] uppercase tracking-wider">Common requests:</p>
+                    <div class="flex flex-wrap gap-2">
+                        <button type="button" onclick="quickAsk('Track my order')" class="chip text-xs">
+                            Track my order
+                        </button>
+                        <button type="button" onclick="quickAsk('Return or refund')" class="chip text-xs">
+                            Return or refund
+                        </button>
+                        <button type="button" onclick="quickAsk('Billing issue')" class="chip text-xs">
+                            Billing issue
+                        </button>
+                        <button type="button" onclick="quickAsk('Talk to a human')" class="chip text-xs">
+                            Talk to a human
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Live Audio Player (Hidden by default) -->
-    <div id="audioPlayerContainer" class="hidden px-4 py-2 bg-brand-50 border-t border-brand-100 flex items-center justify-between text-xs text-brand-700">
-        <span class="flex items-center gap-1 font-semibold">
-            <span class="material-symbols-outlined text-sm">volume_up</span>
-            Playing AI voice response...
-        </span>
-        <audio id="audioPlayer" controls class="h-6 max-w-xs"></audio>
-    </div>
-
-    <!-- Ticket Banner (Hidden until created) -->
-    <div id="ticketBanner" class="hidden px-4 py-3 bg-emerald-50 border-t border-emerald-200 flex items-center justify-between text-xs text-emerald-800">
-        <span class="font-bold flex items-center gap-1.5">
-            <span class="material-symbols-outlined text-sm">check_circle</span>
-            Ticket Created: <span id="ticketNumberDisplay" class="font-mono ml-1"></span>
-        </span>
-        <span class="text-[11px] text-emerald-600">Team notified &bull; Reply within SLA</span>
-    </div>
-
-    <!-- Input Box & Controls -->
-    <div class="p-4 bg-white border-t border-gray-200 flex-shrink-0 space-y-3">
+    <!-- Input Box & Action Controls -->
+    <div class="p-3 bg-white border-t border-[#E0E0E0] flex-shrink-0 space-y-2">
         <form id="chatForm" onsubmit="sendChatMessage(event)" class="flex items-center gap-2">
-            <input type="text" id="chatInput" placeholder="Type your message or order/AWB number..." autocomplete="off" class="flex-1 px-4 py-3 text-xs sm:text-sm border border-gray-200 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none">
-            <button type="submit" id="sendBtn" class="bg-brand-500 hover:bg-brand-600 text-white p-3 rounded-xl transition flex items-center justify-center shadow-md">
-                <span class="material-symbols-outlined text-base">send</span>
+            <input type="text" id="chatInput" placeholder="Type your message, order ID, or AWB..." autocomplete="off" class="input-text flex-1">
+            <button type="submit" id="sendBtn" class="btn-primary py-2.5 px-4" title="Send message">
+                <span class="material-symbols-outlined text-lg">send</span>
             </button>
         </form>
 
-        <!-- Action Buttons Row -->
-        <div class="flex items-center gap-2">
-            <button type="button" id="submitTicketBtn" onclick="submitAndRaiseTicket()"
-                class="flex-1 flex items-center justify-center gap-1.5 text-xs font-bold text-white bg-brand-500 hover:bg-brand-600 px-3 py-2.5 rounded-xl transition shadow-sm">
-                <span class="material-symbols-outlined text-sm">confirmation_number</span>
-                Submit &amp; Raise Ticket
-            </button>
-            <button type="button" id="endConvoBtn" onclick="endConversationOnly()"
-                class="flex items-center justify-center gap-1.5 text-xs font-semibold text-gray-600 hover:text-charcoal-900 bg-gray-50 hover:bg-gray-100 px-3 py-2.5 rounded-xl border border-gray-200 transition">
-                <span class="material-symbols-outlined text-sm">close</span>
-                End
-            </button>
+        <div class="flex items-center justify-between text-xs text-[#757575] px-1 pt-0.5">
+            <div class="flex items-center gap-2">
+                <button type="button" id="submitTicketBtn" onclick="submitAndRaiseTicket()" class="text-[#1976D2] hover:underline font-medium flex items-center gap-1">
+                    <span class="material-symbols-outlined text-sm">confirmation_number</span>
+                    Submit as ticket
+                </button>
+                <span>&bull;</span>
+                <button type="button" id="endConvoBtn" onclick="endConversationOnly()" class="text-[#616161] hover:text-[#212121]">
+                    End chat
+                </button>
+            </div>
+            <span class="text-[11px]">Protected session</span>
         </div>
     </div>
 
-    <!-- ========================================================================= -->
-    <!-- PRE-CHAT IDENTITY MODAL (Name + 10-digit Indian Mobile Required)           -->
-    <!-- ========================================================================= -->
-    <div id="preChatModal" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-        <div class="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl border border-gray-200 space-y-4">
-            <div class="flex items-center justify-between pb-2 border-b border-gray-100">
-                <div class="flex items-center gap-2">
-                    <span class="material-symbols-outlined text-brand-500">verified_user</span>
-                    <h3 class="font-bold text-sm text-charcoal-900">Customer Identification</h3>
-                </div>
-                <button type="button" onclick="closePreChatModal()" class="text-gray-400 hover:text-gray-600">
+    <!-- Pre-Chat Identity Modal -->
+    <div id="preChatModal" class="hidden fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
+        <div class="bg-white rounded-lg max-w-sm w-full p-6 shadow-[0_4px_12px_rgba(0,0,0,0.08)] border border-[#E0E0E0] space-y-4">
+            <div class="flex items-center justify-between pb-2 border-b border-[#E0E0E0]">
+                <h2 class="font-semibold text-base text-[#212121]">Customer Details</h2>
+                <button type="button" onclick="closePreChatModal()" class="text-[#757575] hover:text-[#212121]">
                     <span class="material-symbols-outlined text-lg">close</span>
                 </button>
             </div>
 
-            <p class="text-[11px] text-gray-500 leading-relaxed">
-                Enter your details to verify your account and safely access real-time order tracking, cancellation, and support tickets.
+            <p class="text-xs text-[#616161] leading-relaxed">
+                Provide your name and 10-digit mobile number to verify your account and view order history.
             </p>
 
-            <!-- Quick Demo Fill Buttons -->
-            <div class="p-2.5 bg-gray-50 rounded-2xl border border-gray-200 space-y-1.5 text-[11px]">
-                <div class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Quick Fill Demo Personas:</div>
+            <!-- Quick Demo Fill -->
+            <div class="p-3 bg-[#F5F7FA] rounded border border-[#E0E0E0] space-y-1.5 text-xs">
+                <p class="text-[11px] font-semibold text-[#616161] uppercase tracking-wider">Demo Personas:</p>
                 <div class="flex flex-col gap-1">
-                    <button type="button" onclick="fillDemoUser('Vansh Soni', '6367743066', 'vansh.soni@example.com')" class="text-left px-2.5 py-1.5 bg-white hover:bg-brand-50 hover:border-brand-300 rounded-lg border border-gray-200 font-semibold text-charcoal-800 transition flex items-center justify-between">
+                    <button type="button" onclick="fillDemoUser('Vansh Soni', '6367743066', 'vansh.soni@example.com')" class="text-left px-2.5 py-1.5 bg-white hover:bg-[#E3F2FD] rounded border border-[#E0E0E0] text-xs font-medium text-[#212121] transition-colors flex items-center justify-between">
                         <span>Vansh Soni</span>
-                        <span class="font-mono text-[10px] text-gray-500">6367743066</span>
+                        <span class="font-mono text-[#616161]">6367743066</span>
                     </button>
-                    <button type="button" onclick="fillDemoUser('Riya Sharma', '9571538144', 'riya.sharma@example.com')" class="text-left px-2.5 py-1.5 bg-white hover:bg-brand-50 hover:border-brand-300 rounded-lg border border-gray-200 font-semibold text-charcoal-800 transition flex items-center justify-between">
+                    <button type="button" onclick="fillDemoUser('Riya Sharma', '9571538144', 'riya.sharma@example.com')" class="text-left px-2.5 py-1.5 bg-white hover:bg-[#E3F2FD] rounded border border-[#E0E0E0] text-xs font-medium text-[#212121] transition-colors flex items-center justify-between">
                         <span>Riya Sharma</span>
-                        <span class="font-mono text-[10px] text-gray-500">9571538144</span>
+                        <span class="font-mono text-[#616161]">9571538144</span>
                     </button>
                 </div>
             </div>
 
             <form id="preChatForm" onsubmit="saveCustomerIdentity(event)" class="space-y-3">
                 <div>
-                    <label class="block text-[10px] font-bold uppercase text-gray-600 mb-1">Full Name *</label>
-                    <input type="text" id="modalNameInput" required placeholder="e.g. Vansh Soni" class="w-full px-3 py-2 text-xs border border-gray-200 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none">
+                    <label for="modalNameInput" class="block text-xs font-semibold text-[#212121] mb-1">Full Name *</label>
+                    <input type="text" id="modalNameInput" required placeholder="e.g. Vansh Soni" class="input-text">
                 </div>
+
                 <div>
-                    <label class="block text-[10px] font-bold uppercase text-gray-600 mb-1">Mobile Phone Number *</label>
-                    <div class="flex items-center gap-1.5 border border-gray-200 rounded-xl px-3 py-2 focus-within:ring-2 focus-within:ring-brand-500">
-                        <span class="text-xs font-semibold text-gray-500">+91</span>
-                        <input type="tel" id="modalPhoneInput" required pattern="[6-9][0-9]{9}" maxlength="10" placeholder="10-digit mobile" class="w-full text-xs font-mono font-bold outline-none bg-transparent">
+                    <label for="modalPhoneInput" class="block text-xs font-semibold text-[#212121] mb-1">Mobile Phone Number *</label>
+                    <div class="flex items-center gap-1.5 border border-[#E0E0E0] rounded px-3 py-2 bg-white focus-within:border-[#1976D2] focus-within:ring-1 focus-within:ring-[#1976D2]">
+                        <span class="text-xs font-medium text-[#757575]">+91</span>
+                        <input type="tel" id="modalPhoneInput" required maxlength="10" placeholder="10-digit mobile number" class="w-full text-xs font-mono font-medium outline-none bg-transparent text-[#212121]">
                     </div>
-                    <span class="text-[10px] text-gray-400 mt-0.5 block">10-digit Indian mobile (starts with 6-9)</span>
+                    <div id="modalPhoneError" class="input-error-msg hidden">Please enter a valid 10-digit Indian mobile number (starts with 6, 7, 8, or 9).</div>
                 </div>
+
                 <div>
-                    <label class="block text-[10px] font-bold uppercase text-gray-600 mb-1">Email Address (Optional)</label>
-                    <input type="email" id="modalEmailInput" placeholder="name@example.com" class="w-full px-3 py-2 text-xs border border-gray-200 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none">
+                    <label for="modalEmailInput" class="block text-xs font-semibold text-[#212121] mb-1">Email (Optional)</label>
+                    <input type="email" id="modalEmailInput" placeholder="name@example.com" class="input-text">
                 </div>
 
-                <!--
-                // TODO: Implement SMS OTP verification for production identity
-                -->
+                <!-- // TODO: Implement SMS OTP verification for production identity -->
 
-                <button type="submit" class="w-full py-2.5 bg-brand-500 hover:bg-brand-600 text-white font-bold text-xs rounded-xl shadow-md transition flex items-center justify-center gap-1.5 pt-2">
-                    <span class="material-symbols-outlined text-sm">lock_open</span>
-                    Continue to Support
-                </button>
+                <div class="pt-2">
+                    <button type="submit" class="btn-primary w-full text-xs">
+                        Start support session
+                    </button>
+                </div>
             </form>
         </div>
     </div>
 
-    <!-- ========================================================================= -->
-    <!-- MOBILE PHONE CALL SCREEN OVERLAY (Live Voice Call Interface)             -->
-    <!-- ========================================================================= -->
-    <div id="phoneCallModal" class="hidden fixed inset-0 z-50 bg-charcoal-950 flex flex-col justify-between p-6 sm:p-10 text-white">
+    <!-- Restrained Voice Call Screen Overlay -->
+    <div id="phoneCallModal" class="hidden fixed inset-0 z-50 bg-[#212121] flex flex-col justify-between p-6 sm:p-10 text-white">
         <!-- Call Header -->
-        <div class="flex items-center justify-between text-xs text-gray-400">
+        <div class="flex items-center justify-between text-xs text-[#E0E0E0] border-b border-[#424242] pb-4">
             <div class="flex items-center gap-2">
-                <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping"></span>
-                <span class="font-bold text-gray-200">Live Voice Call</span>
+                <span class="w-2 h-2 rounded-full bg-[#4CAF50]"></span>
+                <span class="font-medium text-white">Voice Call</span>
             </div>
-            <span id="callTimer" class="font-mono text-emerald-400 font-bold text-base">00:00</span>
+            <span id="callTimer" class="font-mono text-white font-medium text-sm">00:00</span>
         </div>
 
-        <!-- Assistant Profile & Calling Visualizer -->
-        <div class="flex flex-col items-center justify-center space-y-6 my-auto">
-            <div class="relative">
-                <div class="absolute -inset-4 rounded-full bg-emerald-500/20 animate-pulse"></div>
-                <div class="w-28 h-28 rounded-full bg-gradient-to-tr from-brand-500 to-indigo-600 p-1 flex items-center justify-center shadow-2xl relative z-10">
-                    <div class="w-full h-full rounded-full bg-charcoal-900 flex items-center justify-center text-brand-400">
-                        <span class="material-symbols-outlined text-5xl">support_agent</span>
-                    </div>
-                </div>
+        <!-- Center Status -->
+        <div class="flex flex-col items-center justify-center space-y-6 my-auto text-center max-w-md mx-auto">
+            <div class="w-20 h-20 rounded-full bg-[#424242] border border-[#616161] flex items-center justify-center text-white">
+                <span class="material-symbols-outlined text-4xl">support_agent</span>
             </div>
 
-            <div class="text-center space-y-1">
-                <h2 class="text-xl sm:text-2xl font-black text-white">{{ workspace.name }} AI Voice Agent</h2>
-                <p id="callStatusText" class="text-xs text-emerald-400 font-semibold">Call Connected &bull; Tap Speak</p>
+            <div class="space-y-1">
+                <h2 class="text-xl font-bold text-white">{{ workspace.name }} Voice Assistant</h2>
+                <p id="callStatusText" class="text-xs text-[#BDBDBD]">Call Connected &bull; Tap Speak to talk</p>
             </div>
 
-            <!-- Animated Sound Wave Visualizer -->
-            <div class="flex items-center gap-1.5 h-10">
-                <span class="w-1.5 bg-emerald-400 rounded-full h-4 animate-bounce"></span>
-                <span class="w-1.5 bg-emerald-400 rounded-full h-8 animate-bounce delay-100"></span>
-                <span class="w-1.5 bg-emerald-400 rounded-full h-6 animate-bounce delay-200"></span>
-                <span class="w-1.5 bg-emerald-400 rounded-full h-10 animate-bounce delay-75"></span>
-                <span class="w-1.5 bg-emerald-400 rounded-full h-5 animate-bounce delay-150"></span>
-            </div>
-
-            <!-- Live Speech Bubble -->
-            <div class="max-w-md w-full bg-charcoal-900/90 p-4 rounded-2xl border border-charcoal-800 text-center min-h-[75px] flex items-center justify-center shadow-inner">
-                <p id="callTranscriptLive" class="text-xs text-gray-300 italic leading-relaxed">
-                    "Hello! I am your AI assistant. Tap 'Speak' and ask me anything."
+            <!-- Live Speech Transcript Box -->
+            <div class="w-full bg-[#303030] p-4 rounded border border-[#424242] text-xs text-[#E0E0E0] min-h-[70px] flex items-center justify-center leading-relaxed">
+                <p id="callTranscriptLive">
+                    "Hello. Ask me any question about your order, tracking, or returns."
                 </p>
             </div>
         </div>
 
-        <!-- Call Action Controls -->
-        <div class="flex items-center justify-center gap-8 pt-6">
-            <!-- Speak / Mic Button -->
-            <button type="button" id="callMicBtn" onclick="toggleCallSpeaking()" class="w-20 h-20 rounded-full bg-emerald-500 hover:bg-emerald-400 text-white flex flex-col items-center justify-center shadow-2xl transition transform hover:scale-105 border-4 border-emerald-400/30">
-                <span id="callMicIcon" class="material-symbols-outlined text-3xl">mic</span>
-                <span id="callMicText" class="text-[9px] font-bold uppercase tracking-wider mt-0.5">Speak</span>
+        <!-- Call Controls -->
+        <div class="flex items-center justify-center gap-6 pt-4 border-t border-[#424242]">
+            <button type="button" id="callMicBtn" onclick="toggleCallSpeaking()" class="px-6 py-3 rounded bg-[#1976D2] hover:bg-[#1565C0] text-white text-xs font-semibold flex items-center gap-2 transition-colors">
+                <span id="callMicIcon" class="material-symbols-outlined text-lg">mic</span>
+                <span id="callMicText">Speak</span>
             </button>
-
-            <!-- End Call Button -->
-            <button type="button" onclick="endVoiceCall()" class="w-16 h-16 rounded-full bg-rose-600 hover:bg-rose-500 text-white flex items-center justify-center shadow-xl transition transform hover:scale-105 border-2 border-rose-400/30" title="End Call">
-                <span class="material-symbols-outlined text-3xl">call_end</span>
+            <button type="button" onclick="endVoiceCall()" class="px-6 py-3 rounded bg-[#D32F2F] hover:bg-[#C62828] text-white text-xs font-semibold flex items-center gap-2 transition-colors">
+                <span class="material-symbols-outlined text-lg">call_end</span>
+                <span>End call</span>
             </button>
         </div>
     </div>
+
 </div>
 
 <script>
@@ -252,17 +246,24 @@
     let liveBrowserTranscript = "";
     let conversationEnded = false;
 
-    // Live Call Timer & State
     let callTimerInterval = null;
     let callSeconds = 0;
     let isCallActive = false;
 
-    // // TODO: Implement SMS OTP verification for production identity
+    // Set Welcome Time
+    document.addEventListener("DOMContentLoaded", function() {
+        const wt = document.getElementById("welcomeTime");
+        if (wt) {
+            const now = new Date();
+            wt.textContent = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        }
+    });
 
     function openPreChatModal() {
         document.getElementById("modalNameInput").value = activeName || "Vansh Soni";
         document.getElementById("modalPhoneInput").value = activePhone || "6367743066";
         document.getElementById("modalEmailInput").value = activeEmail || "vansh.soni@example.com";
+        document.getElementById("modalPhoneError").classList.add("hidden");
         document.getElementById("preChatModal").classList.remove("hidden");
     }
 
@@ -274,40 +275,42 @@
         document.getElementById("modalNameInput").value = name;
         document.getElementById("modalPhoneInput").value = phone;
         document.getElementById("modalEmailInput").value = email;
+        document.getElementById("modalPhoneError").classList.add("hidden");
     }
 
     function saveCustomerIdentity(e) {
         if (e) e.preventDefault();
         const name = document.getElementById("modalNameInput").value.trim();
-        const phone = document.getElementById("modalPhoneInput").value.trim().replace(/\D/g, '');
+        const rawPhone = document.getElementById("modalPhoneInput").value.trim().replace(/\D/g, '');
         const email = document.getElementById("modalEmailInput").value.trim();
+        const errEl = document.getElementById("modalPhoneError");
 
-        if (phone.length !== 10) {
-            alert("Please enter a valid 10-digit Indian mobile number.");
+        // 10-digit Indian mobile validation
+        if (rawPhone.length !== 10 || !['6','7','8','9'].includes(rawPhone[0])) {
+            errEl.classList.remove("hidden");
             return;
         }
+        errEl.classList.add("hidden");
 
         activeName = name;
-        activePhone = phone;
+        activePhone = rawPhone;
         activeEmail = email;
 
         localStorage.setItem(`supporto_name_${publicKey}`, activeName);
         localStorage.setItem(`supporto_phone_${publicKey}`, activePhone);
         if (activeEmail) localStorage.setItem(`supporto_email_${publicKey}`, activeEmail);
 
-        // Update UI
         const headerSub = document.getElementById("headerCustomerSub");
         if (headerSub) {
-            headerSub.innerHTML = `Hello, <strong class="text-gray-200">${activeName}</strong> (<span class="font-mono text-gray-300">${activePhone}</span>)`;
+            headerSub.innerHTML = `${activeName} &bull; <span class="font-mono">${activePhone}</span>`;
         }
         const greeting = document.getElementById("welcomeGreetingText");
         if (greeting) {
-            greeting.textContent = `Welcome ${activeName}! How can our AI assistant help you today?`;
+            greeting.textContent = `Welcome, ${activeName}. How can we assist you with your order, returns, or billing today?`;
         }
 
         closePreChatModal();
 
-        // If there was a pending voice call trigger
         if (window._pendingVoiceCall) {
             window._pendingVoiceCall = false;
             startVoiceCall();
@@ -323,7 +326,7 @@
         }
     }
 
-    // Initialize browser SpeechRecognition if available
+    // SpeechRecognition initialization
     if ("webkitSpeechRecognition" in window || "SpeechRecognition" in window) {
         const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
         recognition = new SpeechRec();
@@ -352,7 +355,6 @@
         sendChatMessage();
     }
 
-    // ─── Send text message ────────────────────────────────────────────────────
     async function sendChatMessage(e) {
         if (e) e.preventDefault();
         if (conversationEnded) return;
@@ -384,31 +386,26 @@
                 localStorage.setItem(`supporto_session_${publicKey}`, sessionToken);
             }
 
-            appendMessage("AI", data.ai_message);
+            appendMessage("AI", data.ai_message, data.is_escalated ? data.escalation_ticket : null);
 
             if (data.is_escalated && data.escalation_ticket) {
                 showTicketBanner(data.escalation_ticket);
             }
         } catch (err) {
             removeTypingIndicator(typingId);
-            appendMessage("AI", "Sorry, an error occurred communicating with the support engine.");
+            appendMessage("AI", "An error occurred communicating with the support assistant.");
         }
     }
 
-    // ─── Submit & Raise Ticket ────────────────────────────────────────────────
     async function submitAndRaiseTicket() {
-        if (conversationEnded) {
-            alert("This conversation has already been submitted.");
-            return;
-        }
+        if (conversationEnded) return;
         if (!sessionToken) {
-            alert("Please send at least one message before submitting a ticket.");
+            alert("Please send a message before submitting a ticket.");
             return;
         }
 
         const btn = document.getElementById("submitTicketBtn");
-        btn.disabled = true;
-        btn.innerHTML = `<span class="material-symbols-outlined text-sm">hourglass_empty</span> Submitting...`;
+        btn.textContent = "Submitting...";
 
         try {
             const resp = await fetch(`/widget/${publicKey}/complete/`, {
@@ -417,26 +414,25 @@
                 body: JSON.stringify({ session_token: sessionToken })
             });
             const data = await resp.json();
-
             conversationEnded = true;
+
             if (data.ticket_number) {
                 showTicketBanner(data.ticket_number);
-                appendMessage("AI", `✅ Ticket #${data.ticket_number} raised! Our support team will get back to you within the SLA window. You may close this window.`);
+                appendMessage("AI", `Ticket #${data.ticket_number} has been submitted to our support team.`, data.ticket_number);
             } else {
-                appendMessage("AI", data.message || "Your conversation has been submitted to our support team!");
+                appendMessage("AI", data.message || "Your inquiry has been submitted.");
             }
             disableInput(true);
         } catch (err) {
+            btn.textContent = "Submit as ticket";
             appendMessage("AI", "Could not submit ticket. Please try again.");
-            btn.disabled = false;
-            btn.innerHTML = `<span class="material-symbols-outlined text-sm">confirmation_number</span> Submit & Raise Ticket`;
         }
     }
 
     async function endConversationOnly() {
         if (conversationEnded) return;
         conversationEnded = true;
-        appendMessage("AI", "Thank you for chatting with us! Your conversation has ended. Refresh the page to start a new session.");
+        appendMessage("AI", "The conversation has ended. Refresh the page to start a new chat.");
         disableInput(false);
         if (sessionToken) {
             try {
@@ -458,21 +454,18 @@
         if (sendBtn) sendBtn.disabled = true;
         if (submitBtn) {
             submitBtn.disabled = true;
-            submitBtn.innerHTML = ticketSubmitted
-                ? `<span class="material-symbols-outlined text-sm">check_circle</span> Ticket Submitted`
-                : `<span class="material-symbols-outlined text-sm">check_circle</span> Conversation Ended`;
+            submitBtn.textContent = ticketSubmitted ? "Ticket Submitted" : "Ended";
         }
         if (endBtn) endBtn.disabled = true;
         localStorage.removeItem(`supporto_session_${publicKey}`);
     }
 
-    // ─── Voice Call ───────────────────────────────────────────────────────────
     function startVoiceCall() {
         isCallActive = true;
         callSeconds = 0;
         document.getElementById("phoneCallModal").classList.remove("hidden");
         document.getElementById("callTimer").textContent = "00:00";
-        document.getElementById("callStatusText").textContent = "Call Connected \u2022 Tap Speak";
+        document.getElementById("callStatusText").textContent = "Call Connected \u2022 Tap Speak to talk";
 
         callTimerInterval = setInterval(() => {
             callSeconds++;
@@ -481,7 +474,7 @@
             document.getElementById("callTimer").textContent = `${mins}:${secs}`;
         }, 1000);
 
-        const welcomeSpeech = "Hello! I am your AI support specialist. Tap the Speak button to ask anything.";
+        const welcomeSpeech = "Hello. Ask me any question about your order, tracking, or returns.";
         document.getElementById("callTranscriptLive").textContent = `AI: "${welcomeSpeech}"`;
         playVoiceResponse("", welcomeSpeech);
     }
@@ -502,10 +495,10 @@
                 liveBrowserTranscript = "";
                 if (recognition) { try { recognition.start(); } catch(e) {} }
 
-                btn.classList.remove("bg-emerald-500", "hover:bg-emerald-400");
-                btn.classList.add("bg-rose-500", "animate-pulse");
+                btn.classList.remove("bg-[#1976D2]", "hover:bg-[#1565C0]");
+                btn.classList.add("bg-[#D32F2F]", "hover:bg-[#C62828]");
                 text.textContent = "Done";
-                document.getElementById("callStatusText").textContent = "Listening to you...";
+                document.getElementById("callStatusText").textContent = "Listening...";
             } catch (err) {
                 alert("Microphone permission required: " + err.message);
             }
@@ -517,10 +510,10 @@
                 }
                 isRecording = false;
                 if (recognition) { try { recognition.stop(); } catch(e) {} }
-                btn.classList.remove("bg-rose-500", "animate-pulse");
-                btn.classList.add("bg-emerald-500", "hover:bg-emerald-400");
+                btn.classList.remove("bg-[#D32F2F]", "hover:bg-[#C62828]");
+                btn.classList.add("bg-[#1976D2]", "hover:bg-[#1565C0]");
                 text.textContent = "Speak";
-                document.getElementById("callStatusText").textContent = "AI is thinking...";
+                document.getElementById("callStatusText").textContent = "Processing audio...";
             }
         }
     }
@@ -548,19 +541,20 @@
                 sessionToken = data.session_token;
                 localStorage.setItem(`supporto_session_${publicKey}`, sessionToken);
             }
+
             if (data.transcription) appendMessage("CUSTOMER", data.transcription);
             if (data.ai_message) {
-                appendMessage("AI", data.ai_message);
+                appendMessage("AI", data.ai_message, data.is_escalated ? data.escalation_ticket : null);
                 document.getElementById("callTranscriptLive").textContent = `AI: "${data.ai_message}"`;
             }
-            document.getElementById("callStatusText").textContent = "Call Connected \u2022 Tap Speak";
+            document.getElementById("callStatusText").textContent = "Call Connected \u2022 Tap Speak to talk";
             playVoiceResponse(data.audio_url, data.ai_message);
 
             if (data.is_escalated && data.escalation_ticket) {
                 showTicketBanner(data.escalation_ticket);
             }
         } catch (err) {
-            document.getElementById("callStatusText").textContent = "Voice error. Tap Speak again.";
+            document.getElementById("callStatusText").textContent = "Audio error. Tap Speak to retry.";
         }
     }
 
@@ -587,15 +581,15 @@
 
         const btn = document.getElementById("callMicBtn");
         if (btn) {
-            btn.classList.remove("bg-rose-500", "animate-pulse");
-            btn.classList.add("bg-emerald-500", "hover:bg-emerald-400");
+            btn.classList.remove("bg-[#D32F2F]", "hover:bg-[#C62828]");
+            btn.classList.add("bg-[#1976D2]", "hover:bg-[#1565C0]");
         }
         const micText = document.getElementById("callMicText");
         if (micText) micText.textContent = "Speak";
 
         const duration = document.getElementById("callTimer").textContent;
         document.getElementById("phoneCallModal").classList.add("hidden");
-        appendMessage("AI", `[Voice Call Ended \u2014 Duration: ${duration}]`);
+        appendMessage("AI", `[Voice call ended \u2014 Duration: ${duration}]`);
     }
 
     function playVoiceResponse(audioUrl, fallbackText) {
@@ -604,34 +598,62 @@
             const player = document.getElementById("audioPlayer");
             player.src = audioUrl;
             container.classList.remove("hidden");
-            player.play().catch(e => console.log("Audio autoplay prevented", e));
+            player.play().catch(e => console.log("Audio playback:", e));
             player.onended = () => container.classList.add("hidden");
         } else if (fallbackText && "speechSynthesis" in window) {
             window.speechSynthesis.cancel();
             const clean = fallbackText.replace(/<[^>]+>/g, '').replace(/\*+/g, '');
             const utterance = new SpeechSynthesisUtterance(clean);
             utterance.rate = 1.05;
-            utterance.pitch = 1.0;
             window.speechSynthesis.speak(utterance);
         }
     }
 
-    function appendMessage(sender, text) {
+    // Markdown simple renderer (bold, lists, paragraphs)
+    function renderMarkdown(raw) {
+        let text = escapeHtml(raw);
+        // Bold: **text**
+        text = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+        // Unordered lists: - item or * item
+        text = text.replace(/(?:^|\n)[-*]\s+(.+)/g, '<li class="ml-4 list-disc">$1</li>');
+        // Numbered lists: 1. item
+        text = text.replace(/(?:^|\n)\d+\.\s+(.+)/g, '<li class="ml-4 list-decimal">$1</li>');
+        // Wrap contiguous li items in ul/ol if needed or simply preserve line breaks
+        text = text.replace(/\n/g, '<br>');
+        return text;
+    }
+
+    function appendMessage(sender, text, ticketNumber) {
         const stream = document.getElementById("chatStream");
         const div = document.createElement("div");
         div.className = `flex flex-col ${sender === "CUSTOMER" ? "items-end" : "items-start"}`;
 
         const isAi = sender === "AI";
-        const bg = isAi ? "bg-white text-charcoal-900 border border-gray-100 rounded-tl-none shadow-sm" : "bg-brand-500 text-white rounded-tr-none shadow-md";
+        const bg = isAi ? "bg-[#F5F7FA] text-[#212121] border border-[#E0E0E0]" : "bg-[#1976D2] text-white";
         const senderLabel = isAi ? "Supporto AI" : (activeName || "You");
+        const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+        let escalationChip = "";
+        if (ticketNumber) {
+            escalationChip = `
+                <div class="mt-2.5 pt-2 border-t border-[#E0E0E0] flex items-center justify-between text-xs">
+                    <span class="inline-flex items-center gap-1 font-mono font-semibold bg-white text-[#0D47A1] px-2 py-0.5 rounded border border-[#90CAF9]">
+                        Ticket #${escapeHtml(ticketNumber)} created
+                    </span>
+                    <span class="text-[11px] text-[#616161]">Human SLA assigned</span>
+                </div>
+            `;
+        }
 
         div.innerHTML = `
-            <div class="flex items-center gap-1 text-[10px] text-gray-400 mb-1 px-1">
-                ${isAi ? '<span class="material-symbols-outlined text-xs text-brand-500">smart_toy</span>' : '<span class="material-symbols-outlined text-xs text-gray-400">person</span>'}
-                ${senderLabel}
+            <div class="flex items-center gap-1.5 text-xs text-[#757575] mb-1 px-1">
+                <span>${senderLabel}</span>
+                <span class="text-[10px]">&bull;</span>
+                <span class="text-[11px]">${timeStr}</span>
             </div>
-            <div class="max-w-[85%] rounded-2xl ${bg} p-3.5 leading-relaxed">
-                ${escapeHtml(text).replace(/\n/g, '<br>')}
+            <div class="max-w-[85%] rounded-lg ${bg} p-3.5 leading-relaxed">
+                <div>${renderMarkdown(text)}</div>
+                ${escalationChip}
             </div>
         `;
         stream.appendChild(div);
@@ -645,12 +667,12 @@
         div.id = id;
         div.className = "flex flex-col items-start";
         div.innerHTML = `
-            <span class="text-[10px] text-gray-400 mb-1 px-1">Supporto AI</span>
-            <div class="bg-white p-3 rounded-2xl rounded-tl-none border border-gray-100 shadow-sm flex items-center gap-1.5 text-xs text-gray-400">
-                <span class="w-1.5 h-1.5 rounded-full bg-brand-500 animate-bounce"></span>
-                <span class="w-1.5 h-1.5 rounded-full bg-brand-500 animate-bounce delay-100"></span>
-                <span class="w-1.5 h-1.5 rounded-full bg-brand-500 animate-bounce delay-200"></span>
-                <span class="text-[11px] text-gray-400 ml-1">AI is thinking...</span>
+            <span class="text-xs text-[#757575] mb-1 px-1">Supporto AI</span>
+            <div class="bg-[#F5F7FA] px-3.5 py-2.5 rounded-lg border border-[#E0E0E0] flex items-center gap-1 text-xs text-[#757575]">
+                <span class="w-1.5 h-1.5 rounded-full bg-[#1976D2] animate-bounce"></span>
+                <span class="w-1.5 h-1.5 rounded-full bg-[#1976D2] animate-bounce delay-100"></span>
+                <span class="w-1.5 h-1.5 rounded-full bg-[#1976D2] animate-bounce delay-200"></span>
+                <span class="text-xs text-[#757575] ml-1.5">Checking...</span>
             </div>
         `;
         stream.appendChild(div);
@@ -683,7 +705,7 @@
             input.value = "{{ initial_query|escapejs }}";
             setTimeout(function() {
                 sendChatMessage();
-            }, 350);
+            }, 300);
         }
     });
     {% endif %}

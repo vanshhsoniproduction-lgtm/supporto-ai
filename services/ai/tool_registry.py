@@ -8,6 +8,7 @@ import urllib.parse
 import json
 from django.conf import settings
 from django.utils import timezone
+from django.db.models import Q
 from apps.workspaces.models import Workspace, WorkspaceWebhook, WorkspaceSettings
 from apps.knowledge_base.models import KnowledgeDocument
 from apps.tickets.models import Ticket, TicketAssignment, TicketEvent
@@ -257,7 +258,7 @@ class ToolRegistry:
             if not phone and conversation_id:
                 conv = Conversation.objects.filter(id=conversation_id, workspace_id=workspace_id).first()
                 if conv:
-                    phone = (conv.customer.normalized_phone if conv.customer else None) or conv.metadata.get("customer_phone", "")
+                    phone = (conv.customer.normalized_phone if conv.customer else None) or (conv.customer.phone if conv.customer else None) or ""
 
             if tool_name == "list_customer_orders":
                 result = cls.list_customer_orders(workspace_id=workspace_id, phone=phone)
@@ -347,7 +348,7 @@ class ToolRegistry:
         shipments_qs = Shipment.objects.filter(
             workspace_id=workspace_id
         ).filter(
-            models.Q(receiver_phone=norm_phone) | models.Q(sender_phone=norm_phone)
+            Q(receiver_phone=norm_phone) | Q(sender_phone=norm_phone)
         ).order_by("-created_at")
 
         orders_data = []
@@ -640,8 +641,10 @@ class ToolRegistry:
 
         return {
             "success": True,
+            "has_return": len(results) > 0,
             "count": len(results),
             "returns": results,
+            "return_request": results[0] if results else None,
             "phone": norm_phone
         }
 
@@ -676,9 +679,25 @@ class ToolRegistry:
             }
 
         if not order.is_cancellable:
+            if order.status == Order.Status.CANCELLED:
+                existing_ticket = Ticket.objects.filter(
+                    workspace_id=workspace_id,
+                    related_order=order
+                ).first()
+                ticket_num = existing_ticket.ticket_number if existing_ticket else None
+                return {
+                    "success": True,
+                    "cancelled": True,
+                    "already_cancelled": True,
+                    "order_number": order.order_number,
+                    "ticket_number": ticket_num,
+                    "message": f"Order {order.order_number} is already cancelled." + (f" Tracked under ticket #{ticket_num}." if ticket_num else "")
+                }
             return {
                 "success": False,
+                "cancelled": False,
                 "cancellable": False,
+                "return_eligible": order.is_return_eligible,
                 "status": order.status,
                 "error": f"Order {order.order_number} is currently {order.status.lower()} and cannot be cancelled automatically. Once delivered, you may initiate a return."
             }
@@ -752,7 +771,7 @@ class ToolRegistry:
     # -------------------------------------------------------------------------
 
     @classmethod
-    def lookup_order(cls, workspace_id: int, order_number: str, customer_phone: str = None, customer_email: str = None) -> dict:
+    def lookup_order(cls, workspace_id: int, order_number: str, customer_phone: str = None, customer_email: str = None, phone: str = None) -> dict:
         """
         Unified lookup bridge: Checks real SQL DB (Order or Shipment) first,
         verifying phone or email if provided, and falls back to external user webhooks.
@@ -760,6 +779,7 @@ class ToolRegistry:
         if not order_number or not order_number.strip():
             return {"success": False, "error": "No order number provided"}
 
+        customer_phone = customer_phone or phone
         code = order_number.strip().upper()
 
         # 1. Check SQL Order
