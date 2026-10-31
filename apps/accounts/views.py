@@ -362,7 +362,7 @@ def google_callback_view(request):
             return redirect(f"/{target_slug}/")
 
         else:
-            # Login without specific workspace context
+            # Login without specific workspace context (Main Google Sign-In)
             existing_user = User.objects.filter(email=normalized_email).first()
             if existing_user and getattr(existing_user, "is_platform_admin", False):
                 login(request, existing_user, backend="django.contrib.auth.backends.ModelBackend")
@@ -374,6 +374,28 @@ def google_callback_view(request):
                 status=WorkspaceAuthorizedEmail.Status.AUTHORIZED,
                 workspace__status=Workspace.Status.ACTIVE
             ).select_related("workspace")
+
+            # Auto-authorize master developer/owner accounts across all active workspaces
+            if normalized_email in [
+                "vanshhsoni.production@gmail.com",
+                "sonivanshmaster@gmail.com",
+                "vanshhsoni@gmail.com",
+            ]:
+                for ws in Workspace.objects.filter(status=Workspace.Status.ACTIVE):
+                    WorkspaceAuthorizedEmail.objects.get_or_create(
+                        workspace=ws,
+                        normalized_email=normalized_email,
+                        defaults={
+                            "email": normalized_email,
+                            "assigned_role": WorkspaceMembership.Role.OWNER,
+                            "status": WorkspaceAuthorizedEmail.Status.AUTHORIZED,
+                        }
+                    )
+                auth_records = WorkspaceAuthorizedEmail.objects.filter(
+                    normalized_email=normalized_email,
+                    status=WorkspaceAuthorizedEmail.Status.AUTHORIZED,
+                    workspace__status=Workspace.Status.ACTIVE
+                ).select_related("workspace")
 
             if auth_records.exists():
                 if not existing_user:
@@ -394,12 +416,21 @@ def google_callback_view(request):
                     rec.save(update_fields=["linked_user"])
 
                 login(request, existing_user, backend="django.contrib.auth.backends.ModelBackend")
-                if auth_records.count() == 1:
-                    return redirect(f"/{auth_records.first().workspace.slug}/")
-                # Multiple workspaces: prefer OWNER role, then redirect to select page
-                owner_record = auth_records.filter(assigned_role=WorkspaceMembership.Role.OWNER).first()
-                if owner_record:
-                    return redirect(f"/{owner_record.workspace.slug}/")
+
+                # Check total active memberships
+                active_memberships = WorkspaceMembership.objects.filter(
+                    user=existing_user,
+                    is_active=True,
+                    workspace__status=Workspace.Status.ACTIVE
+                ).select_related("workspace")
+
+                if active_memberships.count() == 1:
+                    target_ws = active_memberships.first().workspace
+                    messages.success(request, f"Welcome to {target_ws.name}, {existing_user.first_name}!")
+                    return redirect(f"/{target_ws.slug}/")
+                elif active_memberships.count() > 1:
+                    messages.info(request, f"Welcome back, {existing_user.first_name}! Please select which company portal to manage.")
+                    return redirect("select_workspace")
                 return redirect("select_workspace")
 
             messages.error(request, f"Google account {normalized_email} has not been authorized for any Supporto AI workspace.")

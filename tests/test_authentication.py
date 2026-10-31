@@ -107,3 +107,26 @@ class AuthenticationArchitectureTests(TestCase):
         resp = self.client.post("/logout/")
         self.assertEqual(resp.status_code, 302)
         self.assertRedirects(resp, "/")
+
+    def test_multi_workspace_selection_page(self):
+        """A user linked to multiple workspaces sees the workspace switcher listing all organizations."""
+        WorkspaceMembership.objects.create(
+            workspace=self.workspace_a,
+            user=self.staff_user,
+            role=WorkspaceMembership.Role.OWNER,
+            is_active=True
+        )
+        WorkspaceMembership.objects.create(
+            workspace=self.workspace_b,
+            user=self.staff_user,
+            role=WorkspaceMembership.Role.AGENT,
+            is_active=True
+        )
+        self.client.login(username=self.staff_email, password=self.password)
+        resp = self.client.get("/select-workspace/")
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, "Select Company Workspace")
+        self.assertContains(resp, "ShopEase")
+        self.assertContains(resp, "OtherCorp")
+        self.assertContains(resp, "/shopease/")
+        self.assertContains(resp, "/othercorp/")

@@ -18,11 +18,17 @@
                 </div>
             </div>
 
-            <!-- Role badge -->
+            <!-- Role badge & Switch Company -->
             {% if current_membership %}
             <div class="px-6 py-2.5 bg-charcoal-950/60 flex items-center justify-between border-b border-charcoal-800/60">
-                <span class="text-[10px] uppercase tracking-wider text-gray-400 font-semibold">Role:</span>
-                <span class="text-xs font-bold text-brand-500">{{ current_membership.role }}</span>
+                <div class="flex items-center gap-1.5">
+                    <span class="text-[10px] uppercase tracking-wider text-gray-400 font-semibold">Role:</span>
+                    <span class="text-xs font-bold text-brand-500">{{ current_membership.role }}</span>
+                </div>
+                <a href="{% url 'select_workspace' %}" class="text-[11px] font-bold text-gray-400 hover:text-white hover:bg-charcoal-800 px-2 py-0.5 rounded-lg transition flex items-center gap-1" title="Switch Company Workspace">
+                    <span class="material-symbols-outlined text-xs">swap_horiz</span>
+                    Switch
+                </a>
             </div>
             {% endif %}
 
@@ -144,6 +150,10 @@
         <header class="h-16 bg-white border-b border-gray-200 px-6 sm:px-8 flex items-center justify-between sticky top-0 z-10">
             <div class="flex items-center gap-3">
                 <h2 class="text-base font-bold text-charcoal-900">{% block workspace_title %}{{ current_workspace.name }}{% endblock %}</h2>
+                <a href="{% url 'select_workspace' %}" class="text-xs font-bold text-charcoal-700 hover:text-charcoal-900 bg-gray-100 hover:bg-gray-200 px-2.5 py-1 rounded-xl transition flex items-center gap-1 border border-gray-200/60" title="Switch to another company workspace">
+                    <span class="material-symbols-outlined text-sm">swap_horiz</span>
+                    Switch Company
+                </a>
             </div>
             <div class="flex items-center gap-3">
                 <a href="{% url 'email_review_queue' company_slug=current_workspace.slug %}" class="text-xs font-bold text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 px-3 py-1.5 rounded-xl transition flex items-center gap-1.5">

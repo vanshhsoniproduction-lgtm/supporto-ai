@@ -120,3 +120,4 @@ class Command(BaseCommand):
                     self.stdout.write(self.style.WARNING(f"    [!] Email send failed ({e}), printed to log."))
 
         self.stdout.write(self.style.SUCCESS("\n[+] Weekly reports batch processing complete!\n"))
+
